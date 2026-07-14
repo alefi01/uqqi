@@ -295,6 +295,20 @@ def normalize_org_url(raw_url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
 
 
+# Суффиксы размеров фото Яндекса. Нужны для дедупа галереи и для сравнения
+# фото с логотипом: одна и та же картинка приходит с разными суффиксами.
+PHOTO_SIZE_SUFFIX_RE = re.compile(
+    r'/(XXXL|XXL|XL|L|M|orig|'
+    r'priority-headline-background|priority-headline-logo-square|'
+    r'[0-9]+x[0-9]+|smart_crop_[^/]+)$'
+)
+
+
+def photo_base(url: str) -> str:
+    """Базовый путь фото без суффикса размера — для сравнения картинок."""
+    return PHOTO_SIZE_SUFFIX_RE.sub('', (url or '').strip().rstrip('/'))
+
+
 def is_search_echo(title: str, query: str) -> bool:
     return clean_text(title).casefold() == clean_text(query).casefold()
 
@@ -762,16 +776,11 @@ def _catalog_title_for(category: str) -> str:
 
 def _normalize_gallery_urls(raw_urls: list, limit: int = 15) -> list[str]:
     """
-    Отсекает заготовки (_height/_width — незагруженные lazy-плейсхолдеры) и видео.
-    Берёт уникальные фото по base-пути с рабочим суффиксом размера.
+    Отсекает заготовки (_height/_width — незагруженные lazy-плейсхолдеры),
+    видео и логотип организации (лого — не фото заведения, ему не место
+    в галерее и hero). Берёт уникальные фото по base-пути.
     """
     import re as _re
-    # Рабочие финальные суффиксы размеров Яндекса
-    GOOD_SUFFIX = _re.compile(
-        r'/(XXXL|XXL|XL|L|M|orig|'
-        r'priority-headline-background|priority-headline-logo-square|'
-        r'[0-9]+x[0-9]+|smart_crop_[^/]+)$'
-    )
     # Заготовки — отбрасываем
     BAD_SUFFIX = _re.compile(r'/(?:[A-Z]+_height|[A-Z]+_width)$')
 
@@ -784,11 +793,14 @@ def _normalize_gallery_urls(raw_urls: list, limit: int = 15) -> list[str]:
         # Видео / плеер — пропускаем
         if 'yaplayer' in url or '/get-vh/' in url and url.endswith('_height'):
             continue
+        # Логотип организации — пропускаем
+        if 'priority-headline-logo' in url:
+            continue
         # Битая заготовка — пропускаем
         if BAD_SUFFIX.search(url):
             continue
-        # Должен быть рабочий суффикс; если нет суффикса вообще — оставляем как есть
-        base = GOOD_SUFFIX.sub('', url)
+        # Дедуп по базовому пути без суффикса размера
+        base = photo_base(url)
         if base in seen_bases:
             continue
         seen_bases.add(base)
@@ -806,8 +818,8 @@ async def extract_gallery_photos(page, limit: int = 15) -> list[str]:
             const HOSTS = ['get-altay', 'get-tycoon', 'get-vh'];
             const sel = HOSTS.map(h => `[style*="${h}"], [src*="${h}"], [data-src*="${h}"]`).join(', ');
             document.querySelectorAll(sel).forEach(el => {
-                // Пропускаем элементы внутри видео-плеера
-                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"]')) return;
+                // Пропускаем элементы внутри видео-плеера и логотипа
+                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"], [class*="logo"]')) return;
                 const style = el.getAttribute('style') || '';
                 const src   = el.getAttribute('src') || el.getAttribute('data-src') || '';
                 const all   = style + ' ' + src;
@@ -1090,9 +1102,9 @@ async def scrape_gallery(page, limit: int = 20) -> list:
             const HOSTS = ['get-altay', 'get-tycoon', 'get-vh'];
             const hostOk = (s) => HOSTS.some(h => s.includes(h));
 
-            // Из img элементов
+            // Из img элементов (кроме видео и логотипа организации)
             document.querySelectorAll('img').forEach(img => {
-                if (img.closest('.yaplayer, [class*="yaplayer"], [class*="video"]')) return;
+                if (img.closest('.yaplayer, [class*="yaplayer"], [class*="video"], [class*="logo"]')) return;
                 let src = img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
                 if (!src.includes('avatars.mds.yandex.net')) return;
                 if (!hostOk(src)) return;
@@ -1103,7 +1115,7 @@ async def scrape_gallery(page, limit: int = 20) -> list:
             // Из CSS background-image
             const sel = HOSTS.map(h => `[style*="${h}"]`).join(', ');
             document.querySelectorAll(sel).forEach(el => {
-                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"]')) return;
+                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"], [class*="logo"]')) return;
                 const style = el.getAttribute('style') || '';
                 const m = style.match(/url\(["']?(https:\/\/avatars\.mds\.yandex\.net[^"')]+)["']?\)/);
                 if (m) urls.push(m[1].replace(':443/', '/'));
@@ -1512,6 +1524,10 @@ async def parse_detail_page(page, place: Place, context=None) -> Place:
         print(f"[INFO] Загружаем галерею: {_tab_url(_full_url, 'gallery')}", flush=True)
         photos = await _fetch_tab(context, _tab_url(_full_url, 'gallery'), scrape_gallery, limit=20)
         print(f"[INFO] Фото найдено: {len(photos) if photos else 0}", flush=True)
+        # Лого может прийти и с обычным суффиксом размера — сверяем базовые пути
+        if photos and place.logo_url:
+            _logo_base = photo_base(place.logo_url)
+            photos = [p for p in photos if photo_base(p) != _logo_base]
         if photos:
             place.gallery_photos = ' | '.join(photos[:20])
 

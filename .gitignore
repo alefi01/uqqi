@@ -39,3 +39,6 @@ ms-playwright/
 # Отладка
 debug_page.html
 debug_*.py
+
+# Загрузки клиентов (фото из ЛК)
+static/uploads/
