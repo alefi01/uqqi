@@ -944,10 +944,18 @@ function ScreenSites({
   }, void 0, true);
 }
 
-// ---- валидация ссылки (короткая yandex.com/maps/-/...) ----
-function validYandex(url) {
-  if (!url.trim()) return null;
-  return /^https:\/\/yandex\.(com|ru)\/maps\/-\/[A-Za-z0-9_~-]+\/?$/.test(url.trim());
+// ---- валидация ссылки: короткая /maps/-/CODE, org /maps/org/…/{id}, mapframe (oid=) ----
+// Принимает и текст «Поделиться» с телефона (название + адрес + ссылка).
+// ВАЖНО: та же логика на бэке — app/yandex_links.py. Менять синхронно.
+function validYandex(text) {
+  if (!text.trim()) return null;
+  const m = text.match(/https?:\/\/(?:maps\.)?yandex\.(?:ru|com|by|kz|uz)\/maps\/[^\s]+/);
+  if (!m) return false;
+  const url = m[0];
+  if (/\/maps\/-\/[A-Za-z0-9_~-]+/.test(url)) return true;    // короткая
+  if (/\/maps\/org\/(?:[^\/]+\/)?\d+/.test(url)) return true; // карточка организации
+  if (/(?:[?&]oid=|oid%3D)\d+/i.test(url)) return true;       // mapframe: oid в query
+  return false;
 }
 
 // ---- экран «Добавить сайт» ----
@@ -1011,12 +1019,12 @@ function ScreenAddSite({
           children: "Ссылка на карточку организации"
         }, void 0, false), /*#__PURE__*/_jsxDEV("input", {
           className: 'input' + (valid === true ? ' is-valid' : valid === false ? ' is-error' : ''),
-          placeholder: "https://yandex.com/maps/-/CDe…",
+          placeholder: "https://yandex.ru/maps/org/… или /maps/-/…",
           value: url,
           onChange: e => setUrl(e.target.value)
         }, void 0, false), valid === false && /*#__PURE__*/_jsxDEV("span", {
           className: "field__err",
-          children: "Похоже, это не ссылка на Яндекс Карты. Проверьте формат."
+          children: "Похоже, это не ссылка на карточку организации в Яндекс Картах. Проверьте формат."
         }, void 0, false), valid === true && /*#__PURE__*/_jsxDEV("span", {
           className: "field__hint",
           style: {
@@ -1051,7 +1059,7 @@ function ScreenAddSite({
           },
           children: ["Где взять ссылку: откройте карточку компании в Яндекс Картах, нажмите кнопку ", /*#__PURE__*/_jsxDEV("b", {
             children: "«Поделиться»"
-          }, void 0, false), " и скопируйте ссылку."]
+          }, void 0, false), " и скопируйте ссылку. Можно вставить скопированное целиком — вместе с названием и адресом."]
         }, void 0, true)]
       }, void 0, true), /*#__PURE__*/_jsxDEV("button", {
         className: "btn btn--primary btn--lg btn--block",

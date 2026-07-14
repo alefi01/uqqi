@@ -103,10 +103,18 @@ function ScreenSites({ nav, sites, onPay, onMenu, canAdd }) {
   );
 }
 
-// ---- валидация ссылки (короткая yandex.com/maps/-/...) ----
-function validYandex(url) {
-  if (!url.trim()) return null;
-  return /^https:\/\/yandex\.(com|ru)\/maps\/-\/[A-Za-z0-9_~-]+\/?$/.test(url.trim());
+// ---- валидация ссылки: короткая /maps/-/CODE, org /maps/org/…/{id}, mapframe (oid=) ----
+// Принимает и текст «Поделиться» с телефона (название + адрес + ссылка).
+// ВАЖНО: та же логика на бэке — app/yandex_links.py. Менять синхронно.
+function validYandex(text) {
+  if (!text.trim()) return null;
+  const m = text.match(/https?:\/\/(?:maps\.)?yandex\.(?:ru|com|by|kz|uz)\/maps\/[^\s]+/);
+  if (!m) return false;
+  const url = m[0];
+  if (/\/maps\/-\/[A-Za-z0-9_~-]+/.test(url)) return true;    // короткая
+  if (/\/maps\/org\/(?:[^\/]+\/)?\d+/.test(url)) return true; // карточка организации
+  if (/(?:[?&]oid=|oid%3D)\d+/i.test(url)) return true;       // mapframe: oid в query
+  return false;
 }
 
 // ---- экран «Добавить сайт» ----
@@ -122,13 +130,13 @@ function ScreenAddSite({ nav, onStartBuild }) {
         <p className="muted" style={{ fontSize: '.88rem', lineHeight: 1.6 }}>Вставьте ссылку на карточку вашей организации — мы возьмём оттуда название, адрес, фото, часы работы и отзывы.</p>
         <div className="field" style={{ marginTop: '1.3rem' }}>
           <label className="field__label">Ссылка на карточку организации</label>
-          <input className={'input' + (valid === true ? ' is-valid' : valid === false ? ' is-error' : '')} placeholder="https://yandex.com/maps/-/CDe…" value={url} onChange={e => setUrl(e.target.value)} />
-          {valid === false && <span className="field__err">Похоже, это не ссылка на Яндекс Карты. Проверьте формат.</span>}
+          <input className={'input' + (valid === true ? ' is-valid' : valid === false ? ' is-error' : '')} placeholder="https://yandex.ru/maps/org/… или /maps/-/…" value={url} onChange={e => setUrl(e.target.value)} />
+          {valid === false && <span className="field__err">Похоже, это не ссылка на карточку организации в Яндекс Картах. Проверьте формат.</span>}
           {valid === true && <span className="field__hint" style={{ color: 'var(--success-soft)' }}>Ссылка распознана ✓</span>}
         </div>
         <div className="card" style={{ background: 'var(--paper-2)', border: 'none', boxShadow: 'none', padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem' }}>
           <i data-lucide="lightbulb" style={{ width: 18, height: 18, color: 'var(--gold-dim)', flex: 'none' }}></i>
-          <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Где взять ссылку: откройте карточку компании в Яндекс Картах, нажмите кнопку <b>«Поделиться»</b> и скопируйте ссылку.</span>
+          <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Где взять ссылку: откройте карточку компании в Яндекс Картах, нажмите кнопку <b>«Поделиться»</b> и скопируйте ссылку. Можно вставить скопированное целиком — вместе с названием и адресом.</span>
         </div>
         <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.3rem' }} disabled={valid !== true} onClick={() => onStartBuild(url)}>Создать сайт</button>
       </div>

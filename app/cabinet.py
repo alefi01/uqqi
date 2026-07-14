@@ -380,27 +380,9 @@ async def delete_account(user: User = Depends(require_user),
 
 # ── СAЙТЫ (Фаза Б) ────────────────────────────────────────────────────────────
 
-import re as _re
-
-YANDEX_LINK_RE = _re.compile(r'^https://yandex\.(com|ru)/maps/-/[A-Za-z0-9_~-]+/?$')
-# Любая ссылка Яндекс.Карт в тексте (короткая, org, mapframe)
-YANDEX_URL_IN_TEXT = _re.compile(r'https?://yandex\.(?:com|ru)/maps/[^\s]+')
-
-
-def _extract_yandex_url(raw: str) -> str | None:
-    """
-    Достаёт ссылку Яндекс.Карт из вставленного текста.
-    При «Поделиться» с телефона копируется блок: название + адрес + ссылка.
-    Принимаем форматы: /maps/-/CODE, /maps/org/name/123?si=, /maps/213/city/?poi[uri]=...
-    """
-    if not raw:
-        return None
-    raw = raw.strip()
-    # Ищем URL внутри текста (может быть многострочный блок)
-    m = YANDEX_URL_IN_TEXT.search(raw)
-    if m:
-        return m.group(0).rstrip('.,;)')
-    return None
+# Разбор ссылок Яндекс.Карт (короткая /maps/-/CODE, org, mapframe) — app/yandex_links.py.
+# Та же валидация продублирована на фронте (validYandex в static/lk/) — менять синхронно.
+from app.yandex_links import extract_yandex_url
 
 
 def _site_dict(c: Company) -> dict:
@@ -499,10 +481,9 @@ async def list_sites(user: User = Depends(require_user), db: OrmSession = Depend
 async def add_site(payload: AddSitePayload,
                     user: User = Depends(require_user),
                     db: OrmSession = Depends(get_db)):
-    url = _extract_yandex_url(payload.url)
+    url, url_err = extract_yandex_url(payload.url)
     if not url:
-        raise HTTPException(status_code=422,
-            detail="Вставьте ссылку на Яндекс.Карты (можно вместе с названием и адресом).")
+        raise HTTPException(status_code=422, detail=url_err)
 
     existing = db.query(Company).filter(Company.user_id == user.id).all()
     can_add, reason = _can_add_site(user, existing)
