@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from yandex_maps_parser import photo_base
+from yandex_maps_parser import photo_base, _normalize_gallery_urls
 from app.models import SessionLocal, Company
 
 
@@ -27,12 +27,13 @@ def clean(apply: bool) -> None:
             photos = c.gallery_photos or []
             if not photos:
                 continue
+            # Прогоняем через тот же фильтр, что и свежий парс:
+            # убирает лого, рекламные баннеры priority-headline-*, пины, заготовки
+            cleaned = _normalize_gallery_urls(photos, limit=20)
+            # Плюс сверка с сохранённым логотипом (лого с обычным суффиксом /M)
             logo_base = photo_base(c.logo_url) if c.logo_url else None
-            cleaned = [
-                p for p in photos
-                if 'priority-headline-logo' not in p
-                and (not logo_base or photo_base(p) != logo_base)
-            ]
+            if logo_base:
+                cleaned = [p for p in cleaned if photo_base(p) != logo_base]
             if cleaned == photos:
                 continue
             changed += 1

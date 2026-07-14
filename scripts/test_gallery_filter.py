@@ -22,21 +22,26 @@ assert photo_base(f"{A}/123/photo1") == f"{A}/123/photo1"  # без суффик
 assert photo_base("") == ""
 
 # ── _normalize_gallery_urls ──────────────────────────────────────────────────
+T = "https://avatars.mds.yandex.net/get-tycoon"
 raw = [
+    f"{T}/13460727/23558409_pin_search_standard_2025-08-27T22_21_11/pin_x2",  # ПИН карты — отсев
+    f"{T}/2/logo/priority-headline-logo-square",        # ЛОГО (реклама) — отсев
+    f"{T}/3/hdr/priority-headline-background",          # БАННЕР-ШАПКА (реклама) — отсев
     f"{A}/1/aaa/XXXL",                                  # нормальное фото
     f"{A}/1/aaa/M",                                     # дубль того же фото
-    f"{A}/2/logo/priority-headline-logo-square",        # ЛОГО — должно отсеяться
-    f"{A}/3/bbb/priority-headline-background",          # фон шапки — это фото, оставляем
     f"{A}/4/ccc/XXL_height",                            # lazy-заготовка — отсев
     "https://avatars.mds.yandex.net/get-vh/5/video/XL_height",  # видео-заготовка — отсев
     f"{A}/6/ddd/L",                                     # нормальное фото
     "",                                                 # пустое — отсев
 ]
 out = _normalize_gallery_urls(raw)
-assert out == [f"{A}/1/aaa/XXXL", f"{A}/3/bbb/priority-headline-background", f"{A}/6/ddd/L"], out
+assert out == [f"{A}/1/aaa/XXXL", f"{A}/6/ddd/L"], out
 
-# Лого не проходит ни с каким суффиксом, содержащим маркер
-assert _normalize_gallery_urls([f"{A}/9/x/priority-headline-logo-square"]) == []
+# Реальные мусорные URL из бага bork не проходят
+assert _normalize_gallery_urls([f"{T}/9/x/priority-headline-logo-square"]) == []
+assert _normalize_gallery_urls([f"{T}/9/x/priority-headline-background"]) == []
+assert _normalize_gallery_urls(
+    [f"{T}/13460727/23558409_pin_search_standard_2025-08-27T22_21_11/pin_x2"]) == []
 
 # Лимит соблюдается
 many = [f"{A}/{i}/p{i}/M" for i in range(30)]

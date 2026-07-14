@@ -783,6 +783,10 @@ def _normalize_gallery_urls(raw_urls: list, limit: int = 15) -> list[str]:
     import re as _re
     # Заготовки — отбрасываем
     BAD_SUFFIX = _re.compile(r'/(?:[A-Z]+_height|[A-Z]+_width)$')
+    # Мусор карточки Яндекса — не фото заведения:
+    #  - priority-headline-* : рекламные ассеты платного размещения (лого + баннер-шапка)
+    #  - pin_* / _pin_search : картографические метки-булавки с карты
+    JUNK = _re.compile(r'priority-headline|/pin_|_pin_search|pin_x\d', _re.I)
 
     seen_bases = set()
     photos = []
@@ -793,8 +797,8 @@ def _normalize_gallery_urls(raw_urls: list, limit: int = 15) -> list[str]:
         # Видео / плеер — пропускаем
         if 'yaplayer' in url or '/get-vh/' in url and url.endswith('_height'):
             continue
-        # Логотип организации — пропускаем
-        if 'priority-headline-logo' in url:
+        # Рекламные ассеты и картографические метки — пропускаем
+        if JUNK.search(url):
             continue
         # Битая заготовка — пропускаем
         if BAD_SUFFIX.search(url):
