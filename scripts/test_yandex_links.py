@@ -43,11 +43,18 @@ ok("https://yandex.by/maps/org/kofeynya/123456789?si=abc",
 ok("Борк\nул. Ленина, 1, Москва\nhttps://yandex.ru/maps/org/bork/1037407780?si=r9dgqe27c2jr7y6kphej5wv8c0",
    "https://yandex.ru/maps/org/bork/1037407780")
 
-# ── Mapframe/poi: org_id в query — query сохраняется ─────────────────────────
+# ── Mapframe/poi: org_id в query — канонизируем в прямой org-URL ─────────────
+# (по mapframe-ссылке карточка открывается poi-оверлеем: вкладки каталога
+#  не работают, лого не извлекается — парс идёт криво)
 ok("https://yandex.ru/maps/213/moscow/?poi%5Buri%5D=ymapsbm1%3A%2F%2Forg%3Foid%3D1037407780&tab=overview",
-   "https://yandex.ru/maps/213/moscow/?poi%5Buri%5D=ymapsbm1%3A%2F%2Forg%3Foid%3D1037407780&tab=overview")
+   "https://yandex.ru/maps/org/1037407780/")
 ok("https://yandex.ru/maps/2/saint-petersburg/?oid=987654&ol=biz",
-   "https://yandex.ru/maps/2/saint-petersburg/?oid=987654&ol=biz")
+   "https://yandex.ru/maps/org/987654/")
+# Реальная ссылка из бага (товары не спарсились в poi-режиме)
+ok("https://yandex.ru/maps/213/moscow/?from=mapframe&ll=37.593714%2C55.767255&mode=poi"
+   "&poi%5Bpoint%5D=37.595650%2C55.766097&poi%5Buri%5D=ymapsbm1%3A%2F%2Forg%3Foid%3D20313286325"
+   "&source=mapframe&utm_source=mapframe&z=17.17",
+   "https://yandex.ru/maps/org/20313286325/")
 
 # ── Отказы ────────────────────────────────────────────────────────────────────
 fail("", ERR_NO_LINK)

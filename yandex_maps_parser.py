@@ -1694,6 +1694,15 @@ async def collect_single_by_url(target_url: str, args: argparse.Namespace):
     Возвращает Place или None.
     """
     ensure_pip_playwright()
+
+    # Mapframe/poi-ссылка (org_id в query как oid=) не редиректит на /org/:
+    # карточка открывается оверлеем на карте города, вкладки каталога не
+    # работают, лого не извлекается. Открываем канонический org-URL напрямую.
+    if '/org/' not in urlsplit(target_url).path:
+        m_oid = re.search(r'(?:[?&]oid=|oid%3D)(\d+)', target_url, re.I)
+        if m_oid:
+            target_url = f"https://yandex.ru/maps/org/{m_oid.group(1)}/"
+            print(f"[SINGLE] Mapframe-ссылка → канонический org-URL: {target_url}", flush=True)
     try:
         from playwright.async_api import async_playwright
     except ImportError:
