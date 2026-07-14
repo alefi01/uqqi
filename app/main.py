@@ -1,0 +1,1052 @@
+"""
+app/main.py — FastAPI-приложение
+"""
+
+from __future__ import annotations
+
+import os
+import secrets
+import uuid
+from pathlib import Path
+
+from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, PlainTextResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import bcrypt as _bcrypt
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from app.config import settings
+from datetime import datetime, timedelta
+
+from app.models import Company, Session as DbSession, SessionLocal, create_tables, get_db
+from app.parser import parse_status
+from app.owner import router as owner_router
+
+# ── Инициализация ─────────────────────────────────────────────────────────────
+
+app = FastAPI(title="uqqi.ru", docs_url=None, redoc_url=None)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Заголовки безопасности + rate limiting + access-лог активности."""
+    import time as _t
+    from app.security import (log_access, client_ip as _cip,
+                              check_rate_limit as _rl)
+    from fastapi.responses import JSONResponse as _JSON
+
+    ip = _cip(request)
+    path = request.url.path
+    method = request.method
+    ua = request.headers.get("user-agent", "")
+
+    # Rate limiting чувствительных endpoint'ов (вход, регистрация и т.п.)
+    if method == "POST" and not _rl(ip, path):
+        log_access(ip, method, path, 429, ua, 0)
+        return _JSON(status_code=429,
+                     content={"detail": "Слишком много попыток. Подождите пару минут."})
+
+    start = _t.time()
+    response = await call_next(request)
+    elapsed_ms = (_t.time() - start) * 1000
+
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+
+    # Access-лог: только метаданные, без тел запросов (не пишем пароли/токены)
+    log_access(ip, method, path, response.status_code, ua, elapsed_ms)
+    return response
+
+
+templates  = Jinja2Templates(directory="templates")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Подключаем панель владельца
+app.include_router(owner_router)
+from app.cabinet import router as cabinet_router
+app.include_router(cabinet_router)
+
+SESSION_COOKIE = "admin_session"
+SESSION_TTL    = timedelta(days=7)
+
+
+# ── Startup ───────────────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+def on_startup():
+    create_tables()
+    settings.upload_path.mkdir(parents=True, exist_ok=True)
+    print(f"[APP] Запущено. Домен: {settings.BASE_DOMAIN}")
+    print(f"[APP] Панель владельца: /{settings.PANEL_PATH}")
+    # Запуск фоновых задач (биллинг + автообновление + watchdog)
+    try:
+        from app.scheduler import start_scheduler
+        start_scheduler()
+    except Exception as e:
+        print(f"[APP] Планировщик не запущен: {e}")
+    # Восстановление застрявших сборок после рестарта (отложенно — нужен running loop)
+    try:
+        import asyncio as _asyncio
+        from app.scheduler import _recover_orphaned_builds
+        async def _deferred_recover():
+            await _asyncio.sleep(3)
+            _recover_orphaned_builds()
+        _asyncio.get_event_loop().create_task(_deferred_recover())
+    except Exception as e:
+        print(f"[APP] Восстановление сборок не запущено: {e}")
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+RESERVED_LABELS = {"lk", "www", "api", "admin", "static", "mail"}
+
+
+def is_cabinet_host(request: Request) -> bool:
+    host = request.headers.get("host", "").split(":")[0].lower()
+    return host == f"lk.{settings.BASE_DOMAIN}"
+
+
+def get_company_by_request(request: Request, db: Session) -> Company | None:
+    host = request.headers.get("host", "").split(":")[0].lower()
+    base = settings.BASE_DOMAIN
+
+    if host == base or host == f"www.{base}":
+        return None
+
+    if host.endswith(f".{base}"):
+        label = host[:-(len(base) + 1)]
+
+        # Зарезервированные поддомены (lk, www, api...) — не компании
+        if label in RESERVED_LABELS:
+            return None
+
+        # Кандидаты слага: исходный + декодированный из punycode
+        candidates = [label]
+        if label.startswith("xn--"):
+            try:
+                decoded = label.encode("ascii").decode("idna")
+                if decoded and decoded != label:
+                    candidates.append(decoded)
+            except Exception:
+                pass
+        else:
+            # на случай если в БД хранится punycode, а пришла кириллица
+            try:
+                encoded = label.encode("idna").decode("ascii")
+                if encoded != label:
+                    candidates.append(encoded)
+            except Exception:
+                pass
+
+        return db.query(Company).filter(
+            Company.slug.in_(candidates),
+            Company.is_active == True,
+        ).first()
+
+    if settings.DEBUG:
+        slug = request.query_params.get("slug")
+        if slug:
+            return db.query(Company).filter(Company.slug == slug).first()
+
+    return None
+
+
+def get_session_slug(admin_session: str | None = Cookie(default=None),
+                     db: Session = Depends(get_db)) -> str | None:
+    if not admin_session:
+        return None
+    s = db.query(DbSession).filter(DbSession.token == admin_session).first()
+    if s and s.is_valid():
+        return s.identity
+    return None
+
+
+def get_cabinet_user_id(uqqi_user_session: str | None = Cookie(default=None),
+                         db: Session = Depends(get_db)) -> int | None:
+    """ID юзера кабинета по куке uqqi_user_session."""
+    if not uqqi_user_session:
+        return None
+    s = db.query(DbSession).filter(DbSession.token == uqqi_user_session).first()
+    if s and s.is_valid() and s.identity.startswith("user:"):
+        try:
+            return int(s.identity.split(":", 1)[1])
+        except ValueError:
+            return None
+    return None
+
+
+def user_owns_site(slug: str, user_id: int | None, db: Session) -> bool:
+    """True если сайт принадлежит юзеру кабинета."""
+    if not user_id:
+        return False
+    c = db.query(Company).filter(Company.slug == slug).first()
+    return bool(c and c.user_id == user_id)
+
+
+
+# ── Иконки особенностей ───────────────────────────────────────────────────────
+
+def _feat_icon(text: str) -> str:
+    """Возвращает имя lucide-иконки по ключевым словам особенности."""
+    t = text.lower()
+    if any(w in t for w in ['карт', 'оплат', 'безнал', 'visa', 'master']): return 'credit-card'
+    if any(w in t for w in ['наличн']): return 'banknote'
+    if any(w in t for w in ['парковк', 'стоянк']): return 'square-parking'
+    if any(w in t for w in ['wi-fi', 'wifi', 'вай-фай', 'интернет']): return 'wifi'
+    if any(w in t for w in ['доставк', 'курьер']): return 'truck'
+    if any(w in t for w in ['самовывоз', 'навынос']): return 'shopping-bag'
+    if any(w in t for w in ['животн', 'собак', 'кошк', 'питомц']): return 'dog'
+    if any(w in t for w in ['туалет', 'санузел']): return 'toilet'
+    if any(w in t for w in ['инвалид', 'коляск', 'доступн']): return 'accessibility'
+    if any(w in t for w in ['открытк', 'подарк', 'сувенир', 'сертификат']): return 'gift'
+    if any(w in t for w in ['кофе', 'чай', 'напитк']): return 'coffee'
+    if any(w in t for w in ['бар', 'алкогол', 'вин', 'пив']): return 'wine'
+    if any(w in t for w in ['запис', 'бронир', 'резерв']): return 'calendar-check'
+    if any(w in t for w in ['акци', 'скидк', 'спецпредл', 'лояльн']): return 'badge-percent'
+    if any(w in t for w in ['детск', 'ребён', 'дети']): return 'baby'
+    if any(w in t for w in ['терраса', 'веранд', 'летн']): return 'sun'
+    if any(w in t for w in ['кальян']): return 'cloud'
+    if any(w in t for w in ['музык', 'концерт']): return 'music'
+    if any(w in t for w in ['полировк', 'детейлинг', 'мойк', 'чистк']): return 'sparkles'
+    if any(w in t for w in ['ремонт', 'сервис']): return 'wrench'
+    if any(w in t for w in ['покрас', 'малярн']): return 'paintbrush'
+    return 'check'
+
+
+# ── ПУБЛИЧНЫЙ САЙТ ────────────────────────────────────────────────────────────
+
+def _is_mobile(request: Request) -> bool:
+    """Определяет мобильное устройство по User-Agent."""
+    ua = request.headers.get("user-agent", "").lower()
+    markers = ["mobile", "android", "iphone", "ipod", "ipad", "windows phone", "opera mini"]
+    return any(m in ua for m in markers)
+
+
+def _city_from_address(address: str) -> str:
+    """Пытается извлечь город из адреса (обычно предпоследний/последний компонент)."""
+    if not address:
+        return ""
+    import re as _re
+    # Ищем известные города или берём компонент после запятой, похожий на город
+    parts = [p.strip() for p in address.split(",") if p.strip()]
+    # Частый формат: «улица, дом, Город» — город часто последний или предпоследний
+    for p in reversed(parts):
+        # пропускаем дома/этажи/индексы
+        if _re.search(r'\d', p) and len(p) < 12:
+            continue
+        # первое «словесное» — вероятно город
+        if _re.match(r'^[А-ЯЁ][а-яё-]+', p):
+            return p
+    return parts[-1] if parts else ""
+
+
+def _extract_org_id(url: str) -> str | None:
+    """
+    Достаёт числовой org_id из ссылки Яндекс.Карт обоих форматов:
+    - org:      /maps/org/slug/12345  или  /maps/org/12345
+    - mapframe: ...?poi[uri]=ymapsbm1://org?oid=12345  (в т.ч. url-encoded)
+    """
+    if not url:
+        return None
+    import re as _re
+    # org-формат: /org/slug/ID или /org/ID
+    m = _re.search(r'/org/(?:[^/]+/)?(\d+)', url)
+    if m:
+        return m.group(1)
+    # mapframe: oid=ID (encoded oid%3DID) или org?oid=ID
+    m = (_re.search(r'oid%3D(\d+)', url, _re.I)
+         or _re.search(r'[?&]oid=(\d+)', url)
+         or _re.search(r'org%3Foid%3D(\d+)', url, _re.I)
+         or _re.search(r'org\?oid=(\d+)', url, _re.I))
+    if m:
+        return m.group(1)
+    return None
+
+
+def _compute_status(company) -> str:
+    """
+    Определяет статус по расписанию и текущему времени (МСК).
+    Возвращает 'Открыто до HH:MM', 'Закрыто', 'Откроется в HH:MM' или ''.
+    """
+    from datetime import datetime, timedelta, timezone
+    hours = company.hours or []
+    if not hours:
+        return ""
+    # Москва UTC+3
+    now = datetime.now(timezone(timedelta(hours=3)))
+    wd = now.weekday()  # 0=Mon
+    daymap = {0: "Mo", 1: "Tu", 2: "We", 3: "Th", 4: "Fr", 5: "Sa", 6: "Su"}
+    today_key = daymap[wd]
+    cur_min = now.hour * 60 + now.minute
+
+    def parse_ranges(time_str):
+        """'09:00–22:00' или '09:00-22:00, ...' → [(start_min, end_min)]"""
+        import re
+        out = []
+        for m in re.finditer(r'(\d{1,2}):(\d{2})\s*[–\-]\s*(\d{1,2}):(\d{2})', time_str or ""):
+            s = int(m.group(1)) * 60 + int(m.group(2))
+            e = int(m.group(3)) * 60 + int(m.group(4))
+            out.append((s, e))
+        return out
+
+    today = next((e for e in hours if e.get("day") == today_key), None)
+    if today and not today.get("closed") and today.get("time"):
+        for s, e in parse_ranges(today["time"]):
+            end_disp = f"{e // 60:02d}:{e % 60:02d}"
+            if s <= cur_min < e:
+                return f"Открыто до {end_disp}"
+            # ещё не открылось сегодня
+            if cur_min < s:
+                return f"Откроется в {s // 60:02d}:{s % 60:02d}"
+    return "Закрыто"
+
+
+def _build_site_context(request: Request, company) -> dict:
+    """Собирает контекст для рендеринга витрины."""
+    status_text = _compute_status(company)
+    # Короткий статус для варианта B: только «Открыто»/«Закрыто»
+    if status_text.startswith("Открыто"):
+        status_short = "Открыто"
+    elif status_text.startswith(("Закрыто", "Откроется")):
+        status_short = "Закрыто"
+    else:
+        status_short = status_text
+
+    import re as _re
+    yandex_map_url = ""
+    if company.yandex_url:
+        org_id = _extract_org_id(company.yandex_url)
+        if org_id:
+            coords = company.coordinates or ""
+            if coords and ',' in coords:
+                lat, lon = coords.split(',')
+                yandex_map_url = f"https://yandex.ru/map-widget/v1/org/{org_id}/?ll={lon.strip()}%2C{lat.strip()}&z=16"
+            else:
+                yandex_map_url = f"https://yandex.ru/map-widget/v1/org/{org_id}/?z=16"
+
+    # Маршрут по координатам
+    route_url = ""
+    if company.coordinates and ',' in company.coordinates:
+        lat, lon = [c.strip() for c in company.coordinates.split(',')]
+        route_url = f"https://yandex.ru/maps/?ll={lon}%2C{lat}&mode=routes&rtext=~{lat}%2C{lon}"
+
+    site_url = f"https://{company.slug}.{settings.BASE_DOMAIN}/"
+    # Неоплаченные/неактивные сайты закрываем от индексации
+    # noindex для неоплаченных, а также для демо-показа и claim-сайтов из панели
+    seo_noindex = (not _is_paid_by_subscription(company)) or bool(getattr(company, "claim_code", None))
+
+    return {
+        "request":        request,
+        "company":        company,
+        "status":         status_text,
+        "status_short":   status_short,
+        "yandex_map_url": yandex_map_url,
+        "route_url":      route_url,
+        "feat_icon":      _feat_icon,
+        "site_url":       site_url,
+        "seo_noindex":    seo_noindex,
+    }
+
+
+def _variant_template(request: Request, company) -> str:
+    """Выбирает файл витрины: мобильный → C, иначе выбранный A/B."""
+    if _is_mobile(request):
+        return "site_c.html"
+    variant = (company.template_variant or "A").upper()
+    return "site_b.html" if variant == "B" else "site_a.html"
+
+
+def _track_visit(request: Request, target: str, db: Session) -> None:
+    """Записывает визит: уник за сутки (visits) + сырой лог с IP/гео/ботом (visit_logs)."""
+    try:
+        import hashlib
+        from datetime import datetime as _dt
+        from sqlalchemy import text as _sql
+
+        # IP: учитываем X-Forwarded-For за nginx
+        xff = request.headers.get("x-forwarded-for", "")
+        ip = xff.split(",")[0].strip() if xff else (request.client.host if request.client else "")
+        ua = (request.headers.get("user-agent", "") or "")[:400]
+        now = _dt.utcnow()
+        day = now.strftime("%Y-%m-%d")
+        vhash = hashlib.sha256(f"{ip}|{ua}|{day}".encode()).hexdigest()[:64]
+
+        # 1) Уник за сутки (как раньше)
+        db.execute(_sql(
+            "INSERT OR IGNORE INTO visits (target, day, visitor_hash, created_at) "
+            "VALUES (:t, :d, :h, :c)"
+        ), {"t": target, "d": day, "h": vhash, "c": now})
+
+        # 2) Сырой лог для детальной метрики (каждый визит = просмотр)
+        try:
+            from app.geoip import lookup as _geo, is_bot as _isbot
+            geo = _geo(ip)
+            bot = _isbot(ua)
+            db.execute(_sql(
+                "INSERT INTO visit_logs (target, ip, city, country, user_agent, is_bot, visitor_hash, created_at) "
+                "VALUES (:t, :ip, :city, :country, :ua, :bot, :h, :c)"
+            ), {"t": target, "ip": ip, "city": geo["city"], "country": geo["country"],
+                "ua": ua, "bot": 1 if bot else 0, "h": vhash, "c": now})
+        except Exception as _e:
+            print(f"[VISIT] лог-деталь пропущена: {_e}", flush=True)
+
+        db.commit()
+    except Exception as e:
+        print(f"[VISIT] Ошибка трекинга: {e}", flush=True)
+
+
+@app.post("/api/yukassa/webhook")
+async def yukassa_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Webhook от ЮKassa. Идемпотентен: повторный payment.succeeded не продлевает дважды.
+    Проверяем статус напрямую у ЮKassa (не доверяем телу слепо).
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return {"ok": True}  # некорректное тело — отвечаем 200 чтобы ЮKassa не ретраила вечно
+
+    event = body.get("event", "")
+    obj = body.get("object", {}) or {}
+    payment_id = obj.get("id", "")
+
+    if not payment_id:
+        return {"ok": True}
+
+    # Обрабатываем только успешную оплату
+    if event == "payment.succeeded":
+        from app.cabinet import _apply_successful_payment
+        # Доп. проверка: подтверждаем статус у ЮKassa, если ключи настроены
+        verified = True
+        try:
+            from app.yukassa import get_payment
+            if settings.YUKASSA_SHOP_ID:
+                remote = get_payment(payment_id)
+                verified = remote.get("status") == "succeeded"
+        except Exception as e:
+            print(f"[YUKASSA] Не удалось проверить платёж {payment_id}: {e}", flush=True)
+            verified = True  # доверяем webhook если проверка недоступна
+
+        if verified:
+            applied = _apply_successful_payment(payment_id, db)
+            print(f"[YUKASSA] Платёж {payment_id} обработан (применён={applied})", flush=True)
+
+    elif event == "payment.canceled":
+        from app.models import Payment
+        pay = db.query(Payment).filter(Payment.payment_id == payment_id).first()
+        if pay and not pay.processed:
+            pay.status = "canceled"
+            pay.processed = True
+            db.commit()
+
+    return {"ok": True}
+
+
+@app.api_route("/oferta", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def oferta_page(request: Request):
+    resp = templates.TemplateResponse("oferta.html", {"request": request})
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    resp.headers["Last-Modified"] = "Sat, 28 Jun 2026 00:00:00 GMT"
+    return resp
+
+
+@app.api_route("/privacy", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    resp = templates.TemplateResponse("privacy.html", {"request": request})
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    resp.headers["Last-Modified"] = "Sat, 28 Jun 2026 00:00:00 GMT"
+    return resp
+
+
+@app.api_route("/contacts", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def contacts_page(request: Request):
+    resp = templates.TemplateResponse("contacts.html", {"request": request})
+    resp.headers["Cache-Control"] = "public, max-age=3600"
+    resp.headers["Last-Modified"] = "Sat, 28 Jun 2026 00:00:00 GMT"
+    return resp
+
+
+@app.get("/verify", response_class=HTMLResponse)
+async def lk_verify_page(request: Request):
+    """Страница подтверждения email (открывается по ссылке из письма)."""
+    if is_cabinet_host(request):
+        return templates.TemplateResponse("lk.html", {"request": request})
+    raise HTTPException(status_code=404)
+
+
+@app.get("/reset", response_class=HTMLResponse)
+async def lk_reset_page(request: Request):
+    """Страница сброса пароля (открывается по ссылке из письма)."""
+    if is_cabinet_host(request):
+        return templates.TemplateResponse("lk.html", {"request": request})
+    raise HTTPException(status_code=404)
+
+
+@app.get("/claim/{code}", response_class=HTMLResponse)
+async def lk_claim_page(request: Request, code: str):
+    """Страница привязки claim-сайта (переход по кнопке «Приобрести»). Отдаёт кабинет-SPA."""
+    if is_cabinet_host(request):
+        return templates.TemplateResponse("lk.html", {"request": request})
+    raise HTTPException(status_code=404)
+
+
+def _is_paid_active(company) -> bool:
+    """True если сайт оплачен/идёт триал/активен демо-показ/это claim-сайт из панели."""
+    from datetime import datetime as _dt
+    now = _dt.utcnow()
+    if getattr(company, "is_demo", False):
+        return True
+    # Claim-сайт из панели (ждёт покупателя) — показываем без заглушки, он всё равно noindex
+    if getattr(company, "claim_code", None) and not company.user_id:
+        return True
+    # Демо-показ из owner-панели («снять заглушку на 7 дней»)
+    demo_until = getattr(company, "demo_until", None)
+    if demo_until and demo_until > now:
+        return True
+    if company.sub_status == "active":
+        return bool(company.paid_until and company.paid_until > now)
+    if company.sub_status == "trial":
+        return bool(company.trial_ends_at and company.trial_ends_at > now)
+    return False
+
+
+def _is_paid_by_subscription(company) -> bool:
+    """True если оплачено подпиской/триалом (БЕЗ учёта demo_until). Для sitemap."""
+    from datetime import datetime as _dt
+    now = _dt.utcnow()
+    if company.sub_status == "active":
+        return bool(company.paid_until and company.paid_until > now)
+    if company.sub_status == "trial":
+        return bool(company.trial_ends_at and company.trial_ends_at > now)
+    return False
+
+
+# Сколько дней показываем неоплаченный платный сайт с overlay, прежде чем заглушка
+UNPAID_OVERLAY_DAYS = 3
+
+
+def _unpaid_show_mode(company) -> str:
+    """
+    Режим показа неоплаченного сайта:
+    - 'overlay' — показать сайт с напоминанием (первые 3 дня платного)
+    - 'stub'    — полная заглушка
+    Триал истёк → сразу 'stub'.
+    """
+    from datetime import datetime as _dt, timedelta as _td
+    now = _dt.utcnow()
+    # Истёкший триал → сразу заглушка
+    if company.sub_status == "trial":
+        return "stub"
+    # Платный неоплаченный (unpaid) — считаем от created_at
+    created = company.created_at or now
+    if now - created < _td(days=UNPAID_OVERLAY_DAYS):
+        return "overlay"
+    return "stub"
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt(request: Request, db: Session = Depends(get_db)):
+    """robots.txt: разрешаем индексацию, указываем sitemap."""
+    host = request.headers.get("host", settings.BASE_DOMAIN).split(":")[0]
+    # Поддомен клиентского сайта
+    if host != settings.BASE_DOMAIN and host != f"www.{settings.BASE_DOMAIN}" and not is_cabinet_host(request):
+        company = get_company_by_request(request, db)
+        # Неоплаченный/неактивный сайт — запрещаем индексацию
+        if company and not _is_paid_active(company):
+            return "User-agent: *\nDisallow: /\n"
+        return (
+            "User-agent: *\nAllow: /\n"
+            f"Sitemap: https://{host}/sitemap.xml\n"
+        )
+    # Кабинет — не индексируем
+    if is_cabinet_host(request):
+        return "User-agent: *\nDisallow: /\n"
+    # Главный домен
+    return (
+        "User-agent: *\nAllow: /\n"
+        f"Sitemap: https://{settings.BASE_DOMAIN}/sitemap.xml\n"
+    )
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
+    """sitemap.xml. На главном домене — список всех активных сайтов; на поддомене — сам сайт."""
+    host = request.headers.get("host", settings.BASE_DOMAIN).split(":")[0]
+    urls = []
+    if host == settings.BASE_DOMAIN or host == f"www.{settings.BASE_DOMAIN}":
+        # Главный: лендинг + все активные оплаченные сайты
+        urls.append(f"https://{settings.BASE_DOMAIN}/")
+        companies = db.query(Company).filter(
+            Company.is_active == True,  # noqa: E712
+            Company.build_status == "ready",
+        ).all()
+        for c in companies:
+            # Только реальные клиентские сайты (с владельцем), оплаченные.
+            # Демо-показ и claim-сайты из панели НЕ индексируем.
+            if c.user_id and c.claim_code is None and _is_paid_by_subscription(c):
+                urls.append(f"https://{c.slug}.{settings.BASE_DOMAIN}/")
+    elif not is_cabinet_host(request):
+        company = get_company_by_request(request, db)
+        if company and company.user_id and company.claim_code is None and _is_paid_by_subscription(company):
+            urls.append(f"https://{company.slug}.{settings.BASE_DOMAIN}/")
+
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for u in urls:
+        xml.append(f"  <url><loc>{u}</loc></url>")
+    xml.append("</urlset>")
+    return Response(content="\n".join(xml), media_type="application/xml")
+
+
+@app.get("/demo", response_class=HTMLResponse)
+async def demo_view(request: Request, db: Session = Depends(get_db)):
+    """
+    Claim-режим: показывает готовый сайт из панели + окошко «Приобрести».
+    Работает только для обезличенных сайтов с активным claim_code.
+    """
+    if is_cabinet_host(request):
+        return RedirectResponse(url="/", status_code=302)
+    company = get_company_by_request(request, db)
+    # Окошко только у обезличенных сайтов из панели с активным claim
+    if not company or not company.claim_code or company.user_id:
+        # Не claim-сайт → обычная витрина
+        return RedirectResponse(url="/", status_code=302)
+    # Помечаем запрос как claim-просмотр (site_index обойдёт заглушки и покажет окошко)
+    request.state.claim_view = True
+    return await site_index(request, db)
+
+
+@app.get("/", response_class=HTMLResponse)
+async def site_index(request: Request, db: Session = Depends(get_db)):
+    # Поддомен lk.uqqi.ru — личный кабинет
+    if is_cabinet_host(request):
+        return templates.TemplateResponse("lk.html", {"request": request})
+
+    company = get_company_by_request(request, db)
+
+    if not company:
+        _track_visit(request, "__landing__", db)
+        return templates.TemplateResponse("landing.html", {"request": request})
+
+    # claim-режим (заход по /demo) — показываем сайт + окошко «Приобрести».
+    # Сами claim-сайты и так без заглушки (см. _is_paid_active), bypass нужен только
+    # чтобы не мешал строящийся/деактивированный статус.
+    is_claim_view = getattr(request.state, "claim_view", False)
+    bypass_stub = is_claim_view
+
+    # Деактивированный вручную сайт — дружелюбная заглушка
+    if not company.is_active and not bypass_stub:
+        return templates.TemplateResponse("site_inactive.html", {
+            "request": request,
+            "company": company,
+        }, status_code=200)
+
+    # Сайт ещё строится — заглушка "готовится"
+    if company.build_status in ("queued", "building") and not bypass_stub:
+        return templates.TemplateResponse("site_inactive.html", {
+            "request": request, "company": company, "building": True,
+        }, status_code=200)
+
+    # Триал/подписка неактивны
+    show_overlay = False
+    if not _is_paid_active(company) and not bypass_stub:
+        mode = _unpaid_show_mode(company)
+        if mode == "stub":
+            return templates.TemplateResponse("site_inactive.html", {
+                "request": request, "company": company, "unpaid": True,
+            }, status_code=200)
+        # mode == 'overlay' — показываем сайт, но с напоминанием поверх
+        show_overlay = True
+
+    # Превью конкретного варианта из админки (?variant=A|B|C) — не считаем как визит
+    preview = request.query_params.get("variant", "").upper()
+    if preview in ("A", "B", "C"):
+        tpl = {"A": "site_a.html", "B": "site_b.html", "C": "site_c.html"}[preview]
+    else:
+        tpl = _variant_template(request, company)
+        _track_visit(request, company.slug, db)
+
+    ctx = _build_site_context(request, company)
+    ctx["unpaid_overlay"] = show_overlay
+    # Claim-окошко «Приобрести» — только в claim-режиме (заход по /demo)
+    if is_claim_view and company.claim_code and not company.user_id:
+        ctx["claim_offer"] = {
+            "title": company.title,
+            "city":  _city_from_address(company.address),
+            "url":   f"https://lk.{settings.BASE_DOMAIN}/claim/{company.claim_code}",
+        }
+    resp = templates.TemplateResponse(tpl, ctx)
+    # Короткий кеш (5 мин) — баланс скорости и свежести при смене дизайна
+    resp.headers["Cache-Control"] = "public, max-age=300, must-revalidate"
+    return resp
+
+
+# ── ЗАЯВКИ С ЛЕНДИНГА ────────────────────────────────────────────────────────
+
+@app.get("/api/random-site")
+async def public_random_site(db: Session = Depends(get_db)):
+    """Случайный активный сайт для кнопки 'Показать готовый сайт' на лендинге."""
+    from sqlalchemy import func as _func
+    company = db.query(Company).filter(
+        Company.is_active == True,  # noqa: E712
+    ).order_by(_func.random()).first()
+    if not company:
+        return {"url": "", "title": ""}
+    return {
+        "url":   f"https://{company.slug}.{settings.BASE_DOMAIN}/",
+        "title": company.title,
+    }
+
+
+class LeadPayload(BaseModel):
+    name:    str
+    email:   str = ""
+    url:     str = ""
+    comment: str = ""
+
+
+@app.post("/api/lead")
+async def submit_lead(payload: LeadPayload, db: Session = Depends(get_db)):
+    """Сохраняет заявку с лендинга."""
+    import re as _re
+    from app.models import Lead
+
+    # Базовая серверная валидация
+    name = payload.name.strip()[:255]
+    email = payload.email.strip()[:255]
+    url = payload.url.strip()[:500]
+    comment = payload.comment.strip()[:1000]
+
+    if not name:
+        raise HTTPException(status_code=422, detail="Укажите название")
+    if email and not _re.match(r'^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$', email):
+        raise HTTPException(status_code=422, detail="Некорректный email")
+    if url and "yandex.ru" not in url:
+        raise HTTPException(status_code=422, detail="Ссылка должна быть с yandex.ru")
+
+    # Санитизация — убираем опасные символы
+    for val in [name, email, url, comment]:
+        if any(c in val for c in ['<', '>', '"', "'"]):
+            raise HTTPException(status_code=422, detail="Недопустимые символы")
+
+    lead = Lead(
+        name    = name,
+        email   = email,
+        url     = url,
+        comment = comment,
+    )
+    db.add(lead)
+    db.commit()
+    return {"ok": True}
+
+
+# ── АВТОРИЗАЦИЯ КЛИЕНТА ───────────────────────────────────────────────────────
+
+@app.get("/admin")
+async def admin_redirect_to_cabinet(request: Request):
+    """Старый вход в админку убран — весь доступ через кабинет lk.uqqi.ru."""
+    return RedirectResponse(f"https://lk.{settings.BASE_DOMAIN}/", status_code=302)
+
+
+@app.get("/site/{slug}/edit", response_class=HTMLResponse)
+async def cabinet_site_editor(
+    slug: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Редактор контента сайта, открывается из кабинета lk.uqqi.ru."""
+    if not is_cabinet_host(request):
+        raise HTTPException(status_code=404)
+    if not user_id:
+        return RedirectResponse(f"https://lk.{settings.BASE_DOMAIN}/", status_code=302)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company or company.user_id != user_id:
+        return RedirectResponse(f"https://lk.{settings.BASE_DOMAIN}/", status_code=302)
+    return templates.TemplateResponse("admin_panel.html", {
+        "request": request, "company": company, "from_cabinet": True,
+    })
+
+
+# ── API КЛИЕНТА: СОХРАНЕНИЕ ───────────────────────────────────────────────────
+
+class SavePayload(BaseModel):
+    title:          str = ""
+    address:        str = ""
+    phone:          str = ""
+    category:       str = ""
+    hours:          list[dict] = []
+    social_links:   list[dict] = []
+    org_name:       str = ""
+    org_type:       str = ""
+    org_inn:        str = ""
+
+
+@app.post("/admin/save/{slug}")
+async def admin_save(
+    slug: str,
+    payload: SavePayload,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+
+    # Сохраняем только разблокированные вкладки (флаг auto_* = False).
+    # Рейтинг и галерея здесь не трогаются (только авто / отдельные эндпоинты).
+    if not company.auto_main:
+        company.title    = payload.title[:255]
+        company.address  = payload.address[:500]
+        company.phone    = payload.phone[:50]
+        company.category = payload.category[:120]
+    if not company.auto_hours:
+        company.hours    = payload.hours
+    if not company.auto_socials:
+        company.social_links = payload.social_links
+    if not company.auto_requisites:
+        company.org_name = payload.org_name[:500]
+        company.org_type = payload.org_type[:50]
+        company.org_inn  = payload.org_inn[:20]
+    db.commit()
+    return {"ok": True}
+
+
+# ── API КЛИЕНТА: ФЛАГИ И ДИЗАЙН ───────────────────────────────────────────────
+
+class FlagPayload(BaseModel):
+    flag:  str
+    value: bool
+
+
+@app.post("/admin/flag/{slug}")
+async def admin_set_flag(
+    slug: str,
+    payload: FlagPayload,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Переключает флаг автообновления вкладки."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+    if payload.flag not in ("auto_main", "auto_hours", "auto_socials", "auto_requisites"):
+        raise HTTPException(status_code=422, detail="Неизвестный флаг")
+    setattr(company, payload.flag, bool(payload.value))
+    db.commit()
+    return {"ok": True, "flag": payload.flag, "value": bool(payload.value)}
+
+
+class DesignPayload(BaseModel):
+    variant: str
+
+
+@app.post("/admin/design/{slug}")
+async def admin_set_design(
+    slug: str,
+    payload: DesignPayload,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Клиент выбирает дизайн A или B."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+    v = payload.variant.upper()
+    if v not in ("A", "B"):
+        raise HTTPException(status_code=422, detail="variant must be A or B")
+    company.template_variant = v
+    db.commit()
+    return {"ok": True, "variant": v}
+
+
+# ── API КЛИЕНТА: ФОТО ГАЛЕРЕИ ─────────────────────────────────────────────────
+
+ALLOWED_TYPES  = {"image/jpeg", "image/png", "image/webp"}
+MAX_PHOTO_SIZE = 8 * 1024 * 1024
+MAX_GALLERY    = 12
+
+
+@app.post("/admin/gallery/toggle-manual/{slug}")
+async def gallery_toggle_manual(
+    slug: str,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Включает/выключает ручной режим галереи."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+
+    company.gallery_manual = not company.gallery_manual
+    db.commit()
+    return {"ok": True, "manual": company.gallery_manual}
+
+
+@app.post("/admin/gallery/upload/{slug}")
+async def gallery_upload(
+    slug: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Загружает фото в галерею с ресайзом/сжатием. Включает ручной режим."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+
+    photos = company.gallery_photos
+    if len(photos) >= MAX_GALLERY:
+        raise HTTPException(status_code=400, detail=f"Максимум {MAX_GALLERY} фотографий")
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail="Только JPG, PNG, WebP")
+
+    contents = await file.read()
+    if len(contents) > MAX_PHOTO_SIZE:
+        raise HTTPException(status_code=400, detail="Файл больше 8 МБ")
+
+    # Ресайз и сжатие через Pillow
+    from PIL import Image
+    import io as _io
+    try:
+        img = Image.open(_io.BytesIO(contents))
+        img = img.convert("RGB")
+        # Ограничиваем макс. сторону 1600px
+        img.thumbnail((1600, 1600), Image.LANCZOS)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Не удалось обработать изображение")
+
+    company_dir = settings.upload_path / slug
+    company_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.jpg"
+    out_path = company_dir / filename
+    img.save(out_path, "JPEG", quality=82, optimize=True)
+
+    url = f"/static/uploads/{slug}/{filename}"
+    photos.append(url)
+    company.gallery_photos = photos
+    # Первая ручная загрузка → замораживаем галерею
+    company.gallery_manual = True
+    db.commit()
+
+    return {"ok": True, "url": url, "count": len(photos), "manual": True}
+
+
+class GalleryDeletePayload(BaseModel):
+    url: str
+
+
+@app.post("/admin/gallery/delete/{slug}")
+async def gallery_delete(
+    slug: str,
+    payload: GalleryDeletePayload,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Удаляет фото из галереи."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+
+    photos = [p for p in company.gallery_photos if p != payload.url]
+    company.gallery_photos = photos
+    company.gallery_manual = True
+
+    # Удаляем локальный файл если он наш
+    if payload.url.startswith(f"/static/uploads/{slug}/"):
+        fname = payload.url.split("/")[-1]
+        fpath = settings.upload_path / slug / fname
+        try:
+            if fpath.exists():
+                fpath.unlink()
+        except Exception:
+            pass
+
+    db.commit()
+    return {"ok": True, "count": len(photos)}
+
+
+class GalleryReorderPayload(BaseModel):
+    order: list[str]
+
+
+@app.post("/admin/gallery/reorder/{slug}")
+async def gallery_reorder(
+    slug: str,
+    payload: GalleryReorderPayload,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Сохраняет новый порядок фото (drag&drop)."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+
+    current = set(company.gallery_photos)
+    new_order = [u for u in payload.order if u in current]
+    # добавляем потерянные в конец
+    for u in company.gallery_photos:
+        if u not in new_order:
+            new_order.append(u)
+    company.gallery_photos = new_order[:MAX_GALLERY]
+    company.gallery_manual = True
+    db.commit()
+    return {"ok": True}
+
+
+# ── API КЛИЕНТА: ПОДДЕРЖКА ────────────────────────────────────────────────────
+
+class SupportPayload(BaseModel):
+    message: str
+    email:   str
+
+
+@app.post("/admin/support/{slug}")
+async def support_submit(
+    slug: str,
+    payload: SupportPayload,
+    db: Session = Depends(get_db),
+    user_id: int | None = Depends(get_cabinet_user_id),
+):
+    """Клиент пишет в поддержку из своей панели."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+
+    import re as _re
+    msg = payload.message.strip()[:5000]
+    email = payload.email.strip()[:255]
+    if len(msg) < 5:
+        raise HTTPException(status_code=422, detail="Сообщение слишком короткое")
+    if not _re.match(r'^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$', email):
+        raise HTTPException(status_code=422, detail="Некорректный email")
+
+    from app.models import SupportMessage
+    sm = SupportMessage(
+        company_slug  = slug,
+        company_title = company.title,
+        reply_email   = email,
+        message       = msg,
+    )
+    db.add(sm)
+    db.commit()
+    return {"ok": True}

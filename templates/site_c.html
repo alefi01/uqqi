@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% include "_seo_meta.html" %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Playfair+Display:ital,wght@1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --paper:#FAF8F4; --paper-2:#F4EDE5; --surface:#FFFFFF;
+  --ink:#1A1714; --ink-2:#3D3733; --muted:#8A7F78; --line:#E8E3DC; --line-2:#EFE7DD;
+  --terracotta:#C8643C; --terracotta-deep:#B0522F; --terracotta-wash:#F6EAE1; --terracotta-soft:#F0D9CB;
+  --gold:#C8A96E; --signal:#21A038; --signal-tint:rgba(33,160,56,.12); --star:#FFBB00; --yellow:#FFDB4D;
+  --espresso:#0E0D0B;
+  --display:'Unbounded',system-ui,sans-serif;
+  --serif:'Playfair Display',Georgia,serif;
+  --body:'Inter',system-ui,-apple-system,sans-serif;
+  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-xl:28px; --r-pill:99px;
+  --sh-sm:0 2px 10px rgba(26,23,20,.05);
+  --sh-md:0 14px 40px rgba(26,23,20,.10);
+  --sh-lg:0 30px 80px rgba(0,0,0,.45);
+  --sh-card:0 1px 0 rgba(26,23,20,.04),0 8px 24px rgba(26,23,20,.06);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --appw:440px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--body);background:
+  radial-gradient(90% 60% at 50% -5%,#241a14 0%,transparent 55%),
+  radial-gradient(70% 50% at 85% 100%,rgba(200,100,60,.18) 0%,transparent 60%),
+  var(--espresso);
+  color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;}
+a{color:inherit;text-decoration:none;}
+img,svg{display:block;max-width:100%;}
+::selection{background:var(--terracotta);color:#fff;}
+
+/* app shell */
+.deskhint{max-width:var(--appw);margin:0 auto;padding:1.6rem .5rem .7rem;text-align:center;}
+.deskhint .ttl{font-family:var(--display);font-weight:700;color:#fff;font-size:.92rem;letter-spacing:.01em;}
+.deskhint .sub{font-size:.74rem;color:rgba(255,255,255,.45);margin-top:.2rem;}
+.app{max-width:var(--appw);margin:0 auto 2.5rem;background:var(--paper);min-height:80vh;border-radius:26px;overflow:hidden;box-shadow:var(--sh-lg);position:relative;}
+@media(max-width:480px){.app{border-radius:0;margin-bottom:0;}.deskhint{display:none;}body{background:var(--paper);}}
+
+.ph{position:relative;background-size:cover;background-position:center;}
+.ph::after{content:"";position:absolute;inset:0;background-image:var(--grain);background-size:120px;opacity:.16;mix-blend-mode:soft-light;}
+.ph1{background:linear-gradient(150deg,#3a2a1c,#1d1512 60%,#0c1418);}
+.ph2{background:linear-gradient(135deg,#E8B98F,#C8643C);}
+.ph3{background:linear-gradient(135deg,#B97FA6,#7E5374);}
+.ph4{background:linear-gradient(135deg,#7FA98F,#4E7A5E);}
+.ph5{background:linear-gradient(135deg,#C8A96E,#9A7B3E);}
+.ph6{background:linear-gradient(135deg,#5C4A3A,#2C2018);}
+.ph7{background:linear-gradient(135deg,#A0786A,#6B4A3E);}
+.ph8{background:linear-gradient(135deg,#8C9AA8,#525E6B);}
+.ph9{background:linear-gradient(135deg,#D9A77F,#A6603C);}
+
+/* cover */
+.cover{position:relative;height:210px;}
+.cover .img{position:absolute;inset:0;}
+.cover .img::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--paper) 1%,rgba(14,13,11,.4) 45%,rgba(14,13,11,.1) 100%);z-index:1;}
+.cover__status{position:absolute;top:1rem;right:1rem;z-index:3;display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;font-weight:600;color:#7fe0a0;background:rgba(33,160,56,.18);border:1px solid rgba(127,224,160,.4);padding:.32rem .7rem;border-radius:var(--r-pill);backdrop-filter:blur(6px);}
+.cover__status .dot{width:6px;height:6px;border-radius:50%;background:#7fe0a0;}
+
+/* identity */
+.ident{padding:0 1.25rem;margin-top:-2.4rem;position:relative;z-index:4;}
+.ident__logo{width:64px;height:64px;border-radius:18px;background:var(--espresso);border:3px solid var(--paper);display:flex;align-items:center;justify-content:center;margin-bottom:.7rem;overflow:hidden;}
+.ident__logo:has(img){background:#fff;}
+.ident__logo img{width:100%;height:100%;object-fit:contain;border-radius:inherit;}
+.ident__logo b{font-family:var(--display);font-weight:700;font-size:1.7rem;color:#fff;line-height:1;}
+.ident__logo b span{color:var(--terracotta);}
+.ident__cat{font-size:.68rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--terracotta);margin-bottom:.2rem;}
+.ident__name{font-family:var(--display);font-weight:900;letter-spacing:-.02em;font-size:1.9rem;line-height:1;}
+.ident__addr{display:flex;align-items:center;gap:.4rem;font-size:.84rem;color:var(--ink-2);margin-top:.55rem;cursor:pointer;}
+.ident__addr svg{width:15px;height:15px;color:var(--muted);}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;padding:.9rem 1.25rem 0;}
+.schip{display:inline-flex;align-items:center;gap:.3rem;font-size:.76rem;font-weight:600;padding:.3rem .7rem;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--surface);}
+.schip--rating{color:var(--signal);border-color:rgba(33,160,56,.3);background:var(--signal-tint);cursor:pointer;}
+.schip--rating .st{color:var(--star);}
+.schip--open{color:var(--signal);border-color:rgba(33,160,56,.3);background:var(--signal-tint);}
+.schip--bill{color:var(--ink-2);}
+
+/* hours compact */
+.hours-card{margin:.9rem 1.25rem 0;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden;}
+.hours-toggle{width:100%;display:flex;align-items:center;gap:.6rem;background:none;border:none;cursor:pointer;font-family:var(--body);padding:.85rem 1rem;text-align:left;}
+.hours-toggle svg.ic{width:17px;height:17px;color:var(--terracotta);}
+.hours-toggle .lbl{font-size:.86rem;font-weight:600;}
+.hours-toggle .now{margin-left:auto;font-size:.84rem;color:var(--signal);font-weight:600;}
+.hours-toggle .chev{width:15px;height:15px;color:var(--muted);transition:transform .25s var(--ease);margin-left:.5rem;}
+.hours-toggle.open .chev{transform:rotate(180deg);}
+.hours-panel{max-height:0;overflow:hidden;transition:max-height .35s var(--ease);}
+.hours-panel.open{max-height:340px;}
+.hours-table{width:100%;border-collapse:collapse;padding:0;}
+.hours-table tr{border-top:1px solid var(--line-2);}
+.hours-table td{padding:.5rem 1rem;font-size:.84rem;}
+.hours-table td:first-child{color:var(--muted);}
+.hours-table td:last-child{text-align:right;}
+.hours-table .today td:first-child{color:var(--terracotta);font-weight:600;}
+.hours-table .today td:last-child{font-weight:600;}
+.hours-table .off td{opacity:.4;}
+
+/* primary actions */
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;padding:.9rem 1.25rem 0;}
+.cta{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;padding:.8rem;border-radius:var(--r-md);font-family:var(--body);font-weight:600;font-size:.88rem;border:none;cursor:pointer;transition:transform .15s var(--ease),filter .15s,background .15s;}
+.cta svg{width:16px;height:16px;}
+.cta:active{transform:scale(.98);}
+.cta--phone{background:var(--yellow);color:var(--ink);grid-column:span 2;}
+.cta--phone:hover{filter:brightness(.96);}
+.cta--book{background:var(--espresso);color:#fff;}
+.cta--route{background:var(--signal);color:#fff;}
+.cta--route:hover{background:#1c8c30;}
+
+/* tabs (sticky) */
+.tabs{position:sticky;top:0;z-index:30;display:flex;gap:.2rem;background:rgba(250,248,244,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:.5rem .6rem;margin-top:1.1rem;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tabs a{flex:1;text-align:center;font-size:.8rem;font-weight:600;color:var(--muted);padding:.5rem .4rem;border-radius:var(--r-sm);white-space:nowrap;transition:all .15s;}
+.tabs a.active{color:var(--ink);background:var(--surface);box-shadow:var(--sh-sm);}
+
+/* block */
+.block{padding:1.4rem 1.25rem;border-bottom:8px solid var(--paper-2);scroll-margin-top:56px;}
+.block__title{font-family:var(--display);font-weight:700;font-size:1.05rem;letter-spacing:-.01em;margin-bottom:.9rem;display:flex;align-items:center;justify-content:space-between;}
+.block__title .more{font-family:var(--body);font-size:.76rem;font-weight:500;color:var(--muted);cursor:pointer;}
+.block__lead{font-size:.9rem;color:var(--ink-2);margin-bottom:1.1rem;}
+
+/* features */
+.features{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+.feat{display:flex;align-items:center;gap:.7rem;}
+.feat__ic{width:40px;height:40px;flex-shrink:0;border-radius:50%;background:var(--terracotta-wash);color:var(--terracotta);display:flex;align-items:center;justify-content:center;}
+.feat__ic svg{width:19px;height:19px;stroke-width:1.8;}
+.feat span{font-size:.82rem;color:var(--ink-2);font-weight:500;}
+
+/* catalog */
+.cat-filters{display:flex;gap:.4rem;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-bottom:1rem;padding-bottom:.2rem;}
+.cat-filters::-webkit-scrollbar{display:none;}
+.chip{padding:.4rem .85rem;border-radius:var(--r-pill);font-size:.78rem;font-weight:500;font-family:var(--body);border:1.5px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer;white-space:nowrap;transition:all .18s var(--ease);}
+.chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.catalog{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;}
+.svc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;cursor:pointer;transition:transform .15s var(--ease),box-shadow .2s;}
+.svc:active{transform:scale(.98);}
+.svc:hover{box-shadow:var(--sh-md);}
+.svc__img{aspect-ratio:1;}
+.svc__body{padding:.6rem .7rem .75rem;}
+.svc__name{font-weight:600;font-size:.84rem;line-height:1.3;margin-bottom:.2rem;}
+.svc__desc{display:none;}
+.svc__foot{display:flex;align-items:center;justify-content:space-between;}
+.svc__price{font-family:var(--display);font-weight:700;font-size:.92rem;}
+.svc__pick{display:none;}
+.pagination{display:flex;align-items:center;justify-content:center;gap:.3rem;margin-top:1rem;}
+.page-btn{width:34px;height:34px;border-radius:50%;border:none;background:var(--surface);border:1px solid var(--line);color:var(--ink-2);font-size:.82rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--body);}
+.page-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.page-btn.arrow:disabled{opacity:.35;}
+
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:.3rem;}
+.gallery .g{aspect-ratio:1;border-radius:var(--r-sm);overflow:hidden;cursor:pointer;}
+
+/* reviews */
+.rating-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;}
+.rating-row__num{font-family:var(--display);font-weight:900;font-size:2.4rem;line-height:1;}
+.rating-row__stars{color:var(--star);font-size:.9rem;}
+.rating-row__cnt{font-size:.78rem;color:var(--muted);}
+.reviews-grid{display:flex;flex-direction:column;gap:.65rem;}
+.review{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:1rem 1.1rem;}
+.review.rev-hidden{display:none;}
+.review__hdr{display:flex;align-items:center;gap:.6rem;margin-bottom:.55rem;}
+.review__av{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.92rem;}
+.review__name{font-weight:700;font-size:.88rem;}
+.review__sub{display:flex;align-items:center;gap:.45rem;margin-top:.05rem;}
+.review__stars{color:var(--star);font-size:.78rem;}
+.review__date{font-size:.74rem;color:var(--muted);}
+.review__text{font-size:.86rem;color:var(--ink-2);line-height:1.6;}
+.show-more{width:100%;margin-top:.8rem;padding:.7rem;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-family:var(--body);font-weight:600;font-size:.84rem;color:var(--ink-2);cursor:pointer;}
+
+/* map */
+.map-card{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);}
+.map-card iframe{width:100%;height:240px;border:0;display:block;}
+.map-foot{padding:.85rem 1rem;background:var(--surface);}
+.map-foot .addr{display:flex;align-items:flex-start;gap:.45rem;font-size:.84rem;color:var(--ink-2);margin-bottom:.5rem;}
+.map-foot .addr svg{width:16px;height:16px;color:var(--terracotta);flex-shrink:0;margin-top:.1rem;}
+.map-foot a{display:inline-flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:600;color:var(--terracotta);}
+
+/* footer */
+.appfoot{padding:1.4rem 1.25rem 6rem;background:var(--espresso);color:rgba(255,255,255,.6);}
+.appfoot .name{font-family:var(--display);font-weight:700;color:#fff;font-size:.95rem;margin-bottom:.3rem;}
+.appfoot .src{font-size:.78rem;}
+.appfoot .src a{color:var(--gold);}
+.appfoot .legal{font-size:.7rem;color:rgba(255,255,255,.35);margin-top:.8rem;line-height:1.6;}
+
+/* sticky bottom bar inside app */
+.appbar{position:sticky;bottom:0;z-index:40;display:flex;gap:.55rem;padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom));background:rgba(250,248,244,.95);backdrop-filter:blur(14px);border-top:1px solid var(--line);}
+.appbar .cta{flex:1;}
+
+/* lightbox + modal */
+.lb{display:none;position:fixed;inset:0;z-index:200;background:rgba(14,13,11,.96);align-items:center;justify-content:center;flex-direction:column;}
+.lb.open{display:flex;}
+.lb__img{width:min(92vw,520px);aspect-ratio:1;border-radius:var(--r-md);}
+.lb__close{position:absolute;top:1.2rem;right:1.2rem;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.1rem;cursor:pointer;}
+.lb__btn{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;}
+.lb__btn.prev{left:.8rem;} .lb__btn.next{right:.8rem;}
+.lb__cnt{position:absolute;bottom:1.6rem;color:rgba(255,255,255,.6);font-size:.82rem;}
+.pm{display:none;position:fixed;inset:0;z-index:210;background:rgba(14,13,11,.65);align-items:flex-end;justify-content:center;}
+.pm.open{display:flex;}
+.pm__box{background:var(--surface);border-radius:22px 22px 0 0;max-width:var(--appw);width:100%;overflow:hidden;position:relative;max-height:88vh;overflow-y:auto;animation:sheet .3s var(--ease);}
+@keyframes sheet{from{transform:translateY(100%);}to{transform:none;}}
+.pm__media{aspect-ratio:16/10;}
+.pm__info{padding:1.3rem 1.25rem 1.5rem;}
+.pm__cat{font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--terracotta);margin-bottom:.35rem;}
+.pm__name{font-family:var(--display);font-weight:700;font-size:1.25rem;line-height:1.1;margin-bottom:.4rem;}
+.pm__price{font-family:var(--display);font-weight:700;font-size:1.4rem;margin-bottom:.9rem;}
+.pm__desc{font-size:.88rem;color:var(--ink-2);line-height:1.65;margin-bottom:1.2rem;}
+.pm__close{position:absolute;top:.8rem;right:.8rem;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:none;color:var(--ink);font-size:1rem;cursor:pointer;z-index:2;}
+.pm .cta{width:100%;}
+
+.reveal{opacity:1;transform:none;}
+
+/* variant switcher */
+.vswitch{position:fixed;top:.7rem;left:50%;transform:translateX(-50%);z-index:120;display:flex;align-items:center;gap:.3rem;background:rgba(14,13,11,.86);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-pill);padding:.3rem;box-shadow:var(--sh-md);}
+.vswitch span{font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);padding:0 .5rem 0 .6rem;}
+.vswitch button{width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:rgba(255,255,255,.65);font-family:var(--display);font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s;}
+.vswitch button:hover{background:rgba(255,255,255,.12);color:#fff;}
+.vswitch button.on{background:var(--terracotta);color:#fff;}
+@media(max-width:480px){.vswitch{top:auto;bottom:.7rem;}}
+</style>
+</head>
+<body>
+{% set book_label = 'Забронировать столик' if (company.catalog_title or '') == 'Меню' else 'Записаться' %}
+
+
+<div class="deskhint">
+  <div class="ttl">бритва.uqqi.ru</div>
+  <div class="sub">Мобильная витрина — большинство гостей заходят с телефона</div>
+</div>
+
+<div class="app">
+  <!-- cover -->
+  <div class="cover">
+    <div class="img ph" {% if company.gallery_photos %}style="background-image:url('{{ company.gallery_photos[0] }}');background-size:cover;background-position:center"{% else %}style="background:linear-gradient(150deg,#3a2a1c,#1d1512 60%,#0c1418)"{% endif %}></div>
+    {% if status %}<div class="cover__status"><span class="dot"></span>{{ status }}</div>{% endif %}
+  </div>
+
+  <!-- identity -->
+  <div class="ident">
+    <div class="ident__logo" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">{% else %}<b>{{ company.title[:1]|lower }}<span>.</span></b>{% endif %}</div>
+    <div class="ident__cat">{{ (company.category or 'Организация')|upper|replace(', ', ' • ') }}</div>
+    <div class="ident__name">{{ company.title }}</div>
+    <div class="ident__addr" onclick="goTo('#location')"><i data-lucide="map-pin"></i>{{ company.address }}{% if company.transit_stop and company.transit_stop.name %} · {{ company.transit_stop.distance }} до ост. {{ company.transit_stop.name }}{% endif %}</div>
+  </div>
+
+  <!-- chips -->
+  <div class="chips">
+    {% if company.rating %}<span class="schip schip--rating" onclick="goTo('#reviews')"><span class="st">★</span> {{ company.rating }}{% if company.reviews_count or company.reviews %} · {{ company.reviews_count if company.reviews_count else company.reviews|length }}{% endif %}</span>{% endif %}
+    {% if status %}<span class="schip schip--open">● {{ status }}</span>{% endif %}
+    {% if company.avg_bill %}<span class="schip schip--bill">₽ {{ company.avg_bill }}</span>{% endif %}
+  </div>
+
+  <!-- hours -->
+  <div class="hours-card">
+    <button class="hours-toggle" id="hoursToggle" onclick="toggleHours()">
+      <i data-lucide="clock" class="ic"></i><span class="lbl">График работы</span>
+      {% if status %}<span class="now">{{ status }}</span>{% endif %}<i data-lucide="chevron-down" class="chev"></i>
+    </button>
+    <div class="hours-panel" id="hoursPanel">
+      <table class="hours-table" id="hoursTable">
+        {% set daymap = {'Mo':'1','Tu':'2','We':'3','Th':'4','Fr':'5','Sa':'6','Su':'0'} %}
+        {% set fulldays = {'Mo':'Понедельник','Tu':'Вторник','We':'Среда','Th':'Четверг','Fr':'Пятница','Sa':'Суббота','Su':'Воскресенье'} %}
+        {% for e in company.hours %}
+        <tr data-d="{{ daymap.get(e.day, '1') }}"{% if e.closed %} class="off"{% endif %}><td>{{ fulldays.get(e.day, e.day_ru) }}</td><td>{{ 'Выходной' if e.closed else e.time }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+
+  <!-- actions -->
+  <div class="actions">
+    {% if company.phone %}<button class="cta cta--phone" onclick="showPhone(this)" data-phone="{{ company.phone }}" data-tel="{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}"><i data-lucide="phone"></i><span>{{ company.phone[:8] }}… Показать номер</span></button>{% endif %}
+    {% if company.book_url %}<button class="cta cta--book" onclick="book()"><i data-lucide="calendar-check"></i>{{ book_label }}</button>{% endif %}
+    {% if route_url %}<button class="cta cta--route" onclick="route()"><i data-lucide="navigation"></i>Маршрут</button>{% endif %}
+  </div>
+
+  <!-- tabs -->
+  <div class="tabs" id="tabs">
+    <a href="#about" class="active">О нас</a>
+    <a href="#catalog">{{ company.catalog_title or 'Услуги' }}</a>
+    <a href="#photos">Фото</a>
+    <a href="#reviews">Отзывы</a>
+  </div>
+
+  <!-- about -->
+  <section class="block" id="about">
+    <div class="block__title">О нас</div>
+    {% if company.features %}
+    <div class="features">
+      {% for feat in company.features %}
+      <div class="feat"><span class="feat__ic"><i data-lucide="{{ feat_icon(feat) }}"></i></span><span>{{ feat }}</span></div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="block__lead">{{ company.title }} — {{ company.category or 'организация' }} по адресу {{ company.address }}.</p>
+    {% endif %}
+  </section>
+
+  <!-- catalog -->
+  <section class="block" id="catalog">
+    <div class="block__title">{{ company.catalog_title or "Товары и услуги" }}</div>
+    <div class="cat-filters" id="catFilters"></div>
+    <div class="catalog" id="catalogGrid" data-layout="cards"></div>
+    <div class="pagination" id="pagination"></div>
+  </section>
+
+  <!-- photos -->
+  {% if company.gallery_photos %}<section class="block" id="photos">
+    <div class="block__title">Фото <span class="more" onclick="openLb(0)">Все →</span></div>
+    <div class="gallery" id="gallery"></div>
+  </section>{% endif %}
+
+  <!-- reviews -->
+  {% if company.reviews %}<section class="block" id="reviews">
+    <div class="block__title">Отзывы</div>
+    <div class="rating-row">
+      <div class="rating-row__num">{{ company.rating or '—' }}</div>
+      <div><div class="rating-row__stars">★★★★★</div><div class="rating-row__cnt">{{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов · Яндекс</div></div>
+    </div>
+    <div class="reviews-grid" id="reviews-grid"></div>
+    <button class="show-more" id="revMoreBtn" onclick="showMoreReviews(this)">Показать ещё отзывы</button>
+    {% if company.yandex_url %}<a href="{{ company.yandex_url }}" target="_blank" rel="noopener" class="show-more" id="allReviewsLink" style="display:none;text-align:center">Все отзывы на Яндекс Картах ↗</a>{% endif %}
+  </section>{% endif %}
+
+  <!-- map -->
+  <section class="block" id="location" style="border-bottom:none;">
+    <div class="block__title">Как нас найти</div>
+    <div class="map-card">
+      {% if yandex_map_url %}<iframe src="{{ yandex_map_url }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" title="Карта"></iframe>{% endif %}
+      <div class="map-foot">
+        <div class="addr"><i data-lucide="map-pin"></i>{{ company.address }}{% if company.transit_stop and company.transit_stop.name %} · {{ company.transit_stop.distance }} до ост. {{ company.transit_stop.name }}{% endif %}</div>
+        {% if company.yandex_url %}<a href="{{ company.yandex_url }}" target="_blank" rel="noopener">Открыть в Яндекс Картах <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i></a>{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <div class="appfoot">
+    <div class="name">{{ company.title }}</div>
+    <div class="src">{% if company.yandex_url %}Данные из <a href="{{ company.yandex_url }}" target="_blank" rel="noopener">Яндекс Карт</a> · {% endif %}сайт на <a href="https://uqqi.ru" target="_blank" rel="noopener">uqqi.ru</a></div>
+    {% if company.org_name or company.org_inn %}<div class="legal">{% if company.org_type and company.org_name %}{{ company.org_type }} {{ company.org_name }}{% endif %}{% if company.org_inn %} · ИНН {{ company.org_inn }}{% endif %}</div>{% endif %}
+  </div>
+
+  <!-- sticky bar -->
+  <div class="appbar">
+    {% if company.phone %}<button class="cta cta--phone" onclick="showPhone(this)" data-phone="{{ company.phone }}" data-tel="{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}"><i data-lucide="phone"></i>Позвонить</button>{% endif %}
+    {% if company.book_url %}<button class="cta cta--book" onclick="book()"><i data-lucide="calendar-check"></i>{{ book_label }}</button>{% endif %}
+  </div>
+</div>
+
+<div class="lb" id="lb" onclick="if(event.target===this)closeLb()">
+  <button class="lb__close" onclick="closeLb()">✕</button>
+  <button class="lb__btn prev" onclick="lbGo(-1)">‹</button>
+  <div class="lb__img ph" id="lbImg"></div>
+  <button class="lb__btn next" onclick="lbGo(1)">›</button>
+  <div class="lb__cnt" id="lbCnt"></div>
+</div>
+
+<div class="pm" id="pm" onclick="if(event.target===this)closePm()">
+  <div class="pm__box">
+    <button class="pm__close" onclick="closePm()">✕</button>
+    <div class="pm__media ph" id="pmImg"></div>
+    <div class="pm__info">
+      <div class="pm__cat" id="pmCat"></div>
+      <div class="pm__name" id="pmName"></div>
+      <div class="pm__price" id="pmPrice"></div>
+      <div id="pmDescWrap"><p class="pm__desc" id="pmDesc"></p></div>
+      {% if company.book_url %}<button class="cta cta--book" onclick="book()"><i data-lucide="calendar-check"></i>{{ book_label }}</button>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% include "_uqqi_data.html" %}
+<script src="/static/js/site.js"></script>
+{% include "_unpaid_overlay.html" %}
+{% include "_claim_offer.html" %}
+</body>
+</html>

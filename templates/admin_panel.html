@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Панель — {{ company.title }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      /* Светлая терракотовая тема — единый вид с кабинетом (А2) */
+      --bg:#FAF8F4; --surface:#FFFFFF; --surface2:#F2EDE6;
+      --border:#E8E3DC; --accent:#C8643C; --accent-dim:#E8B98F;
+      --text:#1A1714; --muted:#8A7F78;
+      --green:#21A038; --red:#D24B3E;
+    }
+
+    body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); }
+
+    /* ── HEADER ── */
+    .header { display:flex; align-items:center; justify-content:space-between; padding:1rem 2rem; border-bottom:1px solid var(--border); flex-wrap:wrap; gap:.75rem; }
+    .header__brand { font-size:.85rem; color:var(--muted); }
+    .header__brand strong { color:var(--text); }
+    .header__actions { display:flex; gap:.75rem; align-items:center; }
+    .btn-outline { padding:.4rem .9rem; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:.82rem; font-family:inherit; cursor:pointer; text-decoration:none; transition:border-color .2s; }
+    .btn-outline:hover { border-color:var(--accent-dim); }
+    .btn-primary { padding:.4rem .9rem; border-radius:6px; border:none; background:var(--accent); color:#fff; font-size:.82rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .2s; }
+    .btn-primary:hover { opacity:.85; }
+
+    /* ── LAYOUT ── */
+    .layout { display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 57px); }
+    @media(max-width:700px) { .layout { grid-template-columns:1fr; } }
+
+    /* ── SIDEBAR ── */
+    .sidebar { border-right:1px solid var(--border); padding:1.5rem 0; }
+    .nav-item { display:flex; align-items:center; gap:.6rem; padding:.55rem 1.5rem; font-size:.88rem; color:var(--muted); cursor:pointer; transition:color .2s, background .2s; border:none; background:transparent; width:100%; text-align:left; font-family:inherit; }
+    .nav-item:hover { color:var(--text); background:var(--surface); }
+    .nav-item.active { color:var(--accent); background:var(--surface2); }
+    .nav-item svg { width:1rem; height:1rem; flex-shrink:0; }
+
+    /* ── CONTENT ── */
+    .content { padding:2rem; max-width:760px; }
+
+    .section { display:none; }
+    .section.active { display:block; }
+
+    .section__title { font-size:1.1rem; font-weight:600; margin-bottom:1.5rem; }
+
+    /* Дизайн A/B */
+    .design-options{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem}
+    @media(max-width:680px){.design-options{grid-template-columns:1fr}}
+    .design-card{border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:border-color .2s,transform .15s;position:relative;background:var(--surface)}
+    .design-card:hover{border-color:var(--accent-dim);transform:translateY(-2px)}
+    .design-card.active{border-color:var(--accent)}
+    .design-card__preview{height:120px;border-radius:8px;overflow:hidden;margin-bottom:.8rem;background:#F2EDE6;position:relative}
+    .design-card__preview--a .dpv-hero{height:55%;background:linear-gradient(135deg,#C8643C,#E8B98F)}
+    .design-card__preview--a .dpv-bar{height:14%;margin:6px;background:#fff;border-radius:4px}
+    .design-card__preview--a .dpv-grid{display:flex;gap:5px;padding:0 6px}
+    .design-card__preview--a .dpv-grid span{flex:1;height:18px;background:#fff;border-radius:3px}
+    .design-card__preview--b .dpv-split{display:flex;height:100%;gap:6px;padding:8px}
+    .design-card__preview--b .dpv-text{flex:1;background:#fff;border-radius:4px}
+    .design-card__preview--b .dpv-collage{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+    .design-card__preview--b .dpv-collage span{background:linear-gradient(135deg,#C8643C,#E8B98F);border-radius:3px}
+    .design-card__name{font-weight:600;font-size:.92rem;margin-bottom:.3rem;color:var(--text)}
+    .design-card__desc{font-size:.8rem;color:var(--muted);line-height:1.45}
+    .design-card__badge{display:none;position:absolute;top:.7rem;right:.7rem;background:var(--accent);color:#fff;font-size:.7rem;font-weight:600;padding:.25rem .6rem;border-radius:20px}
+    .design-card.active .design-card__badge{display:block}
+    .design-preview-link{display:inline-flex;align-items:center;gap:.4rem;font-size:.84rem;color:var(--accent);text-decoration:none;font-weight:500}
+    .design-preview-link:hover{text-decoration:underline}
+
+    /* ── ФЛАГ АВТООБНОВЛЕНИЯ ── */
+    .auto-flag{display:flex;align-items:center;gap:.6rem;padding:.8rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:1.25rem}
+    .auto-flag label{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;flex:1;margin:0;text-transform:none;letter-spacing:0;color:var(--text)}
+    .auto-flag input[type=checkbox]{width:auto;cursor:pointer}
+    .auto-flag__hint{font-size:.74rem;color:var(--muted)}
+    .section--locked .field input,.section--locked .field textarea,.section--locked .field select,
+    .section--locked .hours-editor input,.section--locked .social-input{
+      opacity:.55;pointer-events:none;background:var(--surface2)
+    }
+    .section--locked .hours-row{opacity:.55;pointer-events:none}
+
+    /* ── СОЦСЕТИ КАРТОЧКАМИ ── */
+    .socials-grid{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+    @media(max-width:560px){.socials-grid{grid-template-columns:1fr}}
+    .social-card{display:flex;align-items:center;gap:.75rem;padding:.85rem;background:var(--surface);border:1px solid var(--border);border-radius:11px;transition:border-color .2s}
+    .social-card:focus-within{border-color:var(--accent)}
+    .social-card__icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .social-card__icon svg{width:20px;height:20px}
+    .social-card__body{flex:1;min-width:0}
+    .social-card__body label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
+    .social-card__body input{width:100%;padding:.4rem .5rem;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.85rem;font-family:inherit}
+    .social-card__body input:focus{outline:none;border-color:var(--accent)}
+
+    /* ── ВКЛАДКА ДИЗАЙН ── */
+    .design-options{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:560px){.design-options{grid-template-columns:1fr}}
+    .design-card{border:2px solid var(--border);border-radius:14px;padding:1.25rem;cursor:pointer;transition:border-color .2s,background .2s;text-align:center}
+    .design-card:hover{border-color:var(--accent)}
+    .design-card.active{border-color:var(--accent);background:var(--surface2)}
+    .design-card__name{font-size:1.05rem;font-weight:700;margin-bottom:.3rem}
+    .design-card__desc{font-size:.8rem;color:var(--muted);line-height:1.5}
+    .design-card__badge{display:inline-block;margin-top:.75rem;font-size:.72rem;color:var(--accent);font-weight:600}
+    .design-preview-link{display:inline-flex;align-items:center;gap:.4rem;margin-top:1.25rem;font-size:.85rem;color:var(--accent)}
+
+    /* ── FORM ── */
+    .field { margin-bottom:1.25rem; }
+    .field label { display:block; font-size:.78rem; color:var(--muted); margin-bottom:.4rem; letter-spacing:.05em; text-transform:uppercase; }
+    .field input, .field textarea, .field select {
+      width:100%; padding:.65rem .9rem; border-radius:8px;
+      background:var(--surface); border:1px solid var(--border);
+      color:var(--text); font-size:.92rem; font-family:inherit;
+      transition:border-color .2s;
+    }
+    .field input:focus, .field textarea:focus { outline:none; border-color:var(--accent); }
+    .field textarea { resize:vertical; min-height:80px; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    @media(max-width:500px) { .field-row { grid-template-columns:1fr; } }
+
+    /* ── HOURS TABLE ── */
+    .hours-editor { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .hours-row { display:grid; grid-template-columns:60px 1fr 1fr auto; align-items:center; gap:.75rem; padding:.6rem 1rem; border-bottom:1px solid var(--border); }
+    .hours-row:last-child { border-bottom:none; }
+    .hours-row__day { font-size:.85rem; color:var(--muted); font-weight:500; }
+    .hours-row input[type="time"] { padding:.35rem .5rem; font-size:.85rem; }
+    .hours-row input[type="checkbox"] { width:16px; height:16px; cursor:pointer; accent-color:var(--accent); }
+    .hours-row.is-closed .hours-row__times { opacity:.35; pointer-events:none; }
+
+    /* ── PHOTOS ── */
+    .photos-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:.75rem; margin-bottom:1rem; }
+    .photo-item { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--surface); border:1px solid var(--border); }
+    .photo-item img { width:100%; height:100%; object-fit:cover; }
+    .photo-item__del { position:absolute; top:.35rem; right:.35rem; width:24px; height:24px; border-radius:50%; background:rgba(0,0,0,.7); border:none; color:#fff; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .photo-item__del:hover { background:var(--red); }
+    .photo-drop { border:2px dashed var(--border); border-radius:8px; padding:2rem; text-align:center; cursor:pointer; transition:border-color .2s; }
+    .photo-drop:hover, .photo-drop.drag-over { border-color:var(--accent); }
+    .photo-drop p { color:var(--muted); font-size:.88rem; margin-top:.5rem; }
+    .photo-drop input { display:none; }
+
+    /* ── SOCIALS ── */
+    .social-row { display:grid; grid-template-columns:110px 1fr; align-items:center; gap:.75rem; margin-bottom:.65rem; }
+    .social-row label { font-size:.82rem; color:var(--muted); }
+
+    /* ── SAVE BAR ── */
+    .save-bar { position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border); padding:.85rem 2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .save-msg { font-size:.82rem; color:var(--green); opacity:0; transition:opacity .3s; }
+    .save-msg.show { opacity:1; }
+    .save-btn { padding:.6rem 1.6rem; border-radius:8px; border:none; background:var(--accent); color:#fff; font-size:.88rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .2s; }
+    .save-btn:hover { opacity:.85; }
+    .save-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+    /* ── ALERT ── */
+    .alert { padding:.65rem 1rem; border-radius:8px; font-size:.85rem; margin-bottom:1rem; }
+    .alert--success { background:#0e1f17; border:1px solid #1e4030; color:var(--green); }
+    .alert--error   { background:#1f0e0e; border:1px solid #3d1515; color:var(--red); }
+  </style>
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header__brand">
+    Панель управления · <strong>{{ company.title }}</strong>
+  </div>
+  <div class="header__actions">
+    <a href="/" target="_blank" class="btn-outline">Открыть сайт ↗</a>
+    <a href="https://lk.uqqi.ru/" class="btn-outline">← В кабинет</a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <button class="nav-item active" data-section="main">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Основное
+    </button>
+    <button class="nav-item" data-section="hours">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Часы работы
+    </button>
+    <button class="nav-item" data-section="photos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+      Фотографии
+    </button>
+    <button class="nav-item" data-section="socials">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+      Соцсети
+    </button>
+    <button class="nav-item" data-section="requisites">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
+      Реквизиты
+    </button>
+    <button class="nav-item" data-section="design">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+      Дизайн
+    </button>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content" id="mainContent">
+
+    <div id="alertBox"></div>
+
+    <!-- ── ОСНОВНОЕ ── -->
+    <section class="section active {{ 'section--locked' if company.auto_main else '' }}" id="section-main" data-flag="auto_main">
+      <h2 class="section__title">Основная информация</h2>
+      <div class="auto-flag">
+        <label>
+          <input type="checkbox" {{ 'checked' if company.auto_main else '' }} onchange="toggleAutoFlag('section-main','auto_main',this)">
+          Обновлять автоматически с Яндекс Карт
+        </label>
+        <span class="auto-flag__hint">{{ 'Поля заблокированы — данные из Яндекса' if company.auto_main else 'Можно редактировать вручную' }}</span>
+      </div>
+      <div class="field">
+        <label>Название</label>
+        <input type="text" id="f-title" value="{{ company.title }}">
+      </div>
+      <div class="field">
+        <label>Адрес</label>
+        <input type="text" id="f-address" value="{{ company.address }}">
+      </div>
+      <div class="field">
+        <label>Телефон</label>
+        <input type="tel" id="f-phone" value="{{ company.phone }}">
+      </div>
+      <div class="field">
+        <label>Категория</label>
+        <input type="text" id="f-category" value="{{ company.category }}" placeholder="Кофейня">
+      </div>
+    </section>
+
+    <!-- ── ЧАСЫ ── -->
+    <section class="section {{ 'section--locked' if company.auto_hours else '' }}" id="section-hours" data-flag="auto_hours">
+      <h2 class="section__title">Часы работы</h2>
+      <div class="auto-flag">
+        <label>
+          <input type="checkbox" {{ 'checked' if company.auto_hours else '' }} onchange="toggleAutoFlag('section-hours','auto_hours',this)">
+          Обновлять автоматически с Яндекс Карт
+        </label>
+        <span class="auto-flag__hint">{{ 'Заблокировано — данные из Яндекса' if company.auto_hours else 'Можно редактировать вручную' }}</span>
+      </div>
+      <div class="hours-editor" id="hoursEditor">
+        {% set day_names = {"Mo":"Пн","Tu":"Вт","We":"Ср","Th":"Чт","Fr":"Пт","Sa":"Сб","Su":"Вс"} %}
+        {% set all_days = ["Mo","Tu","We","Th","Fr","Sa","Su"] %}
+        {% set hours_map = {} %}
+        {% for h in company.hours %}
+          {% set _ = hours_map.update({h.day: h}) %}
+        {% endfor %}
+        {% for day_code in all_days %}
+          {% set entry = hours_map.get(day_code, {"day": day_code, "day_ru": day_names[day_code], "time": "09:00-21:00", "closed": False}) %}
+          {% set times = entry.time.split('-') if not entry.closed and entry.time else ["09:00","21:00"] %}
+          <div class="hours-row {{ 'is-closed' if entry.closed else '' }}" data-day="{{ day_code }}">
+            <span class="hours-row__day">{{ day_names[day_code] }}</span>
+            <div class="hours-row__times" style="display:flex;gap:.5rem;align-items:center">
+              <input type="time" class="time-from" value="{{ times[0] if times|length > 0 else '09:00' }}">
+              <span style="color:var(--muted);font-size:.85rem">—</span>
+              <input type="time" class="time-to"   value="{{ times[1] if times|length > 1 else '21:00' }}">
+            </div>
+            <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);cursor:pointer">
+              <input type="checkbox" class="is-closed-cb" {{ 'checked' if entry.closed else '' }}>
+              Выходной
+            </label>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ── ФОТО ── -->
+    <section class="section" id="section-photos">
+      <h2 class="section__title">Фотогалерея <span style="font-size:.8rem;font-weight:400;color:var(--muted)">(до 12 шт.)</span></h2>
+
+      <div class="auto-flag">
+        <label>
+          <input type="checkbox" id="galleryAutoToggle" {{ 'checked' if not company.gallery_manual else '' }} onchange="toggleGalleryAuto()">
+          Обновлять автоматически с Яндекс Карт
+        </label>
+        <span class="auto-flag__hint" id="galleryHint">
+          {{ 'Галерея из Яндекса — загрузка и удаление заблокированы' if not company.gallery_manual else 'Ручной режим — можно загружать и удалять фото' }}
+        </span>
+      </div>
+
+      <div class="photos-grid" id="photosGrid">
+        {% for photo in company.gallery_photos %}
+          <div class="photo-item" data-url="{{ photo }}" draggable="true">
+            <img src="{{ photo }}" alt="">
+            <button class="photo-item__del" onclick="removePhoto(this)">×</button>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="photo-drop" id="photoDrop" style="{{ 'opacity:.5;pointer-events:none' if not company.gallery_manual else '' }}">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p>Перетащите фото сюда или нажмите для выбора</p>
+        <p style="font-size:.75rem;margin-top:.25rem">JPG, PNG, WebP · до 8 МБ · автоматически сжимается</p>
+        <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" multiple>
+      </div>
+      <p style="font-size:.78rem;color:var(--muted);margin-top:.5rem" id="photoLimitHint"></p>
+    </section>
+
+    <!-- ── СОЦСЕТИ ── -->
+    <section class="section {{ 'section--locked' if company.auto_socials else '' }}" id="section-socials" data-flag="auto_socials">
+      <h2 class="section__title">Социальные сети</h2>
+      <div class="auto-flag">
+        <label>
+          <input type="checkbox" {{ 'checked' if company.auto_socials else '' }} onchange="toggleAutoFlag('section-socials','auto_socials',this)">
+          Обновлять автоматически с Яндекс Карт
+        </label>
+        <span class="auto-flag__hint">{{ 'Заблокировано — данные из Яндекса' if company.auto_socials else 'Можно редактировать вручную' }}</span>
+      </div>
+      {% set socials_map = {} %}
+      {% for s in company.social_links %}
+        {% set _ = socials_map.update({s.platform: s.url}) %}
+      {% endfor %}
+      {% set social_meta = {
+        "telegram":  {"label":"Telegram",  "color":"#2AABEE", "ph":"https://t.me/…"},
+        "vk":        {"label":"ВКонтакте", "color":"#0077FF", "ph":"https://vk.com/…"},
+        "whatsapp":  {"label":"WhatsApp",  "color":"#25D366", "ph":"https://wa.me/…"},
+        "viber":     {"label":"Viber",     "color":"#7360F2", "ph":"viber://…"},
+        "instagram": {"label":"Instagram", "color":"#E1306C", "ph":"https://instagram.com/…"},
+        "youtube":   {"label":"YouTube",   "color":"#FF0000", "ph":"https://youtube.com/…"}
+      } %}
+      <div class="socials-grid">
+        {% for platform, meta in social_meta.items() %}
+        <div class="social-card">
+          <div class="social-card__icon" style="background:{{ meta.color }}1a;color:{{ meta.color }}">
+            <i data-lucide="{{ 'send' if platform=='telegram' else 'message-circle' if platform in ['whatsapp','viber'] else 'instagram' if platform=='instagram' else 'youtube' if platform=='youtube' else 'share-2' }}"></i>
+          </div>
+          <div class="social-card__body">
+            <label>{{ meta.label }}</label>
+            <input type="url" class="social-input" data-platform="{{ platform }}"
+                   value="{{ socials_map.get(platform, '') }}"
+                   placeholder="{{ meta.ph }}">
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ── РЕКВИЗИТЫ ── -->
+    <section class="section {{ 'section--locked' if company.auto_requisites else '' }}" id="section-requisites" data-flag="auto_requisites">
+      <h2 class="section__title">Реквизиты организации</h2>
+      <div class="auto-flag">
+        <label>
+          <input type="checkbox" {{ 'checked' if company.auto_requisites else '' }} onchange="toggleAutoFlag('section-requisites','auto_requisites',this)">
+          Обновлять автоматически с Яндекс Карт
+        </label>
+        <span class="auto-flag__hint">{{ 'Заблокировано — данные из Яндекса' if company.auto_requisites else 'Можно редактировать вручную' }}</span>
+      </div>
+      <p style="font-size:.8rem;color:var(--muted);margin-bottom:1.25rem">
+        Отображаются в подвале сайта. Заполните если требуется указать юридические данные.
+      </p>
+      <div class="field">
+        <label>Полное наименование</label>
+        <input type="text" id="f-org-name" value="{{ company.org_name or '' }}"
+               placeholder='ООО "Название" или ИП Запорожченко Максим Русланович'>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Форма</label>
+          <select id="f-org-type">
+            <option value="">Не указано</option>
+            <option value="ИП" {{ 'selected' if company.org_type == 'ИП' else '' }}>ИП</option>
+            <option value="ООО" {{ 'selected' if company.org_type == 'ООО' else '' }}>ООО</option>
+            <option value="АО" {{ 'selected' if company.org_type == 'АО' else '' }}>АО</option>
+            <option value="ПАО" {{ 'selected' if company.org_type == 'ПАО' else '' }}>ПАО</option>
+            <option value="НКО" {{ 'selected' if company.org_type == 'НКО' else '' }}>НКО</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ИНН</label>
+          <input type="text" id="f-org-inn" value="{{ company.org_inn or '' }}"
+                 placeholder="123456789012" maxlength="12">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ДИЗАЙН ── -->
+    <section class="section" id="section-design">
+      <h2 class="section__title">Дизайн сайта</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.25rem">
+        Выберите оформление для компьютерной версии. На телефонах всегда показывается адаптивная мобильная версия.
+      </p>
+      <div class="design-options">
+        <div class="design-card {{ 'active' if (company.template_variant or 'A')|upper == 'A' else '' }}"
+             id="design-A" onclick="selectDesign('A')">
+          <div class="design-card__preview design-card__preview--a">
+            <div class="dpv-hero"></div><div class="dpv-bar"></div><div class="dpv-grid"><span></span><span></span><span></span></div>
+          </div>
+          <div class="design-card__name">Вариант A — Кинообложка</div>
+          <div class="design-card__desc">Крупное фото-герой на весь экран, плашка с рейтингом, карточки услуг.</div>
+          <div class="design-card__badge">✓ Выбрано</div>
+        </div>
+        <div class="design-card {{ 'active' if (company.template_variant or 'A')|upper == 'B' else '' }}"
+             id="design-B" onclick="selectDesign('B')">
+          <div class="design-card__preview design-card__preview--b">
+            <div class="dpv-split"><div class="dpv-text"></div><div class="dpv-collage"><span></span><span></span><span></span><span></span></div></div>
+          </div>
+          <div class="design-card__name">Вариант B — Журнал</div>
+          <div class="design-card__desc">Фото-коллаж справа, текст слева, редакционный стиль с прайс-листом.</div>
+          <div class="design-card__badge">✓ Выбрано</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- SAVE BAR -->
+<div class="save-bar">
+  <span class="save-msg" id="saveMsg">✓ Изменения сохранены</span>
+  <button class="save-btn" id="saveBtn" onclick="saveAll()">Сохранить</button>
+</div>
+
+<script>
+const SLUG = "{{ company.slug }}";
+
+// ── НАВИГАЦИЯ ──────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('section-' + btn.dataset.section).classList.add('active');
+  });
+});
+
+// ── ЧАСЫ: выходной ────────────────────────────────────────────
+document.querySelectorAll('.is-closed-cb').forEach(cb => {
+  cb.addEventListener('change', () => {
+    cb.closest('.hours-row').classList.toggle('is-closed', cb.checked);
+  });
+});
+
+// ── ФОТО ──────────────────────────────────────────────────────
+const photoDrop  = document.getElementById('photoDrop');
+const photoInput = document.getElementById('photoInput');
+const photosGrid = document.getElementById('photosGrid');
+const MAX_PHOTOS = 12;
+
+photoDrop.addEventListener('click', () => photoInput.click());
+photoDrop.addEventListener('dragover', e => { e.preventDefault(); photoDrop.classList.add('drag-over'); });
+photoDrop.addEventListener('dragleave', () => photoDrop.classList.remove('drag-over'));
+photoDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  photoDrop.classList.remove('drag-over');
+  handleFiles([...e.dataTransfer.files]);
+});
+photoInput.addEventListener('change', () => handleFiles([...photoInput.files]));
+
+function updatePhotoHint() {
+  const n = photosGrid.querySelectorAll('.photo-item').length;
+  document.getElementById('photoLimitHint').textContent = `Загружено ${n} из ${MAX_PHOTOS}`;
+}
+updatePhotoHint();
+
+function handleFiles(files) {
+  const current = photosGrid.querySelectorAll('.photo-item').length;
+  const allowed = MAX_PHOTOS - current;
+  if (allowed <= 0) { showAlert(`Максимум ${MAX_PHOTOS} фото`, 'error'); return; }
+  files.slice(0, allowed).forEach(uploadPhoto);
+}
+
+async function uploadPhoto(file) {
+  if (file.size > 8 * 1024 * 1024) {
+    showAlert('Файл ' + file.name + ' больше 8 МБ', 'error');
+    return;
+  }
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`/admin/gallery/upload/${SLUG}`, { method:'POST', body:fd });
+  if (!res.ok) {
+    const d = await res.json().catch(()=>({}));
+    showAlert(d.detail || 'Ошибка загрузки фото', 'error');
+    return;
+  }
+  const { url } = await res.json();
+  addPhotoToGrid(url);
+  updatePhotoHint();
+  // загрузка включила ручной режим
+  document.getElementById('manualToggle').checked = true;
+  document.getElementById('manualHint').textContent = 'Галерея заморожена — обновление данных её не трогает';
+}
+
+function addPhotoToGrid(url) {
+  const div = document.createElement('div');
+  div.className = 'photo-item';
+  div.dataset.url = url;
+  div.draggable = true;
+  div.innerHTML = `<img src="${url}" alt=""><button class="photo-item__del" onclick="removePhoto(this)">×</button>`;
+  photosGrid.appendChild(div);
+  attachDrag(div);
+}
+
+async function removePhoto(btn) {
+  const item = btn.closest('.photo-item');
+  const url = item.dataset.url;
+  const res = await fetch(`/admin/gallery/delete/${SLUG}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({url}),
+  });
+  if (res.ok) {
+    item.remove();
+    updatePhotoHint();
+  } else {
+    showAlert('Ошибка удаления', 'error');
+  }
+}
+
+// Ручной режим
+// Галерея: флаг "обновлять автоматически" (инвертирован к gallery_manual)
+async function toggleGalleryAuto() {
+  const res = await fetch(`/admin/gallery/toggle-manual/${SLUG}`, {method:'POST'});
+  const data = await res.json();
+  if (res.ok) {
+    const manual = data.manual;  // true = ручной режим
+    document.getElementById('galleryHint').textContent = manual
+      ? 'Ручной режим — можно загружать и удалять фото'
+      : 'Галерея из Яндекса — загрузка и удаление заблокированы';
+    photoDrop.style.opacity = manual ? '' : '.5';
+    photoDrop.style.pointerEvents = manual ? '' : 'none';
+    // чекбокс "обновлять авто" = НЕ manual
+    document.getElementById('galleryAutoToggle').checked = !manual;
+  }
+}
+
+// Флаги автообновления вкладок (main/hours/socials/requisites)
+async function toggleAutoFlag(sectionId, flag, checkbox) {
+  const auto = checkbox.checked;
+  const res = await fetch(`/admin/flag/${SLUG}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({flag, value: auto}),
+  });
+  if (res.ok) {
+    const section = document.getElementById(sectionId);
+    section.classList.toggle('section--locked', auto);
+    const hint = section.querySelector('.auto-flag__hint');
+    if (hint) hint.textContent = auto ? 'Заблокировано — данные из Яндекса' : 'Можно редактировать вручную';
+  } else {
+    checkbox.checked = !auto;
+    showAlert('Ошибка сохранения флага', 'error');
+  }
+}
+
+// Drag&drop переупорядочивание
+let dragSrc = null;
+function attachDrag(el) {
+  el.addEventListener('dragstart', () => { dragSrc = el; el.style.opacity='.4'; });
+  el.addEventListener('dragend', () => { el.style.opacity=''; saveOrder(); });
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!dragSrc || dragSrc === el) return;
+    const rect = el.getBoundingClientRect();
+    const after = (e.clientX - rect.left) > rect.width/2;
+    photosGrid.insertBefore(dragSrc, after ? el.nextSibling : el);
+  });
+}
+document.querySelectorAll('#photosGrid .photo-item').forEach(attachDrag);
+
+async function saveOrder() {
+  const order = [...photosGrid.querySelectorAll('.photo-item')].map(i => i.dataset.url);
+  await fetch(`/admin/gallery/reorder/${SLUG}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({order}),
+  });
+}
+
+// ── СОХРАНЕНИЕ ────────────────────────────────────────────────
+async function saveAll() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняю...';
+
+  // Основное
+  const title    = document.getElementById('f-title').value.trim();
+  const address  = document.getElementById('f-address').value.trim();
+  const phone    = document.getElementById('f-phone').value.trim();
+  const category = document.getElementById('f-category').value.trim();
+
+  // Часы
+  const hours = [];
+  document.querySelectorAll('#hoursEditor .hours-row').forEach(row => {
+    const closed = row.querySelector('.is-closed-cb').checked;
+    const from   = row.querySelector('.time-from').value;
+    const to     = row.querySelector('.time-to').value;
+    const day    = row.dataset.day;
+    const dayRuMap = {Mo:'Пн',Tu:'Вт',We:'Ср',Th:'Чт',Fr:'Пт',Sa:'Сб',Su:'Вс'};
+    hours.push({ day, day_ru: dayRuMap[day], time: closed ? '' : `${from}-${to}`, closed });
+  });
+
+  const org_name = (document.getElementById('f-org-name')?.value || '').trim();
+  const org_type = (document.getElementById('f-org-type')?.value || '').trim();
+  const org_inn  = (document.getElementById('f-org-inn')?.value  || '').trim();
+
+  // Соцсети
+  const social_links = [];
+  document.querySelectorAll('.social-input').forEach(inp => {
+    const url = (inp.value || '').trim();
+    const platform = inp.dataset.platform || '';
+    if (url && platform) social_links.push({ platform, url });
+  });
+
+  const payload = { title, address, phone, category, hours, social_links, org_name, org_type, org_inn };
+
+  try {
+    const res = await fetch(`/admin/save/${SLUG}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const msg = document.getElementById('saveMsg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 3000);
+  } catch(e) {
+    showAlert('Ошибка: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Сохранить';
+  }
+}
+
+// ── ДИЗАЙН A/B ────────────────────────────────────────────────
+async function selectDesign(variant){
+  try {
+    const res = await fetch(`/admin/design/${SLUG}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({variant}),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    document.getElementById('design-A').classList.toggle('active', variant === 'A');
+    document.getElementById('design-B').classList.toggle('active', variant === 'B');
+    showAlert('Дизайн ' + variant + ' применён', 'success');
+  } catch(e){
+    showAlert('Ошибка смены дизайна: ' + e.message, 'error');
+  }
+}
+
+function showAlert(text, type='success') {
+  const box = document.getElementById('alertBox');
+  box.innerHTML = `<div class="alert alert--${type}">${text}</div>`;
+  setTimeout(() => box.innerHTML = '', 4000);
+}
+</script>
+</body>
+</html>

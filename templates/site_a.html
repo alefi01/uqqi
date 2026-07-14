@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% include "_seo_meta.html" %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Playfair+Display:ital,wght@1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --paper:#FAF8F4; --paper-2:#F4EDE5; --surface:#FFFFFF;
+  --ink:#1A1714; --ink-2:#3D3733; --muted:#8A7F78; --line:#E8E3DC; --line-2:#EFE7DD;
+  --terracotta:#C8643C; --terracotta-deep:#B0522F; --terracotta-wash:#F6EAE1; --terracotta-soft:#F0D9CB;
+  --gold:#C8A96E; --signal:#21A038; --signal-tint:rgba(33,160,56,.12); --star:#FFBB00; --yellow:#FFDB4D;
+  --espresso:#0E0D0B;
+  --display:'Unbounded',system-ui,sans-serif;
+  --serif:'Playfair Display',Georgia,serif;
+  --body:'Inter',system-ui,-apple-system,sans-serif;
+  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-xl:28px; --r-pill:99px;
+  --sh-sm:0 2px 10px rgba(26,23,20,.05);
+  --sh-md:0 14px 40px rgba(26,23,20,.10);
+  --sh-lg:0 30px 80px rgba(26,23,20,.16);
+  --sh-card:0 1px 0 rgba(26,23,20,.04),0 10px 30px rgba(26,23,20,.06);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --maxw:980px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--body);background:var(--paper);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;}
+a{color:inherit;text-decoration:none;}
+img,svg{display:block;max-width:100%;}
+::selection{background:var(--terracotta);color:#fff;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 1.5rem;}
+
+/* ─── PHOTO PLACEHOLDERS (warm) ─── */
+.ph{position:relative;background-size:cover;background-position:center;}
+.ph::after{content:"";position:absolute;inset:0;background-image:var(--grain);background-size:120px;opacity:.16;mix-blend-mode:soft-light;}
+.ph1{background:linear-gradient(150deg,#3a2a1c,#1d1512 60%,#0c1418);}
+.ph2{background:linear-gradient(135deg,#E8B98F,#C8643C);}
+.ph3{background:linear-gradient(135deg,#B97FA6,#7E5374);}
+.ph4{background:linear-gradient(135deg,#7FA98F,#4E7A5E);}
+.ph5{background:linear-gradient(135deg,#C8A96E,#9A7B3E);}
+.ph6{background:linear-gradient(135deg,#5C4A3A,#2C2018);}
+.ph7{background:linear-gradient(135deg,#A0786A,#6B4A3E);}
+.ph8{background:linear-gradient(135deg,#8C9AA8,#525E6B);}
+.ph9{background:linear-gradient(135deg,#D9A77F,#A6603C);}
+
+/* ─── NAV ─── */
+.nav{position:sticky;top:0;z-index:70;display:flex;align-items:center;gap:1rem;padding:.7rem 1.5rem;background:rgba(250,248,244,.82);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);border-bottom:1px solid var(--line);transition:box-shadow .25s;}
+.nav.scrolled{box-shadow:var(--sh-sm);}
+.nav__brand{display:flex;align-items:center;gap:.55rem;}
+.nav__seal{width:34px;height:34px;border-radius:9px;background:var(--espresso);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+.nav__seal:has(img){background:#fff;border:1px solid var(--line);}
+.nav__seal img{width:100%;height:100%;object-fit:contain;border-radius:inherit;}
+.nav__seal b{font-family:var(--display);font-weight:700;font-size:1.05rem;color:#fff;line-height:1;}
+.nav__seal b span{color:var(--terracotta);}
+.nav__name{font-family:var(--display);font-weight:700;font-size:.98rem;letter-spacing:-.01em;}
+.nav__links{display:flex;gap:.3rem;flex:1;margin-left:.8rem;overflow-x:auto;scrollbar-width:none;}
+.nav__links::-webkit-scrollbar{display:none;}
+.nav__links a{font-size:.82rem;font-weight:500;color:var(--muted);padding:.35rem .7rem;border-radius:var(--r-pill);white-space:nowrap;transition:color .15s,background .15s;}
+.nav__links a:hover{color:var(--ink);background:var(--paper-2);}
+.nav__links a.active{color:var(--ink);background:#fff;box-shadow:var(--sh-sm);}
+.nav__book{display:inline-flex;align-items:center;gap:.45rem;background:var(--terracotta);color:#fff;font-weight:600;font-size:.82rem;padding:.55rem 1.1rem;border-radius:var(--r-pill);border:none;cursor:pointer;font-family:var(--body);white-space:nowrap;flex-shrink:0;box-shadow:0 2px 12px rgba(200,100,60,.25);transition:transform .2s var(--ease),background .2s,box-shadow .25s;}
+.nav__book:hover{transform:translateY(-1px);background:var(--terracotta-deep);box-shadow:0 8px 20px rgba(200,100,60,.32);}
+.nav__book svg{width:15px;height:15px;}
+@media(max-width:760px){.nav__links{display:none;}}
+
+/* ─── HERO COVER ─── */
+.hero{position:relative;min-height:64vh;display:flex;flex-direction:column;justify-content:center;padding:2rem 0 0;overflow:hidden;}
+.hero__cover{position:absolute;inset:0;z-index:0;}
+.hero__cover::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--espresso) 4%,rgba(14,13,11,.55) 38%,rgba(14,13,11,.15) 100%);}
+.hero__status{position:absolute;top:1.4rem;right:1.5rem;z-index:3;display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;font-weight:600;color:#7fe0a0;background:rgba(33,160,56,.16);border:1px solid rgba(127,224,160,.4);padding:.4rem .85rem;border-radius:var(--r-pill);backdrop-filter:blur(6px);}
+.hero__status .dot{width:7px;height:7px;border-radius:50%;background:#7fe0a0;box-shadow:0 0 0 3px rgba(127,224,160,.25);}
+.hero__inner{position:relative;z-index:3;padding-bottom:1.8rem;display:flex;flex-direction:column;align-items:center;text-align:center;}
+.hero__cat{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);padding:.35rem .8rem;border-radius:var(--r-pill);backdrop-filter:blur(4px);margin-bottom:.9rem;}
+.hero__title{font-family:var(--display);font-weight:900;letter-spacing:-.03em;font-size:clamp(2.4rem,7vw,4.2rem);line-height:.98;color:#fff;text-wrap:balance;}
+.hero__title em{font-family:var(--serif);font-style:italic;font-weight:500;color:var(--gold);}
+
+/* meta plaque */
+.plaque{position:relative;z-index:4;margin:-1.2rem auto 0;max-width:calc(var(--maxw) - 0px);}
+.plaque__bar{display:flex;flex-wrap:wrap;align-items:center;gap:1.4rem;background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-md);padding:1rem 1.4rem;}
+.meta{display:inline-flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--ink-2);font-weight:500;}
+.meta svg{width:17px;height:17px;color:var(--muted);flex-shrink:0;}
+.meta--rating{color:var(--ink);font-weight:700;cursor:pointer;}
+.meta--rating .stars{color:var(--star);letter-spacing:.04em;}
+.meta--rating .cnt{color:var(--muted);font-weight:400;}
+.meta--addr{cursor:pointer;}
+.meta--bill{color:var(--ink-2);font-weight:500;}
+.meta--bill svg{width:15px;height:15px;color:var(--terracotta);}
+.meta--addr:hover,.meta--rating:hover{color:var(--terracotta);}
+.hours-toggle{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;background:none;border:none;font-family:var(--body);font-size:.9rem;font-weight:500;color:var(--ink-2);}
+.hours-toggle .chev{transition:transform .25s var(--ease);width:15px;height:15px;}
+.hours-toggle.open .chev{transform:rotate(180deg);}
+.hours-toggle .open-now{color:var(--signal);font-weight:600;}
+.hours-panel{max-height:0;overflow:hidden;transition:max-height .35s var(--ease);}
+.hours-panel.open{max-height:340px;}
+.hours-inner{padding:.4rem 1.4rem 1.1rem;}
+.hours-table{width:100%;max-width:340px;border-collapse:collapse;}
+.hours-table tr{border-bottom:1px solid var(--line);}
+.hours-table tr:last-child{border-bottom:none;}
+.hours-table td{padding:.5rem 0;font-size:.88rem;}
+.hours-table td:first-child{color:var(--muted);width:6rem;}
+.hours-table .today td:first-child{color:var(--terracotta);font-weight:600;}
+.hours-table .today td:last-child{font-weight:600;}
+.hours-table .off td{opacity:.4;}
+
+/* primary action row */
+.cta-row{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1rem;}
+.cta{flex:1;min-width:150px;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.2rem;border-radius:var(--r-pill);font-family:var(--body);font-weight:600;font-size:.92rem;border:1.5px solid transparent;cursor:pointer;transition:transform .2s var(--ease),box-shadow .25s,background .2s,filter .2s;}
+.cta svg{width:17px;height:17px;}
+.cta:hover{transform:translateY(-2px);}
+.cta--phone{background:var(--yellow);color:var(--ink);}
+.cta--phone:hover{filter:brightness(.96);box-shadow:0 10px 24px rgba(255,219,77,.4);}
+.cta--route{background:var(--espresso);color:#fff;}
+.cta--route:hover{box-shadow:0 10px 24px rgba(14,13,11,.32);}
+.cta--book{background:var(--signal);color:#fff;}
+.cta--book:hover{box-shadow:0 10px 24px rgba(33,160,56,.32);background:#1c8c30;}
+
+/* ─── SECTION ─── */
+.section{padding:3.2rem 0;scroll-margin-top:72px;}
+.section--alt{background:var(--paper-2);}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.6rem;}
+.sec-head h2{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:clamp(1.4rem,3.2vw,1.9rem);line-height:1.1;}
+.sec-head .eyebrow{display:block;font-size:.7rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta);margin-bottom:.5rem;}
+.sec-link{font-size:.82rem;font-weight:500;color:var(--muted);white-space:nowrap;transition:color .15s;}
+.sec-link:hover{color:var(--terracotta);}
+
+/* features */
+.social-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.7rem;}
+.social-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1rem;border-radius:var(--r-pill);background:var(--sc);color:#fff;text-decoration:none;font-size:.88rem;font-weight:600;transition:transform .15s,box-shadow .15s;}
+.social-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px color-mix(in srgb,var(--sc) 40%,transparent);}
+.social-btn__ic{display:inline-flex;width:22px;height:22px;}
+.social-btn__ic svg{width:100%;height:100%;}
+.about-text{font-size:1rem;line-height:1.7;color:var(--ink-2);margin-bottom:1.6rem;max-width:680px;}
+.features{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.4rem;}
+.feat{display:flex;align-items:center;gap:.8rem;padding:.7rem .8rem;border-radius:var(--r-md);transition:background .2s;}
+.feat:hover{background:var(--surface);}
+.feat__ic{width:44px;height:44px;flex-shrink:0;border-radius:50%;background:var(--terracotta-wash);color:var(--terracotta);display:flex;align-items:center;justify-content:center;}
+.feat__ic svg{width:21px;height:21px;stroke-width:1.8;}
+.feat span{font-size:.9rem;color:var(--ink-2);font-weight:500;}
+
+/* catalog */
+.cat-filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.3rem;}
+.chip{padding:.45rem .95rem;border-radius:var(--r-pill);font-size:.82rem;font-weight:500;font-family:var(--body);border:1.5px solid var(--line);background:var(--surface);color:var(--ink-2);cursor:pointer;transition:all .18s var(--ease);}
+.chip:hover{border-color:var(--terracotta-soft);}
+.chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;}
+.pagination{display:flex;align-items:center;justify-content:center;gap:.35rem;margin-top:1.6rem;}
+.page-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:.84rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--body);transition:all .15s;}
+.page-btn:hover:not(:disabled):not(.active){border-color:var(--terracotta-soft);}
+.page-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.page-btn.arrow{font-size:1.1rem;}
+.page-btn.arrow:disabled{opacity:.35;cursor:default;}
+.svc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;cursor:pointer;transition:transform .25s var(--ease),box-shadow .25s,border-color .2s;}
+.svc:hover{transform:translateY(-4px);box-shadow:var(--sh-md);border-color:transparent;}
+.svc__img{aspect-ratio:4/3;}
+.svc__body{padding:.95rem 1.1rem 1.1rem;}
+.svc__name{font-weight:600;font-size:.96rem;margin-bottom:.2rem;}
+.svc__desc{font-size:.8rem;color:var(--muted);line-height:1.5;margin-bottom:.7rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.svc__foot{display:flex;align-items:center;justify-content:space-between;}
+.svc__price{font-family:var(--display);font-weight:700;font-size:1.05rem;color:var(--ink);}
+.svc__pick{font-size:.78rem;font-weight:600;color:var(--terracotta);display:inline-flex;align-items:center;gap:.3rem;}
+.svc__pick svg{width:14px;height:14px;transition:transform .2s var(--ease);}
+.svc:hover .svc__pick svg{transform:translateX(3px);}
+
+/* gallery */
+.gallery{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:130px;gap:.5rem;}
+.gallery .g{border-radius:var(--r-sm);overflow:hidden;cursor:pointer;}
+.gallery .g::after{transition:opacity .3s;}
+.gallery .g:hover::after{opacity:.05;}
+.gallery .g:nth-child(1){grid-column:span 2;grid-row:span 2;}
+.gallery .g:nth-child(6){grid-column:span 2;}
+@media(max-width:620px){.gallery{grid-template-columns:repeat(2,1fr);grid-auto-rows:120px;}.gallery .g:nth-child(1){grid-column:span 2;}.gallery .g:nth-child(6){grid-column:span 1;}}
+
+/* reviews carousel */
+.rev-rail{display:flex;gap:1rem;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:.8rem;scrollbar-width:none;margin:0 -1.5rem;padding-left:1.5rem;padding-right:1.5rem;}
+.rev-rail::-webkit-scrollbar{display:none;}
+.rail-ctrl{display:flex;align-items:center;gap:.5rem;}
+.rail-hint{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:500;color:var(--muted);margin-right:.3rem;}
+.rail-hint svg{width:14px;height:14px;animation:nudge 1.6s var(--ease) infinite;}
+@keyframes nudge{0%,100%{transform:translateX(0);}50%{transform:translateX(4px);}}
+@media(prefers-reduced-motion:reduce){.rail-hint svg{animation:none;}}
+.rail-btn{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:1.2rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s var(--ease);}
+.rail-btn:hover{border-color:var(--ink);color:var(--ink);transform:translateY(-1px);}
+@media(max-width:560px){.rail-hint{display:none;}}
+.review{scroll-snap-align:start;flex:0 0 min(360px,82vw);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.5rem;box-shadow:var(--sh-card);}
+.review__hdr{display:flex;align-items:center;gap:.8rem;margin-bottom:.8rem;}
+.review__av{width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:1.05rem;}
+.review__name{font-weight:700;font-size:.96rem;}
+.review__sub{display:flex;align-items:center;gap:.5rem;margin-top:.1rem;}
+.review__stars{color:var(--star);font-size:.85rem;}
+.review__date{font-size:.8rem;color:var(--muted);}
+.review__text{font-size:.92rem;color:var(--ink-2);line-height:1.65;}
+
+/* rating summary */
+.rating-sum{display:flex;align-items:center;gap:2rem;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.5rem 1.8rem;margin-bottom:1.6rem;box-shadow:var(--sh-card);}
+.rating-sum__big{text-align:center;}
+.rating-sum__num{font-family:var(--display);font-weight:900;font-size:3rem;line-height:1;letter-spacing:-.03em;}
+.rating-sum__stars{color:var(--star);font-size:1rem;margin-top:.3rem;}
+.rating-sum__cnt{font-size:.8rem;color:var(--muted);margin-top:.2rem;}
+.rating-bars{flex:1;min-width:200px;display:flex;flex-direction:column;gap:.35rem;}
+.rbar{display:flex;align-items:center;gap:.7rem;font-size:.78rem;color:var(--muted);}
+.rbar__track{flex:1;height:6px;border-radius:99px;background:var(--paper-2);overflow:hidden;}
+.rbar__fill{height:100%;border-radius:99px;background:var(--star);}
+
+/* map */
+.map-card{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-card);background:var(--surface);}
+.map-card iframe{width:100%;height:380px;border:0;display:block;}
+.map-foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 1.4rem;}
+.map-foot .addr{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--ink-2);font-weight:500;}
+.map-foot .addr svg{width:17px;height:17px;color:var(--terracotta);}
+.map-foot a{display:inline-flex;align-items:center;gap:.4rem;font-size:.84rem;font-weight:600;color:var(--terracotta);}
+
+/* footer */
+footer{background:var(--espresso);color:rgba(255,255,255,.7);padding:2.6rem 0 2rem;}
+footer .wrap{display:flex;flex-direction:column;gap:1rem;}
+.foot-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.foot-brand{display:flex;align-items:center;gap:.6rem;}
+.foot-brand .nav__seal{background:#fff;}
+.foot-brand .nav__seal b{color:var(--espresso);}
+.foot-name{font-family:var(--display);font-weight:700;color:#fff;font-size:1rem;}
+.foot-src{font-size:.8rem;}
+.foot-src a{color:var(--gold);}
+.foot-legal{font-size:.74rem;color:rgba(255,255,255,.4);border-top:1px solid rgba(255,255,255,.1);padding-top:1rem;line-height:1.7;}
+
+/* sticky mobile bar */
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;gap:.6rem;padding:.7rem .9rem calc(.7rem + env(safe-area-inset-bottom));background:rgba(250,248,244,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);}
+.mbar .cta{padding:.8rem;font-size:.88rem;min-width:0;}
+@media(max-width:760px){.mbar{display:flex;}body{padding-bottom:5rem;}}
+
+/* lightbox */
+.lb{display:none;position:fixed;inset:0;z-index:200;background:rgba(14,13,11,.96);align-items:center;justify-content:center;flex-direction:column;}
+.lb.open{display:flex;}
+.lb__img{width:min(90vw,760px);aspect-ratio:4/3;border-radius:var(--r-md);}
+.lb__close{position:absolute;top:1.2rem;right:1.2rem;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.1rem;cursor:pointer;}
+.lb__btn{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;cursor:pointer;}
+.lb__btn.prev{left:1rem;} .lb__btn.next{right:1rem;}
+.lb__cnt{position:absolute;bottom:1.6rem;color:rgba(255,255,255,.6);font-size:.82rem;}
+
+/* product modal */
+.pm{display:none;position:fixed;inset:0;z-index:210;background:rgba(14,13,11,.6);align-items:center;justify-content:center;padding:1rem;}
+.pm.open{display:flex;}
+.pm__box{background:var(--surface);border-radius:var(--r-xl);max-width:760px;width:100%;overflow:hidden;box-shadow:var(--sh-lg);display:grid;grid-template-columns:1fr 1fr;position:relative;}
+@media(max-width:600px){.pm__box{grid-template-columns:1fr;max-height:90vh;overflow-y:auto;}}
+.pm__media{aspect-ratio:1;}
+.pm__info{padding:2rem;}
+.pm__cat{font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--terracotta);margin-bottom:.5rem;}
+.pm__name{font-family:var(--display);font-weight:700;font-size:1.5rem;line-height:1.1;margin-bottom:.5rem;}
+.pm__price{font-family:var(--display);font-weight:700;font-size:1.6rem;margin-bottom:1.2rem;}
+.pm__desc{font-size:.92rem;color:var(--ink-2);line-height:1.7;margin-bottom:1.5rem;}
+.pm__close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.8);border:none;color:var(--ink);font-size:1rem;cursor:pointer;z-index:2;}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .5s var(--ease),transform .5s var(--ease);}
+.reveal.in{opacity:1;transform:none;}
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;}}
+
+/* variant switcher */
+.vswitch{position:fixed;top:.7rem;left:50%;transform:translateX(-50%);z-index:120;display:flex;align-items:center;gap:.3rem;background:rgba(14,13,11,.86);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-pill);padding:.3rem;box-shadow:var(--sh-md);}
+.vswitch span{font-size:.66rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);padding:0 .5rem 0 .6rem;}
+.vswitch button{width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:rgba(255,255,255,.65);font-family:var(--display);font-weight:700;font-size:.82rem;cursor:pointer;transition:all .15s;}
+.vswitch button:hover{background:rgba(255,255,255,.12);color:#fff;}
+.vswitch button.on{background:var(--terracotta);color:#fff;}
+@media(max-width:760px){.vswitch{top:auto;bottom:5.2rem;}}
+</style>
+</head>
+<body>
+{% set book_label = 'Забронировать столик' if (company.catalog_title or '') == 'Меню' else 'Записаться' %}
+
+
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a class="nav__brand" href="#top" onclick="event.preventDefault();window.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer;text-decoration:none;color:inherit">
+    <div class="nav__seal">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">{% else %}<b>{{ company.title[:1]|lower }}<span>.</span></b>{% endif %}</div>
+    <div class="nav__name">{{ company.title }}</div>
+  </a>
+  <div class="nav__links">
+    <a href="#catalog" class="active">{{ company.catalog_title or 'Услуги' }}</a>
+    <a href="#photos">Фото</a>
+    <a href="#reviews">Отзывы</a>
+    <a href="#location">Как найти</a>
+  </div>
+  {% if company.book_url %}<button class="nav__book" id="navBook" onclick="book()" style="display:none"><i data-lucide="calendar-check"></i>{{ book_label }}</button>{% endif %}
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero__cover ph" {% if company.gallery_photos %}style="background-image:url('{{ company.gallery_photos[0] }}');background-size:cover;background-position:center"{% else %}style="background:linear-gradient(150deg,#3a2a1c,#1d1512 60%,#0c1418)"{% endif %}></div>
+  {% if status %}<div class="hero__status"><span class="dot"></span>{{ status }}</div>{% endif %}
+  <div class="wrap hero__inner">
+    <span class="hero__cat">{{ (company.category or 'Организация')|upper|replace(', ', ' • ') }}</span>
+    <h1 class="hero__title">{{ company.title }}</h1>
+  </div>
+</header>
+
+<!-- META PLAQUE -->
+<div class="plaque wrap">
+  <div class="plaque__bar">
+    {% if company.rating %}<div class="meta meta--rating" onclick="goTo('#reviews')">
+      <span class="stars">★</span> {{ company.rating }} {% if company.reviews_count or company.reviews %}<span class="cnt">· {{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов</span>{% endif %}
+    </div>{% endif %}
+    <div class="meta meta--addr" onclick="goTo('#location')">
+      <i data-lucide="map-pin"></i> {{ company.address }}{% if company.transit_stop and company.transit_stop.name %} · {{ company.transit_stop.distance }} до ост. {{ company.transit_stop.name }}{% endif %}
+    </div>
+    {% if status %}<button class="hours-toggle" id="hoursToggle" onclick="toggleHours()">
+      <i data-lucide="clock"></i> <span class="open-now">{{ status }}</span>
+      <i data-lucide="chevron-down" class="chev"></i>
+    </button>{% endif %}
+  </div>
+  <div class="hours-panel" id="hoursPanel">
+    <div class="hours-inner">
+      <table class="hours-table" id="hoursTable">
+        {% set daymap = {'Mo':'1','Tu':'2','We':'3','Th':'4','Fr':'5','Sa':'6','Su':'0'} %}
+        {% set fulldays = {'Mo':'Понедельник','Tu':'Вторник','We':'Среда','Th':'Четверг','Fr':'Пятница','Sa':'Суббота','Su':'Воскресенье'} %}
+        {% for e in company.hours %}
+        <tr data-d="{{ daymap.get(e.day, '1') }}"{% if e.closed %} class="off"{% endif %}><td>{{ fulldays.get(e.day, e.day_ru) }}</td><td>{{ 'Выходной' if e.closed else e.time }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+  <div class="cta-row" style="padding:0 .2rem;">
+    {% if company.phone %}<button class="cta cta--phone" id="phoneBtn" onclick="showPhone(this)" data-phone="{{ company.phone }}" data-tel="{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}">
+      <i data-lucide="phone"></i><span>{{ company.phone[:8] }}… Показать</span>
+    </button>{% endif %}
+    {% if route_url %}<button class="cta cta--route" onclick="route()"><i data-lucide="navigation"></i>Маршрут</button>{% endif %}
+    {% if company.book_url %}<button class="cta cta--book" id="mainBook" onclick="book()"><i data-lucide="calendar-check"></i>{{ book_label }}</button>{% endif %}
+  </div>
+  {% if company.social_links %}
+  {% from "_social_icons.html" import social_icon, social_color, social_name %}
+  <div class="social-row" style="padding:0 .2rem;">
+    {% for s in company.social_links %}
+    <a class="social-btn" href="{{ s.url }}" target="_blank" rel="noopener" style="--sc:{{ social_color(s.platform) }}">
+      <span class="social-btn__ic">{{ social_icon(s.platform) }}</span>
+      <span>{{ social_name(s.platform) }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ABOUT / FEATURES -->
+{% if company.features or company.avg_bill or company.about_text %}
+<section class="section">
+  <div class="wrap reveal">
+    <div class="sec-head"><div><span class="eyebrow">О нас</span><h2>{{ company.title }}</h2></div></div>
+    {% if company.about_text %}<p class="about-text">{{ company.about_text }}</p>{% endif %}
+    <div class="features">
+      {% if company.avg_bill %}
+      <div class="feat"><span class="feat__ic"><i data-lucide="wallet"></i></span><span>Средний счёт {{ company.avg_bill }}</span></div>
+      {% endif %}
+      {% for feat in company.features %}
+      <div class="feat"><span class="feat__ic"><i data-lucide="{{ feat_icon(feat) }}"></i></span><span>{{ feat }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- CATALOG -->
+<section class="section section--alt" id="catalog">
+  <div class="wrap reveal">
+    <div class="sec-head"><div><span class="eyebrow">Прайс</span><h2>{{ company.catalog_title or 'Товары и услуги' }}</h2></div></div>
+    <div class="cat-filters" id="catFilters"></div>
+    <div class="catalog" id="catalogGrid"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</section>
+
+<!-- PHOTOS -->
+{% if company.gallery_photos %}
+<section class="section" id="photos">
+  <div class="wrap reveal">
+    <div class="sec-head"><div><span class="eyebrow">Атмосфера</span><h2>Фото</h2></div><span class="sec-link" onclick="openLb(0)">Смотреть все →</span></div>
+    <div class="gallery" id="gallery"></div>
+  </div>
+</section>
+{% endif %}
+
+<!-- REVIEWS -->
+{% if company.reviews %}
+<section class="section section--alt" id="reviews">
+  <div class="wrap reveal">
+    <div class="sec-head"><div><span class="eyebrow">ЧТО ГОВОРЯТ О НАС</span><h2>Отзывы</h2></div>
+    </div>
+    <div class="rating-sum">
+      <div class="rating-sum__big">
+        <div class="rating-sum__num">{{ company.rating or '—' }}</div>
+        <div class="rating-sum__stars">★★★★★</div>
+        <div class="rating-sum__cnt">{{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов</div>
+      </div>
+      <div class="rating-bars">
+        <div class="rbar">5 <div class="rbar__track"><div class="rbar__fill" style="width:88%"></div></div></div>
+        <div class="rbar">4 <div class="rbar__track"><div class="rbar__fill" style="width:9%"></div></div></div>
+        <div class="rbar">3 <div class="rbar__track"><div class="rbar__fill" style="width:2%"></div></div></div>
+        <div class="rbar">2 <div class="rbar__track"><div class="rbar__fill" style="width:1%"></div></div></div>
+        <div class="rbar">1 <div class="rbar__track"><div class="rbar__fill" style="width:0%"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap"><div class="rev-rail" id="reviews-rail"></div></div>
+  {% if company.yandex_url %}<div class="wrap" style="text-align:center;margin-top:1rem"><a href="{{ company.yandex_url }}" target="_blank" rel="noopener" class="sec-link">Все отзывы на Яндекс Картах ↗</a></div>{% endif %}
+</section>
+{% endif %}
+
+<!-- MAP -->
+<section class="section" id="location">
+  <div class="wrap reveal">
+    <div class="sec-head"><div><span class="eyebrow">На карте</span><h2>Как нас найти</h2></div></div>
+    <div class="map-card">
+      {% if yandex_map_url %}<iframe src="{{ yandex_map_url }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" title="Карта"></iframe>{% endif %}
+      <div class="map-foot">
+        <span class="addr"><i data-lucide="map-pin"></i>{{ company.address }}{% if company.transit_stop and company.transit_stop.name %} · {{ company.transit_stop.distance }} до ост. {{ company.transit_stop.name }}{% endif %}</span>
+        {% if company.yandex_url %}<a href="{{ company.yandex_url }}" target="_blank" rel="noopener">Открыть в Яндекс Картах <i data-lucide="arrow-up-right" style="width:14px;height:14px;"></i></a>{% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <div class="nav__seal">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">{% else %}<b>{{ company.title[:1]|lower }}<span>.</span></b>{% endif %}</div>
+        <div class="foot-name">{{ company.title }}</div>
+      </div>
+      <div class="foot-src">{% if company.yandex_url %}Данные из <a href="{{ company.yandex_url }}" target="_blank" rel="noopener">Яндекс Карт</a> · {% endif %}сайт на <a href="https://uqqi.ru" target="_blank" rel="noopener">uqqi.ru</a></div>
+    </div>
+    {% if company.org_name or company.org_inn %}<div class="foot-legal">{% if company.org_type and company.org_name %}{{ company.org_type }} {{ company.org_name }}{% endif %}{% if company.org_inn %} · ИНН {{ company.org_inn }}{% endif %} · {{ company.address }}<br>сайт сделан автоматически на платформе uqqi</div>{% endif %}
+  </div>
+</footer>
+
+<!-- sticky mobile bar -->
+<div class="mbar">
+  {% if company.phone %}<button class="cta cta--phone" onclick="showPhone(this)" data-phone="{{ company.phone }}" data-tel="{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}"><i data-lucide="phone"></i>Позвонить</button>{% endif %}
+  {% if company.book_url %}<button class="cta cta--book" onclick="book()"><i data-lucide="calendar-check"></i>{{ book_label }}</button>{% endif %}
+</div>
+
+<!-- lightbox -->
+<div class="lb" id="lb" onclick="if(event.target===this)closeLb()">
+  <button class="lb__close" onclick="closeLb()">✕</button>
+  <button class="lb__btn prev" onclick="lbGo(-1)">‹</button>
+  <div class="lb__img ph" id="lbImg"></div>
+  <button class="lb__btn next" onclick="lbGo(1)">›</button>
+  <div class="lb__cnt" id="lbCnt"></div>
+</div>
+
+<!-- product modal -->
+<div class="pm" id="pm" onclick="if(event.target===this)closePm()">
+  <div class="pm__box">
+    <button class="pm__close" onclick="closePm()">✕</button>
+    <div class="pm__media ph" id="pmImg"></div>
+    <div class="pm__info">
+      <div class="pm__cat" id="pmCat"></div>
+      <div class="pm__name" id="pmName"></div>
+      <div class="pm__price" id="pmPrice"></div>
+      <div id="pmDescWrap"><p class="pm__desc" id="pmDesc"></p></div>
+      {% if company.book_url %}<div class="cta-row">
+        <button class="cta cta--book" onclick="book()" style="flex:1;"><i data-lucide="calendar-check"></i>{{ book_label }}</button>
+      </div>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% include "_uqqi_data.html" %}
+<script src="/static/js/site.js"></script>
+{% include "_unpaid_overlay.html" %}
+{% include "_claim_offer.html" %}
+</body>
+</html>

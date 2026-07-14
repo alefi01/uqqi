@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ company.title }} — сайт временно недоступен</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Inter',sans-serif;
+      background:#faf8f4;color:#1a1a1a;
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      padding:1.5rem;line-height:1.6;
+    }
+    .card{
+      max-width:480px;text-align:center;
+      background:#fff;border:1px solid #e8e4dc;border-radius:24px;
+      padding:3rem 2.5rem;box-shadow:0 8px 40px rgba(0,0,0,.06);
+    }
+    .seal{
+      width:84px;height:84px;margin:0 auto 1.75rem;
+    }
+    .seal img{width:100%;height:100%;object-fit:contain}
+    h1{
+      font-family:'Unbounded',sans-serif;font-weight:700;
+      font-size:1.4rem;margin-bottom:.75rem;line-height:1.25;
+    }
+    .biz{color:#C8643C;font-weight:700}
+    p{font-size:.95rem;color:#555;margin-bottom:1rem}
+    .contact{
+      display:inline-flex;align-items:center;gap:.5rem;
+      margin-top:1.25rem;padding:.7rem 1.5rem;border-radius:12px;
+      background:#1a1a1a;color:#fff;font-weight:600;font-size:.9rem;
+      text-decoration:none;transition:opacity .15s;
+    }
+    .contact:hover{opacity:.85}
+    .muted{font-size:.78rem;color:#999;margin-top:1.5rem}
+    .spin{width:38px;height:38px;border:3px solid #eee;border-top-color:#C8643C;border-radius:50%;margin:0 auto 1.5rem;animation:sp 1s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    /* Водяной знак для неоплаченного сайта */
+    .watermark{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;opacity:.05}
+    .watermark span{position:absolute;font-family:'Unbounded',sans-serif;font-weight:700;
+      font-size:2.5rem;color:#1a1a1a;white-space:nowrap;transform:rotate(-30deg)}
+    .card{position:relative;z-index:1}
+  </style>
+</head>
+<body>
+  {% if unpaid %}
+  <div class="watermark">
+    {% for i in range(8) %}
+    <span style="top:{{ i * 14 }}%;left:{{ (i % 2) * 30 - 10 }}%">uqqi.ru · демо · uqqi.ru · демо · uqqi.ru · демо</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="seal"><img src="/static/logo-seal.png" alt="uqqi"></div>
+
+    {% if building %}
+      <div class="spin"></div>
+      <h1>Сайт <span class="biz">{{ company.title }}</span><br>почти готов</h1>
+      <p>Мы собираем ваш сайт из карточки Яндекс Карт — это занимает меньше минуты. Загляните в личный кабинет, чтобы увидеть прогресс.</p>
+      <a href="https://lk.uqqi.ru/" class="contact">Открыть кабинет</a>
+      <div class="muted">платформа uqqi.ru</div>
+    {% elif unpaid %}
+      <h1>Сайт <span class="biz">{{ company.title }}</span><br>ждёт активации</h1>
+      <p>Пробный период завершён. Чтобы сайт снова открывался для ваших клиентов, продлите подписку в личном кабинете — это займёт минуту.</p>
+      <a href="https://lk.uqqi.ru/" class="contact">Оплатить и включить сайт</a>
+      <div class="muted">support@uqqi.ru · платформа uqqi.ru</div>
+    {% else %}
+      <h1>Сайт <span class="biz">{{ company.title }}</span><br>временно недоступен</h1>
+      <p>Похоже, срок размещения сайта истёк. Если это ваш сайт — свяжитесь с нами, чтобы быстро его восстановить.</p>
+      <a href="mailto:support@uqqi.ru?subject=Продление сайта {{ company.title }}" class="contact">
+        Написать в поддержку
+      </a>
+      <div class="muted">support@uqqi.ru · платформа uqqi.ru</div>
+    {% endif %}
+  </div>
+</body>
+</html>

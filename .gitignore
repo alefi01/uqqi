@@ -1,0 +1,41 @@
+# Секреты и конфиг
+.env
+*.env
+!.env.example
+
+# База данных
+*.db
+*.db-journal
+*.sqlite3
+
+# GeoIP-база (скачивается отдельно, ~60МБ)
+geo/*.mmdb
+
+# Логи и рантайм
+logs/
+static/screenshots/*.png
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+
+# Node / сборка
+node_modules/
+.build/
+
+# Playwright
+.cache/
+ms-playwright/
+
+# IDE / ОС
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Отладка
+debug_page.html
+debug_*.py

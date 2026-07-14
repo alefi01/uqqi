@@ -1,0 +1,55 @@
+{# SEO-блок для клиентских сайтов. Подключается в <head> витрин site_a/b/c.
+   Ожидает: company, site_url (полный https://slug.uqqi.ru/), seo_noindex (bool). #}
+
+{%- set _title = company.title ~ (' — ' ~ company.category if company.category else '') -%}
+{%- set _desc -%}
+{{ company.title }}{% if company.category %} — {{ company.category|replace(', ', ', ') }}{% endif %}{% if company.address %} по адресу {{ company.address }}{% endif %}.{% if company.about_text %} {{ company.about_text[:140] }}{% else %} Услуги, фото, отзывы, часы работы, контакты.{% endif %}
+{%- endset -%}
+{%- set _img = company.gallery_photos[0] if company.gallery_photos else (company.logo_url or '') -%}
+
+<title>{{ _title }}</title>
+<meta name="description" content="{{ _desc|trim }}">
+{% if seo_noindex %}<meta name="robots" content="noindex, nofollow">{% else %}<meta name="robots" content="index, follow">{% endif %}
+<link rel="canonical" href="{{ site_url }}">
+
+<!-- Open Graph -->
+<meta property="og:type" content="business.business">
+<meta property="og:title" content="{{ _title }}">
+<meta property="og:description" content="{{ _desc|trim }}">
+<meta property="og:url" content="{{ site_url }}">
+<meta property="og:site_name" content="{{ company.title }}">
+{% if _img %}<meta property="og:image" content="{{ _img }}">{% endif %}
+<meta property="og:locale" content="ru_RU">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ _title }}">
+<meta name="twitter:description" content="{{ _desc|trim }}">
+{% if _img %}<meta name="twitter:image" content="{{ _img }}">{% endif %}
+
+<!-- Schema.org LocalBusiness -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": {{ company.title|tojson }},
+  "url": {{ site_url|tojson }}{% if _img %},
+  "image": {{ _img|tojson }}{% endif %}{% if company.about_text %},
+  "description": {{ company.about_text|tojson }}{% endif %}{% if company.phone %},
+  "telephone": {{ company.phone|tojson }}{% endif %}{% if company.address %},
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": {{ company.address|tojson }}
+  }{% endif %}{% if company.rating %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": {{ company.rating|tojson }}{% if company.reviews_count %},
+    "reviewCount": {{ company.reviews_count|tojson }}{% endif %}
+  }{% endif %}{% if company.coordinates %},
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": {{ (company.coordinates.split(',')[0] if ',' in company.coordinates else '')|tojson }},
+    "longitude": {{ (company.coordinates.split(',')[1] if ',' in company.coordinates else '')|tojson }}
+  }{% endif %}
+}
+</script>

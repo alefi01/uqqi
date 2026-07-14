@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ company.title }}</title>
+  <meta name="description" content="{{ company.title }} — {{ company.address }}. Часы работы, контакты, фото, отзывы.">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+  /* ═══ TOKENS ═══════════════════════════════════════════════════════════ */
+  [data-theme="light"]{
+    --bg:#f7f7f7; --bg2:#efefef;
+    --surf:#fff; --surf2:#f2f2f2; --surf3:#e8e8e8;
+    --border:#e0e0e0; --border2:#d0d0d0;
+    --accent:#21a038; --accent-d:#1a7f2c; --accent-t:rgba(33,160,56,.12);
+    --text:#1a1a1a; --text2:#555; --muted:#999;
+    --green:#21a038; --red:#e53935; --yellow:#f5a623;
+    --btn-bg:#f2f2f2; --btn-hover:#e5e5e5;
+    --shadow:0 1px 4px rgba(0,0,0,.08);
+    --shadow-md:0 4px 16px rgba(0,0,0,.1);
+  }
+  [data-theme="dark"]{
+    --bg:#111; --bg2:#1a1a1a;
+    --surf:#1e1e1e; --surf2:#252525; --surf3:#2e2e2e;
+    --border:#333; --border2:#444;
+    --accent:#21a038; --accent-d:#1a7f2c; --accent-t:rgba(33,160,56,.15);
+    --text:#f0f0f0; --text2:#aaa; --muted:#666;
+    --green:#21a038; --red:#e53935; --yellow:#f5a623;
+    --btn-bg:#2a2a2a; --btn-hover:#333;
+    --shadow:0 1px 4px rgba(0,0,0,.3);
+    --shadow-md:0 4px 16px rgba(0,0,0,.4);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth;font-size:17px}
+  body{font-family:"YS Text","Helvetica Neue","Inter",arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased;font-weight:400}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+  button{font-family:inherit;cursor:pointer}
+
+  /* ═══ NAV ═══════════════════════════════════════════════════════════════ */
+  .nav{
+    position:sticky;top:0;z-index:80;
+    background:var(--surf);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:.5rem;
+    padding:.6rem 1.25rem;
+    transition:box-shadow .2s;
+  }
+  .nav.scrolled{box-shadow:var(--shadow-md)}
+
+  .nav__logo{
+    width:34px;height:34px;border-radius:50%;overflow:hidden;
+    background:var(--surf2);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.8rem;color:var(--accent);
+    flex-shrink:0;
+  }
+  .nav__logo img{width:100%;height:100%;object-fit:contain}
+
+  .nav__links{display:flex;gap:0;flex:1;overflow-x:auto;scrollbar-width:none}
+  .nav__links::-webkit-scrollbar{display:none}
+  .nav__link{
+    padding:.4rem .75rem;font-size:.78rem;color:var(--muted);
+    white-space:nowrap;border-radius:6px;transition:color .15s,background .15s;
+  }
+  .nav__link:hover{color:var(--text2);background:var(--btn-bg)}
+  .nav__link.active{color:var(--text);font-weight:500}
+
+  /* Кнопка записи */
+  .btn-book{
+    display:inline-flex;align-items:center;gap:.4rem;
+    padding:.45rem 1rem;border-radius:8px;
+    background:var(--accent);color:#fff;
+    font-size:.78rem;font-weight:600;border:none;
+    white-space:nowrap;flex-shrink:0;
+    transition:background .15s,opacity .15s;
+  }
+  .btn-book:hover{background:var(--accent-d)}
+  .btn-book svg{width:14px;height:14px}
+  .btn-book--nav{display:none}
+  .nav.scrolled .btn-book--nav{display:inline-flex}
+
+  .theme-btn{
+    width:32px;height:32px;border-radius:8px;
+    background:var(--btn-bg);border:1px solid var(--border);
+    color:var(--muted);font-size:.85rem;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;transition:background .15s;
+  }
+  .theme-btn:hover{background:var(--btn-hover)}
+
+
+  /* Кнопка Написать с дропдауном */
+  .write-dropdown{position:relative;flex-shrink:0}
+  .write-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;border-radius:8px;background:var(--btn-bg);border:1px solid var(--border);color:var(--text2);font-size:.8rem;font-weight:500;white-space:nowrap;transition:background .15s}
+  .write-btn:hover{background:var(--btn-hover)}
+  .write-btn svg{width:14px;height:14px}
+  .write-menu{position:absolute;top:calc(100% + .4rem);right:0;background:var(--surf);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-md);padding:.4rem;min-width:160px;display:none;z-index:90}
+  .write-menu.open{display:block}
+  .write-item{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;border-radius:7px;font-size:.82rem;color:var(--text);transition:background .15s}
+  .write-item:hover{background:var(--btn-bg)}
+
+  /* ═══ HERO ════════════════════════════════════════════════════════════ */
+  .hero{background:var(--surf);padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border)}
+  .hero__top{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+  .hero__logo{
+    width:64px;height:64px;border-radius:12px;overflow:hidden;
+    background:var(--surf2);border:1px solid var(--border);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.2rem;font-weight:700;color:var(--accent);
+  }
+  .hero__logo img{width:100%;height:100%;object-fit:contain}
+  .hero__info{}
+  .hero__category{font-size:.72rem;color:var(--muted);margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.08em}
+  .hero__title{font-size:clamp(1.2rem,4vw,1.8rem);font-weight:700;line-height:1.2;margin-bottom:.3rem}
+  .hero__address{font-size:.82rem;color:var(--text2);display:flex;align-items:flex-start;gap:.3rem}
+  .hero__address svg{flex-shrink:0;margin-top:.18rem;opacity:.5}
+
+  /* Кнопки действий */
+  .actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+  .action-btn{
+    display:inline-flex;align-items:center;gap:.4rem;
+    padding:.45rem 1rem;border-radius:8px;
+    background:var(--btn-bg);border:1px solid var(--border);
+    color:var(--text2);font-size:.78rem;font-weight:500;
+    transition:background .15s,border-color .15s;
+  }
+  .action-btn:hover{background:var(--btn-hover);border-color:var(--border2)}
+  .action-btn svg{width:14px;height:14px;opacity:.6;flex-shrink:0}
+  .action-btn--phone{background:#ffdb4d;border-color:#ffdb4d;color:#1a1a1a;font-weight:600}
+  .action-btn--phone:hover{background:#ffd119;border-color:#ffd119}
+  .action-btn--phone svg{opacity:1}
+
+  /* Бейджи */
+  .badges{display:flex;flex-wrap:wrap;gap:.4rem;padding:.75rem 1.25rem;background:var(--surf);border-bottom:1px solid var(--border)}
+  .badge{display:inline-flex;align-items:center;gap:.28rem;padding:.22rem .6rem;border-radius:99px;font-size:.72rem;font-weight:500;background:var(--surf2);border:1px solid var(--border)}
+  .badge--rating{color:var(--green);border-color:rgba(33,160,56,.3);background:rgba(33,160,56,.07)}
+  .badge--open{color:var(--green);border-color:rgba(33,160,56,.3);background:rgba(33,160,56,.07)}
+  .badge--closed{color:var(--red);border-color:rgba(229,57,53,.3);background:rgba(229,57,53,.07)}
+  .badge--bill{color:var(--text2)}
+
+  /* ═══ SECTION ════════════════════════════════════════════════════════ */
+  .sec{background:var(--surf);border-bottom:1px solid var(--border);padding:1.5rem 1.25rem}
+  .sec__title{font-size:1rem;font-weight:700;margin-bottom:1.1rem;color:var(--text)}
+  .sec__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem}
+  .sec__link{font-size:.75rem;color:var(--muted);transition:color .15s}
+  .sec__link:hover{color:var(--accent)}
+
+  /* ═══ О НАС ═══════════════════════════════════════════════════════════ */
+  .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+  @media(max-width:520px){.about-grid{grid-template-columns:1fr}}
+  .block-label{font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem}
+
+  .hours-table{width:100%;border-collapse:collapse}
+  .hours-table tr{border-bottom:1px solid var(--border)}
+  .hours-table tr:last-child{border-bottom:none}
+  .hours-table td{padding:.38rem 0;font-size:.83rem}
+  .hours-table td:first-child{color:var(--muted);width:2.8rem}
+  .hours-table .today td:first-child{color:var(--accent);font-weight:600}
+  .hours-table .today td:last-child{font-weight:600}
+  .hours-table .closed-day td{opacity:.35}
+
+  .contact-list{display:flex;flex-direction:column;gap:.5rem}
+  .contact-link{display:inline-flex;align-items:center;gap:.4rem;font-size:.83rem;color:var(--text2);transition:color .15s}
+  .contact-link:hover{color:var(--accent)}
+  .contact-link svg{width:.9rem;height:.9rem;flex-shrink:0;opacity:.5}
+  .socials{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.75rem}
+  .social-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.32rem .7rem;border-radius:6px;border:1px solid var(--border);background:var(--btn-bg);font-size:.72rem;font-weight:500;transition:background .15s}
+  .social-btn:hover{background:var(--btn-hover)}
+
+  /* ═══ ОСОБЕННОСТИ ════════════════════════════════════════════════════ */
+  .features-wrap{margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)}
+  .features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:.5rem}
+  .feat-item{display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;border-radius:8px}
+  .feat-svg{width:36px;height:36px;flex-shrink:0;border-radius:50%}
+  .feat-text{font-size:.78rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+
+  /* ═══ КАТАЛОГ + ПАГИНАЦИЯ ════════════════════════════════════════════ */
+  .catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:.65rem;margin-bottom:1rem}
+  .catalog-card{background:var(--surf);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:box-shadow .2s,transform .2s}
+  .catalog-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+  .catalog-card__img{width:100%;aspect-ratio:1;object-fit:cover;background:var(--surf2)}
+  .catalog-card__nophoto{width:100%;aspect-ratio:1;background:var(--surf2);display:flex;align-items:center;justify-content:center;font-size:.68rem;color:var(--muted)}
+  .catalog-card__body{padding:.6rem .75rem .75rem}
+  .catalog-card__name{font-size:.78rem;font-weight:600;line-height:1.35;margin-bottom:.25rem}
+  .catalog-card__desc{font-size:.7rem;color:var(--muted);line-height:1.5;margin-bottom:.3rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .catalog-card__price{font-size:.82rem;font-weight:700;color:var(--accent)}
+
+  /* Пагинация */
+  .pagination{display:flex;align-items:center;justify-content:center;gap:.3rem;margin-top:.75rem}
+  .page-btn{
+    width:36px;height:36px;border-radius:50%;border:none;
+    background:var(--btn-bg);color:var(--text2);
+    font-size:.82rem;font-weight:500;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:background .15s,color .15s;
+  }
+  .page-btn:hover{background:var(--btn-hover)}
+  .page-btn.active{background:var(--accent);color:#fff;font-weight:700}
+  .page-btn.arrow{font-size:1.1rem;color:var(--muted)}
+  .page-btn.arrow:disabled{opacity:.3;cursor:default}
+  .page-ellipsis{width:36px;text-align:center;font-size:.82rem;color:var(--muted);line-height:36px}
+
+  /* Фильтры каталога */
+  .cat-filters{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.9rem}
+  .cat-btn{padding:.28rem .65rem;border-radius:99px;font-size:.72rem;border:1px solid var(--border);background:var(--btn-bg);color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s}
+  .cat-btn:hover{background:var(--btn-hover);color:var(--text2)}
+  .cat-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+  /* ═══ ГАЛЕРЕЯ ════════════════════════════════════════════════════════ */
+  .gallery-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-auto-rows:140px;
+    gap:3px;border-radius:10px;overflow:hidden;
+  }
+  @media(max-width:480px){.gallery-grid{grid-auto-rows:90px}}
+  .gallery-item{overflow:hidden;cursor:pointer;background:var(--surf2);position:relative}
+  .gallery-item:first-child{grid-row:span 2}
+  .gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .3s;filter:brightness(.95)}
+  .gallery-item:hover img{transform:scale(1.05);filter:brightness(1)}
+
+  /* Лайтбокс */
+  .lb{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.96);flex-direction:column;align-items:center;justify-content:center}
+  .lb.open{display:flex}
+  .lb__img{max-width:95vw;max-height:82vh;object-fit:contain;border-radius:4px}
+  .lb__nav{position:absolute;top:50%;transform:translateY(-50%);display:flex;justify-content:space-between;width:100%;padding:0 .75rem;pointer-events:none}
+  .lb__btn{pointer-events:all;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .lb__btn:hover{background:rgba(255,255,255,.25)}
+  .lb__close{position:absolute;top:.85rem;right:.85rem;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:.95rem;cursor:pointer}
+  .lb__counter{position:absolute;bottom:4rem;left:50%;transform:translateX(-50%);font-size:.73rem;color:rgba(255,255,255,.5)}
+  .lb__thumbs{position:absolute;bottom:.5rem;left:50%;transform:translateX(-50%);display:flex;gap:3px;max-width:92vw;overflow-x:auto;scrollbar-width:none}
+  .lb__thumbs::-webkit-scrollbar{display:none}
+  .lb__thumb{flex-shrink:0;width:50px;height:36px;border-radius:3px;overflow:hidden;opacity:.4;cursor:pointer;transition:opacity .15s;border:2px solid transparent}
+  .lb__thumb.active{opacity:1;border-color:#fff}
+  .lb__thumb img{width:100%;height:100%;object-fit:cover}
+
+  /* ═══ ОТЗЫВЫ ══════════════════════════════════════════════════════════ */
+  .reviews-grid{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}
+  @media(max-width:520px){.reviews-grid{grid-template-columns:1fr}}
+  .review-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.4rem;transition:box-shadow .2s}
+  .review-card:hover{box-shadow:var(--shadow-md)}
+  .review-card.hidden{display:none}
+  .review-card__hdr{display:flex;align-items:center;gap:.7rem;margin-bottom:.7rem}
+  .review-card__av{width:44px;height:44px;border-radius:50%;background:var(--surf2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;overflow:hidden;border:1px solid var(--border)}
+  .review-card__av img{width:100%;height:100%;object-fit:cover}
+  .review-card__author{font-size:.95rem;font-weight:700}
+  .review-card__sub{display:flex;align-items:center;gap:.45rem;margin-top:.1rem}
+  .review-card__stars{color:#fb0;font-size:.82rem;letter-spacing:.05em}
+  .review-card__date{font-size:.82rem;color:var(--muted)}
+  .review-card__text{font-size:.9rem;color:var(--text2);line-height:1.65}
+
+  .reviews-actions{text-align:center;margin-top:1rem;display:flex;flex-direction:column;align-items:center;gap:.6rem}
+  .show-more-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1.4rem;border-radius:8px;border:1px solid var(--border);background:var(--btn-bg);color:var(--text2);font-size:.8rem;font-family:inherit;cursor:pointer;transition:background .15s}
+  .show-more-btn:hover{background:var(--btn-hover)}
+  .all-reviews-link{font-size:.75rem;color:var(--muted);border-bottom:1px dashed var(--border);padding-bottom:.1rem;transition:color .15s;display:none}
+  .all-reviews-link:hover{color:var(--accent)}
+  .all-reviews-link.visible{display:inline}
+
+  /* ═══ КАРТА ═══════════════════════════════════════════════════════════ */
+  .map-wrap iframe{width:100%;height:320px;border-radius:10px;border:1px solid var(--border);display:block}
+
+  /* ═══ FOOTER ══════════════════════════════════════════════════════════ */
+  footer{background:var(--surf);border-top:1px solid var(--border);padding:1.25rem;display:flex;flex-direction:column;gap:.5rem}
+  .footer-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+  .footer-name{font-size:.82rem;font-weight:600}
+  .footer-src{font-size:.7rem;color:var(--muted)}
+  .footer-src a{color:var(--accent)}
+  .footer-legal{font-size:.68rem;color:var(--muted);border-top:1px solid var(--border);padding-top:.5rem;line-height:1.6}
+
+
+  /* Модалка товара */
+  .product-modal{display:none;position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:1rem}
+  .product-modal.open{display:flex}
+  .product-modal__box{background:var(--surf);border-radius:18px;max-width:860px;width:100%;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .product-modal__close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;background:var(--btn-bg);border:none;color:var(--text2);font-size:1rem;cursor:pointer;z-index:2;transition:background .15s}
+  .product-modal__close:hover{background:var(--btn-hover)}
+  .product-modal__grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media(max-width:640px){.product-modal__grid{grid-template-columns:1fr}}
+  .product-modal__media{background:var(--surf2);display:flex;align-items:center;justify-content:center;padding:2rem;min-height:300px;border-radius:18px 0 0 18px}
+  @media(max-width:640px){.product-modal__media{border-radius:18px 18px 0 0;min-height:220px}}
+  .product-modal__media img{max-width:100%;max-height:360px;object-fit:contain;border-radius:8px}
+  .product-modal__info{padding:2rem}
+  .product-modal__category{font-size:.85rem;color:var(--muted);margin-bottom:.3rem}
+  .product-modal__name{font-size:1.5rem;font-weight:700;margin-bottom:.6rem;line-height:1.2}
+  .product-modal__price{font-size:1.6rem;font-weight:700;margin-bottom:1.25rem}
+  .product-modal__actions{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.5rem}
+  .product-modal__actions .action-btn,.product-modal__actions .btn-book{justify-content:center;width:100%;padding:.7rem 1rem;font-size:.92rem}
+  .product-modal__desc-title{font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
+  .product-modal__desc{font-size:.92rem;color:var(--text2);line-height:1.65;white-space:pre-line}
+  .product-modal__desc-block.empty{display:none}
+
+  /* ═══ REVEAL ══════════════════════════════════════════════════════════ */
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .45s ease,transform .45s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  </style>
+</head>
+<body>
+
+<!-- ══ NAV ══════════════════════════════════════════════════════════════ -->
+<nav class="nav" id="mainNav">
+  <div class="nav__logo">
+    {% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">
+    {% else %}{{ company.title[:1] }}{% endif %}
+  </div>
+  <div class="nav__links">
+    <a class="nav__link" href="#about">О нас</a>
+    {% if company.menu_items %}<a class="nav__link" href="#catalog">Каталог</a>{% endif %}
+    {% if company.reviews %}<a class="nav__link" href="#reviews">Отзывы</a>{% endif %}
+    {% if company.gallery_photos %}<a class="nav__link" href="#photos">Фото</a>{% endif %}
+    <a class="nav__link" href="#location">Как нас найти</a>
+  </div>
+  {% if company.book_url %}
+  <button class="btn-book btn-book--nav" onclick="window.open('{{ company.book_url }}','_blank')">
+    <svg viewBox="0 0 24 24" fill="none"><path fill="currentColor" d="M9.57 19H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.4a8 8 0 0 0-2.87-.4A1 1 0 0 0 16 8H6a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h2.75c.18.71.46 1.38.82 2"/><path fill="currentColor" fill-rule="evenodd" d="M16.5 22a6 6 0 1 1 0-12 6 6 0 0 1 0 12m.2-9.75c.1 0 .18.07.19.17l.35 3.49 2.26 1.48c.1.07.13.19.08.3l-.22.4a.22.22 0 0 1-.28.1l-2.85-1.1a.77.77 0 0 1-.48-.77l.36-3.9a.19.19 0 0 1 .19-.17z" clip-rule="evenodd"/></svg>
+    Записаться
+  </button>
+  {% endif %}
+  {% if company.social_links %}
+  <div class="write-dropdown" id="writeDropdown">
+    <button class="write-btn" onclick="toggleWrite(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Написать
+    </button>
+    <div class="write-menu" id="writeMenu">
+      {% for s in company.social_links %}
+      <a href="{{ s.url }}" target="_blank" rel="noopener" class="write-item">{{ s.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  <button class="theme-btn" id="themeBtn" aria-label="Тема">🌙</button>
+</nav>
+
+<!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+<section class="hero reveal" id="about">
+  <div class="hero__top">
+    <div class="hero__logo">
+      {% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">
+      {% else %}{{ company.title[:1] }}{% endif %}
+    </div>
+    <div class="hero__info">
+      <div class="hero__category">{{ company.category or 'Организация' }}</div>
+      <h1 class="hero__title">{{ company.title }}</h1>
+      <a href="#location" class="hero__address" style="cursor:pointer">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 1.5A4.5 4.5 0 0 0 3.5 6c0 3.25 4.5 8.5 4.5 8.5S12.5 9.25 12.5 6A4.5 4.5 0 0 0 8 1.5zm0 6A1.5 1.5 0 1 1 8 4.5 1.5 1.5 0 0 1 8 7.5z" fill="currentColor"/></svg>
+        {{ company.address }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Кнопки действий -->
+  <div class="actions">
+    {% if company.phone %}
+    <button class="action-btn action-btn--phone" id="phoneBtn" onclick="showPhone(this)"
+            data-phone="{{ company.phone }}"
+            data-tel="{{ company.phone|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+      <span id="phoneText">{{ company.phone[:8] }}… Показать</span>
+    </button>
+    {% endif %}
+    {% if company.book_url %}
+    <button class="btn-book" onclick="window.open('{{ company.book_url }}','_blank')">
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path fill="currentColor" d="M9.57 19H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2.4a8 8 0 0 0-2.87-.4A1 1 0 0 0 16 8H6a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h2.75c.18.71.46 1.38.82 2"/><path fill="currentColor" fill-rule="evenodd" d="M16.5 22a6 6 0 1 1 0-12 6 6 0 0 1 0 12m.2-9.75c.1 0 .18.07.19.17l.35 3.49 2.26 1.48c.1.07.13.19.08.3l-.22.4a.22.22 0 0 1-.28.1l-2.85-1.1a.77.77 0 0 1-.48-.77l.36-3.9a.19.19 0 0 1 .19-.17z" clip-rule="evenodd"/></svg>
+      Записаться онлайн
+    </button>
+    {% endif %}
+
+    {% for s in company.social_links %}
+    <a href="{{ s.url }}" target="_blank" rel="noopener" class="action-btn">{{ s.label }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Бейджи -->
+<div class="badges reveal">
+  {% if company.rating %}<a href="#reviews" class="badge badge--rating" style="cursor:pointer">★ {{ company.rating }}</a>{% endif %}
+  {% if status %}<span class="badge {{ 'badge--open' if 'открыто' in status.lower() else 'badge--closed' }}">● {{ status }}</span>{% endif %}
+  {% if company.avg_bill %}<span class="badge badge--bill">₽ {{ company.avg_bill }}</span>{% endif %}
+</div>
+
+<!-- ══ О НАС ══════════════════════════════════════════════════════════════ -->
+<section class="sec reveal">
+  <div class="about-grid">
+    <div>
+      <p class="block-label">Часы работы</p>
+      {% if company.hours %}
+      <table class="hours-table">
+        {% for e in company.hours %}
+        <tr data-day="{{ e.day }}" class="{{ 'closed-day' if e.closed else '' }}">
+          <td>{{ e.day_ru }}</td><td>{{ 'Выходной' if e.closed else e.time }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}<p style="font-size:.83rem;color:var(--muted)">Не указано</p>{% endif %}
+    </div>
+    <div>
+      <p class="block-label">Контакты</p>
+      <div class="contact-list">
+        {% if company.phone %}
+        <a href="tel:{{ company.phone|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}" class="contact-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          {{ company.phone }}
+        </a>
+        {% endif %}
+        {% if company.yandex_url %}
+        <a href="{{ company.yandex_url }}" target="_blank" rel="noopener" class="contact-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+          Яндекс Карты
+        </a>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  {% if company.features %}
+  <div class="features-wrap">
+    <p class="block-label">Особенности</p>
+    <div class="features-grid">
+      {% for feat in company.features %}
+      <div class="feat-item">
+        <img class="feat-svg" src="/static/features/{{ feat_icon(feat) }}.svg" alt="" width="36" height="36">
+        <span class="feat-text" title="{{ feat }}">{{ feat }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ══ КАТАЛОГ ════════════════════════════════════════════════════════════ -->
+{% if company.menu_items %}
+<section class="sec reveal" id="catalog">
+  <div class="sec__head">
+    <h2 class="sec__title" style="margin:0">Каталог</h2>
+  </div>
+  {% set categories = company.menu_items | map(attribute='category') | select | unique | list %}
+  {% if categories %}
+  <div class="cat-filters">
+    <button class="cat-btn active" data-cat="all" onclick="filterCat('all',this)">Все</button>
+    {% for cat in categories %}{% if cat %}
+    <button class="cat-btn" data-cat="{{ cat }}" onclick="filterCat('{{ cat }}',this)">{{ cat }}</button>
+    {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+  <div class="catalog-grid" id="catalogGrid">
+    {% for item in company.menu_items %}
+    <div class="catalog-card" data-cat="{{ item.category or '' }}" style="display:none;cursor:pointer"
+         onclick="openProduct(this)"
+         data-name="{{ item.name|e }}"
+         data-desc="{{ item.description|e }}"
+         data-price="{{ item.price|e }}"
+         data-img="{{ item.image_url|e }}"
+         data-category="{{ item.category|e }}">
+      {% if item.image_url %}
+        <img class="catalog-card__img" src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy">
+      {% else %}
+        <div class="catalog-card__nophoto">Нет фото</div>
+      {% endif %}
+      <div class="catalog-card__body">
+        <div class="catalog-card__name">{{ item.name }}</div>
+        {% if item.description %}<div class="catalog-card__desc">{{ item.description }}</div>{% endif %}
+        {% if item.price %}<div class="catalog-card__price">{{ item.price }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="pagination" id="pagination"></div>
+</section>
+{% endif %}
+
+<!-- ══ ФОТО ═══════════════════════════════════════════════════════════════ -->
+{% if company.gallery_photos %}
+<section class="sec reveal" id="photos">
+  <div class="sec__head">
+    <h2 class="sec__title" style="margin:0">Фото</h2>
+    <span class="sec__link" style="cursor:pointer" onclick="openLb(0)">Показать все →</span>
+  </div>
+  <div class="gallery-grid">
+    {% for photo in company.gallery_photos[:9] %}
+    <div class="gallery-item" onclick="openLb({{ loop.index0 }})">
+      <img src="{{ photo }}" alt="" loading="{{ 'eager' if loop.index0 < 3 else 'lazy' }}">
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="lb" id="lb" onclick="if(event.target===this)closeLb()">
+  <button class="lb__close" onclick="closeLb()">✕</button>
+  <img class="lb__img" id="lbImg" src="" alt="">
+  <div class="lb__nav">
+    <button class="lb__btn" onclick="lbGo(-1)">‹</button>
+    <button class="lb__btn" onclick="lbGo(1)">›</button>
+  </div>
+  <div class="lb__counter" id="lbCnt"></div>
+  <div class="lb__thumbs" id="lbThumbs">
+    {% for photo in company.gallery_photos %}
+    <div class="lb__thumb" onclick="lbGoTo({{ loop.index0 }})">
+      <img src="{{ photo }}" alt="" loading="lazy">
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ ОТЗЫВЫ ════════════════════════════════════════════════════════════ -->
+{% if company.reviews %}
+<section class="sec reveal" id="reviews">
+  <div class="sec__head">
+    <h2 class="sec__title" style="margin:0">Отзывы</h2>
+    {% if company.rating %}<span class="sec__link">★ {{ company.rating }}</span>{% endif %}
+  </div>
+  <div class="reviews-grid" id="reviewsGrid">
+    {% for r in company.reviews %}
+    <div class="review-card {{ 'hidden' if loop.index0 >= 4 else '' }}">
+      <div class="review-card__hdr">
+        <div class="review-card__av">
+          {% if r.avatar %}<img src="{{ r.avatar }}" alt="" loading="lazy">{% else %}👤{% endif %}
+        </div>
+        <div>
+          <div class="review-card__author">{{ r.author }}</div>
+          <div class="review-card__sub">
+            <span class="review-card__stars">{{ '★' * (r.rating|int) }}</span>
+            {% if r.date %}<span class="review-card__date">{{ r.date }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      <p class="review-card__text">{{ r.text }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="reviews-actions">
+    {% if company.reviews|length > 4 %}
+    <button class="show-more-btn" id="showMoreBtn" onclick="showMoreReviews()">Показать ещё</button>
+    {% endif %}
+    {% if company.yandex_url %}
+    <a href="{{ company.yandex_url }}" target="_blank" rel="noopener"
+       class="all-reviews-link {{ '' if company.reviews|length > 4 else 'visible' }}"
+       id="allReviewsLink">Все отзывы на Яндекс Картах ↗</a>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ══ КАРТА ══════════════════════════════════════════════════════════════ -->
+<section class="sec reveal" id="location">
+  <h2 class="sec__title">Как нас найти</h2>
+  {% if yandex_map_url %}
+  <div class="map-wrap">
+    <iframe src="{{ yandex_map_url }}" frameborder="1" allowfullscreen loading="lazy" referrerpolicy="no-referrer"></iframe>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ══ FOOTER ═════════════════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-name">{{ company.title }}</div>
+    <div class="footer-src">{% if company.yandex_url %}Данные из <a href="{{ company.yandex_url }}" target="_blank" rel="noopener">Яндекс Карт</a>{% endif %}</div>
+  </div>
+  {% if company.org_name or company.org_inn %}
+  <div class="footer-legal">
+    {% if company.org_type and company.org_name %}<span>{{ company.org_type }} {{ company.org_name }}</span> {% endif %}
+    {% if company.org_inn %}<span>ИНН: {{ company.org_inn }}</span>{% endif %}
+  </div>
+  {% endif %}
+</footer>
+
+<script>
+// ── ТЕМА ────────────────────────────────────────────────────────────────
+const html = document.documentElement;
+const tb   = document.getElementById('themeBtn');
+const saved = localStorage.getItem('uqqi_theme') || 'light';
+html.dataset.theme = saved;
+tb.textContent = saved === 'dark' ? '☀️' : '🌙';
+tb.addEventListener('click', () => {
+  const n = html.dataset.theme === 'dark' ? 'light' : 'dark';
+  html.dataset.theme = n; tb.textContent = n === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('uqqi_theme', n);
+});
+
+// ── NAV SCROLL ───────────────────────────────────────────────────────────
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+}, {passive:true});
+
+// ── ACTIVE NAV LINK ──────────────────────────────────────────────────────
+const navLinks = document.querySelectorAll('.nav__link[href^="#"]');
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting)
+      navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#'+e.target.id));
+  });
+}, {threshold:.3});
+navLinks.forEach(a => { const s = document.querySelector(a.getAttribute('href')); if(s) io.observe(s); });
+
+// ── ТЕКУЩИЙ ДЕНЬ ─────────────────────────────────────────────────────────
+const dmap = {0:'Su',1:'Mo',2:'Tu',3:'We',4:'Th',5:'Fr',6:'Sa'};
+document.querySelectorAll('.hours-table tr[data-day]').forEach(tr => {
+  if (tr.dataset.day === dmap[new Date().getDay()]) tr.classList.add('today');
+});
+
+// ── REVEAL ───────────────────────────────────────────────────────────────
+const revIO = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){e.target.classList.add('in'); revIO.unobserve(e.target);} });
+}, {threshold:.08});
+document.querySelectorAll('.reveal').forEach(el => revIO.observe(el));
+
+// ── КАТАЛОГ ПАГИНАЦИЯ ────────────────────────────────────────────────────
+const PAGE_SIZE = 8;
+let currentCat = 'all';
+let currentPage = 1;
+
+function getVisibleCards() {
+  return [...document.querySelectorAll('.catalog-card')].filter(c =>
+    currentCat === 'all' || c.dataset.cat === currentCat
+  );
+}
+
+function renderCatalog() {
+  const cards = getVisibleCards();
+  const total = cards.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  currentPage = Math.min(currentPage, pages || 1);
+
+  // Скрываем все, показываем нужные
+  document.querySelectorAll('.catalog-card').forEach(c => c.style.display = 'none');
+  cards.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE).forEach(c => c.style.display = '');
+
+
+  // Пагинация
+  const pg = document.getElementById('pagination');
+  if (!pg) return;
+  pg.innerHTML = '';
+  if (pages <= 1) return;
+
+  const addBtn = (label, page, isActive, isArrow, disabled) => {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (isActive ? ' active' : '') + (isArrow ? ' arrow' : '');
+    btn.textContent = label;
+    btn.disabled = disabled;
+    if (!disabled && !isActive) btn.addEventListener('click', () => { currentPage = page; renderCatalog(); });
+    pg.appendChild(btn);
+  };
+
+  const addEllipsis = () => {
+    const sp = document.createElement('span');
+    sp.className = 'page-ellipsis'; sp.textContent = '…'; pg.appendChild(sp);
+  };
+
+  addBtn('‹', currentPage-1, false, true, currentPage===1);
+
+  // Страницы с эллипсисом
+  if (pages <= 7) {
+    for (let i=1; i<=pages; i++) addBtn(i, i, i===currentPage);
+  } else {
+    addBtn(1, 1, 1===currentPage);
+    if (currentPage > 3) addEllipsis();
+    for (let i=Math.max(2,currentPage-1); i<=Math.min(pages-1,currentPage+1); i++)
+      addBtn(i, i, i===currentPage);
+    if (currentPage < pages-2) addEllipsis();
+    addBtn(pages, pages, pages===currentPage);
+  }
+
+  addBtn('›', currentPage+1, false, true, currentPage===pages);
+}
+
+function filterCat(cat, btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCat = cat;
+  currentPage = 1;
+  renderCatalog();
+}
+
+renderCatalog();
+
+// ── ЛАЙТБОКС ─────────────────────────────────────────────────────────────
+const allPhotos = [...document.querySelectorAll('.lb__thumb img')].map(i=>i.src);
+const lbEl  = document.getElementById('lb');
+const lbImg = document.getElementById('lbImg');
+const lbCnt = document.getElementById('lbCnt');
+const lbThs = [...document.querySelectorAll('.lb__thumb')];
+let cur=0, sx=0;
+function openLb(idx){if(!allPhotos.length)return;lbEl.classList.add('open');document.body.style.overflow='hidden';lbGoTo(idx);}
+function closeLb(){lbEl.classList.remove('open');document.body.style.overflow='';}
+function lbGoTo(idx){cur=(idx+allPhotos.length)%allPhotos.length;lbImg.src=allPhotos[cur];if(lbCnt)lbCnt.textContent=`${cur+1} / ${allPhotos.length}`;lbThs.forEach((t,i)=>{t.classList.toggle('active',i===cur);if(i===cur)t.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});});}
+function lbGo(d){lbGoTo(cur+d);}
+if(lbEl){
+  lbEl.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+  lbEl.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-sx;if(Math.abs(d)>40)lbGo(d<0?1:-1);});
+}
+document.addEventListener('keydown',e=>{if(!lbEl?.classList.contains('open'))return;if(e.key==='ArrowRight')lbGo(1);if(e.key==='ArrowLeft')lbGo(-1);if(e.key==='Escape')closeLb();});
+
+// ── ОТЗЫВЫ ПОКАЗАТЬ ЕЩЁ ──────────────────────────────────────────────────
+function showMoreReviews(){
+  const hidden=[...document.querySelectorAll('.review-card.hidden')];
+  hidden.slice(0,4).forEach(c=>c.classList.remove('hidden'));
+  const remaining=document.querySelectorAll('.review-card.hidden').length;
+  const btn=document.getElementById('showMoreBtn');
+  if(remaining===0){
+    if(btn)btn.remove();
+    const link=document.getElementById('allReviewsLink');
+    if(link)link.classList.add('visible');
+  }
+}
+
+// ── ТЕЛЕФОН ПОКАЗАТЬ ─────────────────────────────────────────────────────
+function showPhone(btn){
+  const phone = btn.dataset.phone;
+  const span = btn.querySelector('span');
+  if (span) span.textContent = phone;
+  btn.onclick = () => { window.location.href = 'tel:' + btn.dataset.tel; };
+}
+
+// ── НАПИСАТЬ ДРОПДАУН ────────────────────────────────────────────────────
+function toggleWrite(e){
+  e.stopPropagation();
+  const menu = document.getElementById('writeMenu');
+  if (menu) menu.classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const dd = document.getElementById('writeDropdown');
+  const menu = document.getElementById('writeMenu');
+  if (menu && dd && !dd.contains(e.target)) menu.classList.remove('open');
+});
+
+// ── МОДАЛКА ТОВАРА ───────────────────────────────────────────────────────
+function openProduct(card){
+  const modal = document.getElementById('productModal');
+  document.getElementById('pmName').textContent = card.dataset.name || '';
+  document.getElementById('pmCategory').textContent = card.dataset.category || '';
+  document.getElementById('pmPrice').textContent = card.dataset.price || '';
+  const img = document.getElementById('pmImg');
+  const mediaBlock = document.querySelector('.product-modal__media');
+  if (card.dataset.img) {
+    img.src = card.dataset.img;
+    mediaBlock.style.display = '';
+  } else {
+    mediaBlock.style.display = 'none';
+  }
+  const desc = card.dataset.desc || '';
+  const descBlock = document.getElementById('pmDescBlock');
+  document.getElementById('pmDesc').textContent = desc;
+  descBlock.classList.toggle('empty', !desc);
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeProduct(){
+  document.getElementById('productModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeProduct();
+});
+
+</script>
+
+<!-- ══ МОДАЛКА ТОВАРА ════════════════════════════════════════════════════ -->
+<div class="product-modal" id="productModal" onclick="if(event.target===this)closeProduct()">
+  <div class="product-modal__box">
+    <button class="product-modal__close" onclick="closeProduct()">✕</button>
+    <div class="product-modal__grid">
+      <div class="product-modal__media">
+        <img id="pmImg" src="" alt="">
+      </div>
+      <div class="product-modal__info">
+        <div class="product-modal__category" id="pmCategory"></div>
+        <h3 class="product-modal__name" id="pmName"></h3>
+        <div class="product-modal__price" id="pmPrice"></div>
+        <div class="product-modal__actions">
+          {% if company.phone %}
+          <button class="action-btn action-btn--phone" onclick="showPhone(this)"
+                  data-phone="{{ company.phone }}"
+                  data-tel="{{ company.phone|replace(' ','')|replace('(','') |replace(')','') |replace('-','') }}">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+            <span>{{ company.phone[:8] }}… Показать</span>
+          </button>
+          {% endif %}
+          {% if company.book_url %}
+          <button class="btn-book" onclick="window.open('{{ company.book_url }}','_blank')">Записаться онлайн</button>
+          {% endif %}
+        </div>
+        <div class="product-modal__desc-block" id="pmDescBlock">
+          <div class="product-modal__desc-title">Описание</div>
+          <p class="product-modal__desc" id="pmDesc"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,28 @@
+<svg width="72" height="72" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FFD480"/>
+            <stop offset="100%" stop-color="#FF9B61"/>
+        </linearGradient>
+    </defs>
+
+    <circle cx="36" cy="36" r="32" fill="url(#grad)"/>
+
+<g fill="#fff">
+
+    <ellipse cx="24" cy="31" rx="4" ry="5"/>
+    <ellipse cx="34" cy="24" rx="4" ry="5"/>
+    <ellipse cx="46" cy="24" rx="4" ry="5"/>
+    <ellipse cx="56" cy="31" rx="4" ry="5"/>
+
+    <path d="
+        M40 51
+        C30 51 24 44 24 38
+        C24 32 29 29 34 32
+        C36 33 38 35 40 36
+        C42 35 44 33 46 32
+        C51 29 56 32 56 38
+        C56 44 50 51 40 51
+        Z"/>
+</g>
+</svg>

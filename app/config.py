@@ -1,0 +1,47 @@
+"""
+app/config.py — настройки приложения из .env
+"""
+
+from pathlib import Path
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    BASE_DOMAIN:    str  = "uqqi.ru"
+    SECRET_KEY:     str  = "dev-secret-key-change-in-production"
+    DATABASE_URL:   str  = "sqlite:///./uqqi.db"
+    UPLOAD_DIR:     str  = "./static/uploads"
+    DEBUG:          bool = False
+
+    # Панель владельца
+    PANEL_PATH:     str  = "BcJf69nkkikxqBj8"   # секретный URL-путь
+    PANEL_USER:     str  = "admin"
+    PANEL_PASSWORD: str  = "qsc123zx"
+
+    # SMTP для биллинг-уведомлений (Beget)
+    SMTP_HOST:      str  = "smtp.beget.com"
+    SMTP_PORT:      int  = 465
+    SMTP_USER:      str  = "clients@uqqi.ru"
+    SMTP_PASSWORD:  str  = "di5knwkDCt9*"
+    SMTP_FROM:      str  = "clients@uqqi.ru"
+    SUPPORT_EMAIL:  str  = "support@uqqi.ru"
+
+    # Автообновление данных
+    AUTO_REFRESH_ENABLED: bool = True
+
+    # ЮKassa (приём платежей)
+    YUKASSA_SHOP_ID:    str = ""   # идентификатор магазина
+    YUKASSA_SECRET_KEY: str = ""   # секретный ключ API
+    SUBSCRIPTION_PRICE: str = "990.00"  # цена за сайт в месяц, ₽
+    SUBSCRIPTION_DAYS:  int = 30        # период подписки
+
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    @property
+    def upload_path(self) -> Path:
+        p = Path(self.UPLOAD_DIR)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+
+settings = Settings()

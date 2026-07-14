@@ -1,0 +1,31 @@
+# /etc/systemd/system/uqqi.service
+#
+# Установка:
+#   sudo cp uqqi.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable uqqi
+#   sudo systemctl start uqqi
+#
+# Просмотр логов:
+#   sudo journalctl -u uqqi -f
+
+[Unit]
+Description=uqqi.ru — FastAPI сервис сайтов
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/uqqi
+Environment="PATH=/var/www/uqqi/venv/bin"
+Environment="PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright"
+ExecStart=/var/www/uqqi/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=5
+
+# Логи
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>uqqi — панель</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0e0d0b;--surface:#1a1915;--surface2:#211f18;
+      --border:#2e2c27;--accent:#c8a96e;--accent-dim:#7a6340;
+      --text:#e8e4db;--muted:#7a7568;
+      --green:#6fcf97;--red:#eb5757;--yellow:#f2c94c;
+    }
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* ── HEADER ── */
+    .header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.5rem;border-bottom:1px solid var(--border);gap:1rem;flex-wrap:wrap}
+    .header__logo{font-family:'Unbounded',sans-serif;font-size:1rem;color:var(--accent);letter-spacing:.04em}
+    .header__nav{display:flex;gap:.25rem}
+    .nav-btn{padding:.4rem .85rem;border-radius:6px;border:none;background:transparent;color:var(--muted);font-size:.82rem;font-family:inherit;cursor:pointer;transition:color .2s,background .2s}
+    .nav-btn:hover{color:var(--text);background:var(--surface)}
+    .nav-btn.active{color:var(--accent);background:var(--surface2)}
+    .header__right{display:flex;align-items:center;gap:.75rem}
+    .logout-btn{padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;font-family:inherit;cursor:pointer;text-decoration:none;transition:color .2s}
+    .logout-btn:hover{color:var(--text)}
+
+    /* ── SECTIONS ── */
+    .section{display:none;padding:1.5rem}
+    .section.active{display:block}
+    .section__title{font-size:1rem;font-weight:600;margin-bottom:1.25rem;color:var(--text)}
+
+    /* ── CARDS ROW ── */
+    .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;margin-bottom:1.5rem}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem}
+    .stat-card__val{font-size:1.8rem;font-weight:700;color:var(--accent);line-height:1}
+    .stat-card__label{font-size:.75rem;color:var(--muted);margin-top:.3rem}
+
+    /* ── TABLE ── */
+    .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+    table{width:100%;border-collapse:collapse;font-size:.82rem}
+    thead th{padding:.65rem 1rem;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface)}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:var(--surface)}
+    tbody td{padding:.6rem 1rem;vertical-align:middle}
+    .badge{display:inline-block;padding:.2rem .5rem;border-radius:4px;font-size:.7rem;font-weight:500}
+    .badge--active{background:#0e1f17;color:var(--green);border:1px solid #1e4030}
+    .badge--inactive{background:#1f1a0e;color:var(--yellow);border:1px solid #3d3010}
+    .td-actions{display:flex;gap:.4rem;flex-wrap:wrap}
+    .action-btn{padding:.25rem .6rem;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.72rem;font-family:inherit;cursor:pointer;text-decoration:none;transition:color .15s,border-color .15s;white-space:nowrap}
+    .action-btn:hover{color:var(--text);border-color:var(--accent-dim)}
+    .action-btn--danger:hover{color:var(--red);border-color:var(--red)}
+    .variant-switch{display:inline-flex;align-items:center;gap:2px;margin-right:.3rem}
+    .vbtn{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.74rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s}
+    .vbtn:hover{color:var(--text);border-color:var(--accent-dim)}
+    .vbtn.on{background:var(--accent);color:#0e0d0b;border-color:var(--accent)}
+
+    /* ── PARSER FORM ── */
+    .parser-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+    @media(max-width:600px){.parser-grid{grid-template-columns:1fr}}
+    .field{margin-bottom:.9rem}
+    .field label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.06em}
+    .field input,.field select{width:100%;padding:.6rem .85rem;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:.88rem;font-family:inherit;transition:border-color .2s}
+    .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+    .field select option{background:var(--surface)}
+    .checkbox-row{display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--muted);cursor:pointer}
+    .checkbox-row input{accent-color:var(--accent);width:15px;height:15px}
+
+    .run-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;border-radius:8px;background:var(--accent);color:#0e0d0b;font-size:.88rem;font-weight:600;font-family:inherit;border:none;cursor:pointer;transition:opacity .2s}
+    .run-btn:hover{opacity:.85}
+    .run-btn:disabled{opacity:.5;cursor:not-allowed}
+    .stop-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1.4rem;border-radius:8px;background:transparent;color:var(--red);font-size:.88rem;font-weight:600;font-family:inherit;border:1px solid var(--red);cursor:pointer;transition:opacity .2s;display:none}
+    .stop-btn:hover{opacity:.7}
+
+    /* ── LOG ── */
+    .log-wrap{background:#080807;border:1px solid var(--border);border-radius:8px;padding:1rem;height:360px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.78rem;line-height:1.6;margin-top:1rem}
+    .log-line{color:#a0a090}
+    .log-line--ok{color:var(--green)}
+    .log-line--err{color:var(--red)}
+    .log-line--warn{color:var(--yellow)}
+    .log-line--info{color:#7eb8f7}
+    .log-status{display:flex;align-items:center;gap:.75rem;padding:.6rem .85rem;border-radius:7px;font-size:.8rem;margin-top:.75rem;background:var(--surface);border:1px solid var(--border)}
+    .spinner{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .dot--green{background:var(--green)}
+    .dot--red{background:var(--red)}
+    .dot--grey{background:var(--muted)}
+
+    /* ── RESULTS PREVIEW ── */
+    .results-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-top:.75rem;font-size:.82rem}
+    .import-btn{padding:.45rem 1rem;border-radius:6px;background:var(--accent);color:#0e0d0b;font-size:.8rem;font-weight:600;border:none;cursor:pointer;font-family:inherit;transition:opacity .2s}
+    .import-btn:hover{opacity:.85}
+    .import-btn:disabled{opacity:.4;cursor:not-allowed}
+
+    /* ── MODAL ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;display:none}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;width:100%;max-width:460px}
+    .support-msg{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem}
+    .support-msg--unread{border-color:var(--accent);background:var(--surface2)}
+    .support-msg__head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem}
+    .support-msg__text{font-size:.88rem;color:var(--text);line-height:1.6;white-space:pre-wrap}
+    .period-btn{padding:.4rem .9rem;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.8rem;font-family:inherit;cursor:pointer;transition:all .15s}
+    .period-btn:hover{color:var(--text)}
+    .period-btn.active{background:var(--accent);color:#0e0d0b;border-color:var(--accent);font-weight:600}
+    .metric-row{display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;border:1px solid var(--border);border-radius:9px;margin-bottom:.5rem;background:var(--surface)}
+    .metric-row--landing{background:var(--surface2);border-color:var(--accent-dim)}
+    .metric-row__name{font-size:.88rem;font-weight:500}
+    .metric-row__slug{font-size:.72rem;color:var(--muted)}
+    .metric-row__count{font-size:1.3rem;font-weight:700;color:var(--accent)}
+    .metric-row__count small{font-size:.7rem;color:var(--muted);font-weight:400}
+
+    /* ── ПОДДЕРЖКА (redesign) ── */
+    .sup-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.1rem}
+    .sup-filters{display:flex;gap:.4rem}
+    .sup-filter{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .85rem;border-radius:99px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.8rem;font-family:inherit;cursor:pointer;transition:all .15s}
+    .sup-filter:hover{color:var(--text)}
+    .sup-filter.active{background:var(--surface2);border-color:var(--accent-dim);color:var(--text)}
+    .sup-filter span{min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 .35rem;border-radius:99px;background:var(--surface);font-size:.68rem;font-weight:600;color:var(--muted)}
+    .sup-filter.active span{background:var(--accent);color:#0e0d0b}
+    .sup-list{display:flex;flex-direction:column;gap:.6rem}
+    .sup-card{display:flex;gap:.9rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.15rem;position:relative;overflow:hidden;transition:border-color .15s}
+    .sup-card.is-unread{border-color:var(--accent-dim);background:var(--surface2)}
+    .sup-card.is-unread::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+    .sup-card__avatar{flex-shrink:0;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.95rem;background:var(--surface2);border:1px solid var(--border);color:var(--accent)}
+    .sup-card.is-unread .sup-card__avatar{background:var(--accent);color:#0e0d0b;border-color:var(--accent)}
+    .sup-card__main{flex:1;min-width:0}
+    .sup-card__head{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;flex-wrap:wrap;margin-bottom:.55rem}
+    .sup-card__who{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap}
+    .sup-card__company{font-weight:600;font-size:.92rem;color:var(--text)}
+    .sup-card__badge{font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--accent);border:1px solid var(--accent-dim);border-radius:99px;padding:.12rem .5rem}
+    .sup-card__time{font-size:.74rem;color:var(--muted);white-space:nowrap}
+    .sup-card__text{font-size:.88rem;color:var(--text);line-height:1.65;white-space:pre-wrap;padding:.6rem .85rem;background:rgba(0,0,0,.18);border-radius:8px;border-left:2px solid var(--border)}
+    .sup-card__foot{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-top:.7rem}
+    .sup-reply{display:inline-flex;align-items:center;gap:.45rem;padding:.4rem .9rem;border-radius:99px;background:transparent;border:1px solid var(--accent-dim);color:var(--accent);font-size:.8rem;text-decoration:none;transition:all .15s;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sup-reply:hover{background:var(--accent);color:#0e0d0b;border-color:var(--accent)}
+    .sup-card__actions{display:flex;gap:.4rem;flex-shrink:0}
+
+    /* ── МЕТРИКА (redesign) ── */
+    .m-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem;margin-bottom:1.25rem}
+    .m-stat{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:.85rem 1rem}
+    .m-stat__label{font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:.45rem}
+    .m-stat__value{font-size:1.7rem;font-weight:700;line-height:1;color:var(--text)}
+    .m-stat__value small{font-size:.72rem;font-weight:400;color:var(--muted);margin-left:.28rem}
+    .m-stat--accent .m-stat__value{color:var(--accent)}
+    .m-site{background:var(--surface);border:1px solid var(--border);border-radius:11px;margin-bottom:.55rem;overflow:hidden}
+    .m-site--landing{border-color:var(--accent-dim);background:var(--surface2)}
+    .m-site__head{display:flex;align-items:center;gap:1rem;padding:.8rem 1rem;transition:background .15s}
+    .m-site--expandable .m-site__head{cursor:pointer}
+    .m-site--expandable .m-site__head:hover{background:var(--surface2)}
+    .m-site--landing .m-site__head:hover{background:var(--surface)}
+    .m-site__title{font-size:.9rem;font-weight:500}
+    .m-site__slug{font-size:.72rem;color:var(--muted)}
+    .m-site__spacer{flex:1;min-width:0}
+    .m-fresh{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;padding:.25rem .6rem;border-radius:99px;border:1px solid var(--border);white-space:nowrap}
+    .m-fresh__dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .fresh-ok{color:#7FB584}.fresh-ok .m-fresh__dot{background:#5FA463}
+    .fresh-warn{color:var(--accent)}.fresh-warn .m-fresh__dot{background:var(--accent)}
+    .fresh-old{color:#E08A7A}.fresh-old .m-fresh__dot{background:var(--red)}
+    .m-site__count{font-size:1.25rem;font-weight:700;color:var(--accent);min-width:66px;text-align:right;line-height:1.1}
+    .m-site__count small{font-size:.66rem;color:var(--muted);font-weight:400;display:block}
+    .m-site__chev{color:var(--muted);transition:transform .2s;flex-shrink:0}
+    .m-site.open .m-site__chev{transform:rotate(90deg)}
+    .m-site__body{display:none;border-top:1px solid var(--border);padding:1rem 1.1rem}
+    .m-site.open .m-site__body{display:block}
+    .m-meta{display:flex;gap:1.4rem;flex-wrap:wrap;margin-bottom:.9rem}
+    .m-meta div{font-size:.78rem;color:var(--muted)}
+    .m-meta b{color:var(--text);font-weight:600}
+    .ip-scroll{overflow-x:auto}
+    .ip-table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:520px}
+    .ip-table th{text-align:left;font-size:.64rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:.4rem .55rem;border-bottom:1px solid var(--border)}
+    .ip-table td{padding:.5rem .55rem;border-bottom:1px solid var(--border);white-space:nowrap}
+    .ip-table tr:last-child td{border-bottom:none}
+    .ip-table tbody tr:hover{background:var(--surface2)}
+    .ip-mono{font-family:monospace;color:var(--text)}
+    .ip-req{font-weight:600;color:var(--text)}
+    .ip-bot{font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--red);border:1px solid var(--red);border-radius:99px;padding:.06rem .42rem}
+    .ip-human{font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .ip-log-btn{padding:.28rem .7rem;border-radius:99px;border:1px solid var(--accent-dim);background:transparent;color:var(--accent);font-size:.72rem;font-family:inherit;cursor:pointer;white-space:nowrap;transition:all .15s}
+    .ip-log-btn:hover{background:var(--accent);color:#0e0d0b}
+    .m-toolbar{display:flex;justify-content:flex-end;align-items:center;margin-top:.9rem;gap:.6rem;flex-wrap:wrap}
+    .modal__title{font-size:.95rem;font-weight:600;margin-bottom:1rem}
+    .modal__actions{display:flex;gap:.75rem;margin-top:1.25rem;justify-content:flex-end}
+    .btn-cancel{padding:.5rem 1rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.82rem;font-family:inherit;cursor:pointer}
+    .btn-cancel:hover{color:var(--text)}
+    .btn-confirm{padding:.5rem 1rem;border-radius:6px;border:none;background:var(--accent);color:#0e0d0b;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer}
+    .btn-confirm:hover{opacity:.85}
+    .btn-danger{padding:.5rem 1rem;border-radius:6px;border:none;background:var(--red);color:#fff;font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer}
+
+    /* ── TOAST ── */
+    .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.7rem 1.1rem;font-size:.82rem;z-index:200;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s;pointer-events:none}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .toast--ok{border-color:#1e4030;color:var(--green)}
+    .toast--err{border-color:#3d1515;color:var(--red)}
+
+    .empty-state{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:.88rem}
+  </style>
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header__logo">uqqi.ru</div>
+  <nav class="header__nav">
+    <button class="nav-btn active" data-section="sites">Сайты</button>
+    <button class="nav-btn" data-section="parser">Парсер</button>
+    <button class="nav-btn" data-section="metrics">Метрика</button>
+    <button class="nav-btn" data-section="support">Поддержка <span id="supportBadge" style="background:var(--red);color:#fff;border-radius:99px;padding:.1rem .4rem;font-size:.65rem;font-weight:700;margin-left:.2rem"></span></button>
+  </nav>
+  <div class="header__right">
+    <a href="/{{ panel_path }}/logout" class="logout-btn">Выйти</a>
+  </div>
+</header>
+
+<!-- ══ САЙТЫ ══════════════════════════════════════════════════ -->
+<section class="section active" id="section-sites">
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-card__val" id="statTotal">{{ companies|length }}</div>
+      <div class="stat-card__label">Всего сайтов</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card__val" id="statActive">{{ companies|selectattr('is_active')|list|length }}</div>
+      <div class="stat-card__label">Активных</div>
+    </div>
+  </div>
+
+  {% if companies %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Компания</th>
+          <th>Субдомен</th>
+          <th>Телефон</th>
+          <th>Статус</th>
+          <th>Создан</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="sitesTableBody">
+        {% for c in companies %}
+        <tr id="row-{{ c.id }}">
+          <td><strong>{{ c.title }}</strong></td>
+          <td>
+            <a href="https://{{ c.slug }}.uqqi.ru" target="_blank"
+               style="color:var(--accent);text-decoration:none;font-size:.78rem">
+              {{ c.slug }}.uqqi.ru ↗
+            </a>
+          </td>
+          <td style="color:var(--muted)">{{ c.phone or '—' }}</td>
+          <td>
+            <span class="badge {{ 'badge--active' if c.is_active else 'badge--inactive' }}">
+              {{ 'Активен' if c.is_active else 'Выключен' }}
+            </span>
+          </td>
+          <td style="color:var(--muted);font-size:.78rem">
+            {{ c.created_at.strftime('%d.%m.%Y') if c.created_at else '—' }}
+          </td>
+          <td>
+            <div class="td-actions">
+              <div class="variant-switch" title="Дизайн витрины (мобильным всегда отдаётся C)">
+                <button class="vbtn {{ 'on' if (c.template_variant or 'A') == 'A' else '' }}"
+                        onclick="setVariant({{ c.id }}, 'A', this)">A</button>
+                <button class="vbtn {{ 'on' if c.template_variant == 'B' else '' }}"
+                        onclick="setVariant({{ c.id }}, 'B', this)">B</button>
+                <a class="action-btn" href="https://{{ c.slug }}.uqqi.ru/?variant=C" target="_blank"
+                   style="margin-left:.3rem" title="Мобильная версия">C 📱</a>
+              </div>
+              <button class="action-btn {{ 'action-btn--danger' if c.yandex_unavailable else '' }}"
+                      id="refresh-{{ c.id }}"
+                      {{ 'disabled' if c.yandex_unavailable else '' }}
+                      onclick="refreshData({{ c.id }}, this)"
+                      title="{{ 'Карточка недоступна на Яндексе' if c.yandex_unavailable else 'Обновить данные из Яндекс Карт (раз в сутки)' }}">
+                {{ 'Недоступно' if c.yandex_unavailable else 'Обновить данные' }}
+              </button>
+              <button class="action-btn" onclick="openBilling({{ c.id }}, '{{ c.title }}', '{{ c.next_payment_date.strftime('%Y-%m-%d') if c.next_payment_date else '' }}', '{{ c.client_email }}')"
+                      title="Дата оплаты и email клиента">
+                💳 Биллинг{% if c.next_payment_date %} · {{ c.next_payment_date.strftime('%d.%m') }}{% endif %}
+              </button>
+              <button class="action-btn {{ '' if c.is_active else 'action-btn--danger' }}"
+                      onclick="toggleSite({{ c.id }}, {{ 'false' if c.is_active else 'true' }})">
+                {{ 'Выключить' if c.is_active else 'Включить' }}
+              </button>
+              <a class="action-btn" href="/{{ panel_path }}/api/company/{{ c.id }}/export"
+                 target="_blank" title="Скачать ZIP для размещения на своём хостинге">
+                Выгрузить
+              </a>
+              <button class="action-btn" onclick="showBuildLog({{ c.id }})" title="Лог сборки сайта">
+                Лог
+              </button>
+              {% if c.claim_code %}
+              <button class="action-btn action-btn--claim" onclick="showMaterials({{ c.id }})" title="Материалы для клиента: текст, ссылка, скриншот">
+                📦 Клиенту
+              </button>
+              {% if c.demo_until %}
+              <button class="action-btn" onclick="toggleDemo({{ c.id }}, false)" title="Вернуть заглушку">
+                🔓 Демо активно
+              </button>
+              {% else %}
+              <button class="action-btn" onclick="toggleDemo({{ c.id }}, true)" title="Показать сайт вживую на 7 дней">
+                Снять заглушку (7д)
+              </button>
+              {% endif %}
+              {% endif %}
+              <button class="action-btn action-btn--danger"
+                      onclick="confirmDelete({{ c.id }}, '{{ c.title }}')">
+                Удалить
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    Сайтов ещё нет. Запустите парсер и импортируйте компании.
+  </div>
+  {% endif %}
+
+</section>
+
+<!-- ══ ПАРСЕР ════════════════════════════════════════════════ -->
+<section class="section" id="section-parser">
+  <h2 class="section__title">Поиск клиентов</h2>
+  <p style="color:var(--muted);font-size:.85rem;margin:-.5rem 0 1.2rem">
+    Фаза 1 — найти организации <b>без сайта</b>. Фаза 2 — нажать «Создать сайт» у нужных.
+  </p>
+
+  <div class="parser-grid">
+    <div class="field">
+      <label>Поисковый запрос</label>
+      <input type="text" id="pQuery" placeholder="кофейни" value="кофейни">
+    </div>
+    <div class="field">
+      <label>Город</label>
+      <input type="text" id="pCity" placeholder="Москва" value="Москва">
+    </div>
+    <div class="field">
+      <label>Сколько найти</label>
+      <input type="number" id="pLimit" value="10" min="1" max="200">
+    </div>
+    <div class="field">
+      <label>Режим</label>
+      <select id="pMode" style="width:100%;padding:.55rem;border-radius:8px;border:1px solid var(--line,#444);background:var(--surface2,#222);color:var(--text,#e8e4db)">
+        <option value="overwrite">Перезаписать список</option>
+        <option value="append">Дополнить список</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+    <button class="run-btn" id="runBtn" onclick="startParser()">▶ Найти без сайта</button>
+    <button class="stop-btn" id="stopBtn" onclick="stopParser()">■ Остановить</button>
+  </div>
+
+  <div class="log-status" id="logStatus" style="display:none">
+    <div class="spinner" id="logSpinner"></div>
+    <span id="logStatusText">Запуск...</span>
+  </div>
+
+  <div class="log-wrap" id="logWrap">
+    <div class="log-line log-line--info">Готов к запуску. Введите запрос и нажмите «Найти без сайта».</div>
+  </div>
+
+  <!-- Список кандидатов -->
+  <div style="margin-top:1.5rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <h3 style="margin:0;font-size:1.05rem">Найденные организации без сайта</h3>
+    <select id="candFilter" onchange="loadCandidates()" style="padding:.4rem;border-radius:8px;border:1px solid var(--line,#444);background:var(--surface2,#222);color:var(--text,#e8e4db)">
+      <option value="">Все запросы</option>
+    </select>
+    <div style="flex:1"></div>
+    <button class="action-btn action-btn--danger" onclick="clearCandidates()">Очистить список</button>
+  </div>
+  <div id="candList" style="margin-top:1rem"></div>
+
+</section>
+
+<!-- ══ МЕТРИКА ════════════════════════════════════════════════ -->
+<section class="section" id="section-metrics">
+  <div style="margin-bottom:1rem;color:var(--muted);font-size:.85rem">
+    Уникальные посетители (по IP+браузеру, один визит в сутки) и свежесть данных из Яндекс Карт. Нажмите на сайт, чтобы увидеть IP и выгрузить лог.
+  </div>
+  <div class="metrics-periods" style="display:flex;gap:.4rem;margin-bottom:1.25rem">
+    <button class="period-btn active" data-period="d1" onclick="setPeriod('d1',this)">Сегодня</button>
+    <button class="period-btn" data-period="d7" onclick="setPeriod('d7',this)">7 дней</button>
+    <button class="period-btn" data-period="d30" onclick="setPeriod('d30',this)">30 дней</button>
+    <button class="period-btn" data-period="d90" onclick="setPeriod('d90',this)">90 дней</button>
+  </div>
+  <div id="metricsContent"><p style="color:var(--muted)">Загрузка…</p></div>
+</section>
+
+<!-- ══ ПОДДЕРЖКА ══════════════════════════════════════════════ -->
+<section class="section" id="section-support">
+  <div style="margin-bottom:1rem;color:var(--muted);font-size:.85rem">
+    Обращения клиентов из их панелей. Отвечайте с почты support@uqqi.ru — нажмите «Ответить».
+  </div>
+  <div id="supportList"><p style="color:var(--muted);padding:1rem">Загрузка…</p></div>
+</section>
+
+<!-- ══ MODAL: новый пароль ════════════════════════════════════ -->
+<div class="modal-overlay" id="modalMaterials">
+  <div class="modal" style="max-width:560px;width:92vw">
+    <div class="modal__title">📦 Материалы для клиента</div>
+    <div style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
+      Отправьте клиенту текст со ссылкой. По ссылке он увидит готовый сайт с кнопкой «Приобрести».
+    </div>
+    <div id="materialsBody"></div>
+    <div class="modal__actions" style="margin-top:1rem">
+      <button class="btn-cancel" onclick="closeModal('modalMaterials')">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: биллинг ═════════════════════════════════════════ -->
+<div class="modal-overlay" id="billingModal">
+  <div class="modal">
+    <div class="modal__title">Биллинг — <span id="billingTitle"></span></div>
+    <input type="hidden" id="billingId">
+    <div style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">
+      Укажите дату следующей оплаты и email клиента. За 7 и 3 дня до даты
+      на этот email уйдёт напоминание с clients@uqqi.ru.
+    </div>
+    <label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:.3rem">Дата следующей оплаты</label>
+    <input type="date" id="billingDate"
+           style="width:100%;padding:.6rem;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;margin-bottom:1rem">
+    <label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:.3rem">Email клиента</label>
+    <input type="email" id="billingEmail" placeholder="client@mail.ru"
+           style="width:100%;padding:.6rem;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;margin-bottom:.5rem">
+    <div class="modal__actions">
+      <button class="btn-cancel" onclick="closeBilling()">Отмена</button>
+      <button class="btn-confirm" onclick="saveBilling()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: удаление ════════════════════════════════════════ -->
+<div class="modal-overlay" id="modalDelete">
+  <div class="modal">
+    <div class="modal__title">Удалить сайт?</div>
+    <div style="font-size:.85rem;color:var(--muted)" id="modalDeleteText"></div>
+    <div class="modal__actions">
+      <button class="btn-cancel" onclick="closeModal('modalDelete')">Отмена</button>
+      <button class="btn-danger" id="confirmDeleteBtn">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUILD LOG MODAL -->
+<div class="bl-scrim" id="blScrim" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem" onclick="closeBuildLog(event)">
+  <div class="bl-modal" style="background:var(--surface,#1a1915);border:1px solid var(--border,#2e2c27);border-radius:12px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden" onclick="event.stopPropagation()">
+    <div style="padding:1.1rem 1.3rem;border-bottom:1px solid var(--border,#2e2c27);display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div id="blTitle" style="font-weight:700;color:var(--text,#e8e4db)">Лог сборки</div>
+        <div id="blMeta" style="font-size:.78rem;color:var(--muted,#7a7568);margin-top:.2rem"></div>
+      </div>
+      <button onclick="closeBuildLog()" style="background:none;border:none;color:var(--muted,#7a7568);font-size:1.5rem;cursor:pointer;line-height:1">×</button>
+    </div>
+    <pre id="blBody" style="margin:0;padding:1.2rem 1.3rem;overflow:auto;font-size:.8rem;line-height:1.6;color:var(--text,#e8e4db);white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,monospace"></pre>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const PANEL = '/{{ panel_path }}';
+
+// ── ЛОГ СБОРКИ ────────────────────────────────────────────────
+async function showBuildLog(id){
+  const scrim = document.getElementById('blScrim');
+  const body = document.getElementById('blBody');
+  const title = document.getElementById('blTitle');
+  const meta = document.getElementById('blMeta');
+  body.textContent = 'Загрузка…';
+  scrim.style.display = 'flex';
+  try {
+    const res = await fetch(`${PANEL}/api/company/${id}/build-log`);
+    if (!res.ok) throw new Error('Не удалось загрузить лог');
+    const d = await res.json();
+    title.textContent = 'Лог сборки — ' + (d.title || ('#' + d.id));
+    meta.textContent = `${d.slug}.uqqi.ru · статус: ${d.build_status} · попыток: ${d.build_attempts}`;
+    body.textContent = d.build_log || '(лог пуст)';
+  } catch (e) {
+    body.textContent = 'Ошибка: ' + e.message;
+  }
+}
+function closeBuildLog(ev){
+  if (ev && ev.target.id !== 'blScrim' && ev.type === 'click' && ev.target.closest('.bl-modal')) return;
+  document.getElementById('blScrim').style.display = 'none';
+}
+
+// ── НАВИГАЦИЯ ─────────────────────────────────────────────────
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('section-' + btn.dataset.section).classList.add('active');
+    if (btn.dataset.section === 'support') loadSupport();
+    if (btn.dataset.section === 'metrics') loadMetrics();
+  });
+});
+
+// Загружаем счётчик поддержки при старте
+loadSupport();
+
+// ── TOAST ─────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast toast--${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// ── МАТЕРИАЛЫ ДЛЯ КЛИЕНТА ──────────────────────────────────────
+let currentMaterialsId = null;
+
+async function showMaterials(id) {
+  currentMaterialsId = id;
+  const modal = document.getElementById('modalMaterials');
+  const body = document.getElementById('materialsBody');
+  body.innerHTML = '<p style="color:#9a9389">Загрузка…</p>';
+  modal.classList.add('open');
+  try {
+    const res = await fetch(`${PANEL}/api/company/${id}/materials`);
+    const d = await res.json();
+    const shotBlock = d.screenshot
+      ? `<img src="${d.screenshot}?t=${Date.now()}" alt="Скриншот" style="width:100%;border-radius:10px;border:1px solid var(--line,#333);margin-bottom:12px">`
+      : `<p style="color:#9a9389;font-size:.85rem;margin-bottom:12px">Скриншот ещё не создан. Нажмите «Сделать скриншот» ниже.</p>`;
+    body.innerHTML = `
+      ${shotBlock}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="action-btn" id="makeShotBtn" onclick="makeScreenshot(${id})">📸 ${d.screenshot ? 'Обновить' : 'Сделать'} скриншот</button>
+        ${d.screenshot ? `<a class="action-btn" href="${PANEL}/api/company/${id}/screenshot" target="_blank">⬇ Скачать</a>` : ''}
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:.75rem;color:#9a9389;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Ссылка для клиента (с окошком «Приобрести»)</div>
+        <div style="display:flex;gap:6px">
+          <input id="matClaimUrl" readonly value="${d.claim_url || d.site_url}" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line,#444);background:var(--surface2,#222);color:var(--text,#e8e4db);font-size:.82rem">
+          <button class="action-btn" onclick="copyField('matClaimUrl')">Копировать</button>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:.75rem;color:#9a9389;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Готовый текст предложения</div>
+        <textarea id="matOfferText" readonly rows="9" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--line,#444);background:var(--surface2,#222);color:var(--text,#e8e4db);font-size:.82rem;line-height:1.5;resize:vertical;box-sizing:border-box">${d.offer_text}</textarea>
+      </div>
+      <button class="action-btn action-btn--claim" onclick="copyField('matOfferText')">📋 Скопировать текст</button>
+    `;
+  } catch (e) {
+    body.innerHTML = '<p style="color:#e57373">Ошибка загрузки материалов</p>';
+  }
+}
+
+function copyField(fieldId) {
+  const el = document.getElementById(fieldId);
+  if (!el) return;
+  el.select();
+  navigator.clipboard.writeText(el.value).then(() => toast('Скопировано')).catch(() => {
+    document.execCommand('copy'); toast('Скопировано');
+  });
+}
+
+async function makeScreenshot(id) {
+  const btn = document.getElementById('makeShotBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '📸 Создаю… (10-20 сек)'; }
+  try {
+    const res = await fetch(`${PANEL}/api/company/${id}/make-screenshot`, {method:'POST'});
+    const d = await res.json();
+    if (d.ok) { toast('Скриншот готов'); showMaterials(id); }
+    else { toast(d.error || 'Не удалось', 'err'); if (btn) { btn.disabled = false; btn.textContent = '📸 Сделать скриншот'; } }
+  } catch (e) {
+    toast('Ошибка', 'err');
+    if (btn) { btn.disabled = false; btn.textContent = '📸 Сделать скриншот'; }
+  }
+}
+
+async function toggleDemo(id, on) {
+  const url = on ? `${PANEL}/api/company/${id}/demo` : `${PANEL}/api/company/${id}/demo-off`;
+  try {
+    const res = await fetch(url, {method:'POST'});
+    if (res.ok) {
+      toast(on ? 'Заглушка снята на 7 дней' : 'Заглушка возвращена');
+      setTimeout(() => location.reload(), 700);
+    } else { toast('Ошибка', 'err'); }
+  } catch (e) { toast('Ошибка', 'err'); }
+}
+
+// ── УДАЛЕНИЕ ──────────────────────────────────────────────────
+let deleteId = null;
+
+function confirmDelete(id, title) {
+  deleteId = id;
+  document.getElementById('modalDeleteText').textContent =
+    `Сайт «${title}» и все данные будут удалены безвозвратно.`;
+  document.getElementById('modalDelete').classList.add('open');
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+  if (!deleteId) return;
+  const res = await fetch(`${PANEL}/api/company/${deleteId}`, {method:'DELETE'});
+  if (res.ok) {
+    document.getElementById(`row-${deleteId}`)?.remove();
+    closeModal('modalDelete');
+    toast('Сайт удалён');
+    updateStats();
+  } else {
+    toast('Ошибка удаления', 'err');
+  }
+});
+
+// ── ВКЛЮЧИТЬ/ВЫКЛЮЧИТЬ ────────────────────────────────────────
+async function toggleSite(id, activate) {
+  const res = await fetch(`${PANEL}/api/company/${id}/toggle`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({active: activate}),
+  });
+  if (res.ok) {
+    location.reload();
+  } else {
+    toast('Ошибка', 'err');
+  }
+}
+
+// ── ВИТРИНА A/B ───────────────────────────────────────────────
+async function setVariant(id, variant, btn) {
+  const res = await fetch(`${PANEL}/api/company/${id}/variant`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({variant}),
+  });
+  if (res.ok) {
+    // подсветка кнопок
+    const group = btn.parentElement;
+    group.querySelectorAll('.vbtn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    toast(`Витрина переключена на ${variant}`, 'ok');
+  } else {
+    toast('Ошибка переключения', 'err');
+  }
+}
+
+// ── ОБНОВИТЬ ДАННЫЕ ───────────────────────────────────────────
+async function refreshData(id, btn) {
+  if (btn.disabled) return;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Обновляю…';
+  try {
+    const res = await fetch(`${PANEL}/api/company/${id}/refresh`, {method:'POST'});
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      toast(data.message || 'Данные обновлены', 'ok');
+      setTimeout(() => location.reload(), 1200);
+    } else if (data.unavailable) {
+      toast('Карточка недоступна на Яндексе', 'err');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      toast(data.detail || data.error || 'Ошибка обновления', 'err');
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  } catch (e) {
+    toast('Сетевая ошибка', 'err');
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+// ── БИЛЛИНГ ───────────────────────────────────────────────────
+function openBilling(id, title, date, email) {
+  const modal = document.getElementById('billingModal');
+  document.getElementById('billingTitle').textContent = title;
+  document.getElementById('billingId').value = id;
+  document.getElementById('billingDate').value = date || '';
+  document.getElementById('billingEmail').value = email || '';
+  modal.classList.add('open');
+}
+function closeBilling() {
+  document.getElementById('billingModal').classList.remove('open');
+}
+async function saveBilling() {
+  const id = document.getElementById('billingId').value;
+  const next_payment_date = document.getElementById('billingDate').value;
+  const client_email = document.getElementById('billingEmail').value.trim();
+  const res = await fetch(`${PANEL}/api/company/${id}/billing`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({next_payment_date, client_email}),
+  });
+  const data = await res.json();
+  if (res.ok && data.ok) {
+    toast('Биллинг сохранён', 'ok');
+    closeBilling();
+    setTimeout(() => location.reload(), 800);
+  } else {
+    toast(data.detail || 'Ошибка', 'err');
+  }
+}
+
+// ── ПОДДЕРЖКА ─────────────────────────────────────────────────
+let _supportData = null;
+let _supportFilter = 'all';
+
+async function loadSupport() {
+  const res = await fetch(`${PANEL}/api/support`);
+  if (!res.ok) return;
+  _supportData = await res.json();
+  const badge = document.getElementById('supportBadge');
+  if (badge) badge.textContent = _supportData.unread > 0 ? _supportData.unread : '';
+  renderSupport();
+}
+
+function setSupportFilter(f) {
+  _supportFilter = f;
+  renderSupport();
+}
+
+function renderSupport() {
+  const wrap = document.getElementById('supportList');
+  if (!wrap || !_supportData) return;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const all = _supportData.messages || [];
+  const unread = all.filter(m => !m.is_read);
+  const list = _supportFilter === 'unread' ? unread : all;
+
+  const toolbar = `
+    <div class="sup-toolbar">
+      <div class="sup-filters">
+        <button class="sup-filter ${_supportFilter==='all'?'active':''}" onclick="setSupportFilter('all')">Все <span>${all.length}</span></button>
+        <button class="sup-filter ${_supportFilter==='unread'?'active':''}" onclick="setSupportFilter('unread')">Новые <span>${unread.length}</span></button>
+      </div>
+    </div>`;
+
+  if (!all.length) {
+    wrap.innerHTML = toolbar + '<div class="empty-state">Обращений пока нет.</div>';
+    return;
+  }
+  if (!list.length) {
+    wrap.innerHTML = toolbar + '<div class="empty-state">Новых обращений нет — всё разобрано.</div>';
+    return;
+  }
+
+  wrap.innerHTML = toolbar + '<div class="sup-list">' + list.map(m => `
+    <article class="sup-card ${m.is_read ? '' : 'is-unread'}">
+      <div class="sup-card__avatar">${esc((m.company||'?').trim().charAt(0).toUpperCase())}</div>
+      <div class="sup-card__main">
+        <div class="sup-card__head">
+          <div class="sup-card__who">
+            <span class="sup-card__company">${esc(m.company)}</span>
+            ${m.is_read ? '' : '<span class="sup-card__badge">Новое</span>'}
+          </div>
+          <span class="sup-card__time">${esc(m.created_at)}</span>
+        </div>
+        <p class="sup-card__text">${esc(m.message)}</p>
+        <div class="sup-card__foot">
+          <a class="sup-reply" href="mailto:${esc(m.email)}?subject=Ответ на обращение (${encodeURIComponent(m.company||'')})">✉ Ответить · ${esc(m.email)}</a>
+          <div class="sup-card__actions">
+            ${m.is_read ? '' : `<button class="action-btn" onclick="markRead(${m.id})">Прочитано</button>`}
+            <button class="action-btn action-btn--danger" onclick="deleteSupport(${m.id})">Удалить</button>
+          </div>
+        </div>
+      </div>
+    </article>`).join('') + '</div>';
+}
+async function markRead(id) {
+  await fetch(`${PANEL}/api/support/${id}/read`, {method:'POST'});
+  loadSupport();
+}
+async function deleteSupport(id) {
+  await fetch(`${PANEL}/api/support/${id}`, {method:'DELETE'});
+  loadSupport();
+}
+
+// ── МЕТРИКА ───────────────────────────────────────────────────
+// Ожидаемый формат /api/metrics:
+//   { landing: {d1,d7,d30,d90},
+//     sites: [ { title, slug, d1,d7,d30,d90,        // уник. посетители
+//                 pageviews: {d1,d7,d30,d90},        // (опц.) просмотры
+//                 yandex_refresh: "2026-06-30T08:12:00", // (опц.) ISO последнего refresh
+//                 ips: [ {ip, city, requests, bot, last_seen} ] } ] }  // (опц.)
+// Поля pageviews / yandex_refresh / ips опциональны — блок раскрытия и
+// сводка подстраиваются под то, что реально пришло с сервера.
+// Выгрузка лога тянется с /api/metrics/{slug}/log?ip=<ip> (без ip — весь).
+let _metricsData = null;
+let _currentPeriod = 'd1';
+const _openSites = new Set();
+
+async function loadMetrics() {
+  const res = await fetch(`${PANEL}/api/metrics`);
+  if (!res.ok) return;
+  _metricsData = await res.json();
+  renderMetrics();
+}
+
+function setPeriod(period, btn) {
+  _currentPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMetrics();
+}
+
+function _fresh(iso) {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
+  let cls = 'fresh-ok', label = days === 0 ? 'сегодня' : days === 1 ? 'вчера' : `${days} дн. назад`;
+  if (days > 30) cls = 'fresh-old'; else if (days >= 7) cls = 'fresh-warn';
+  return { cls, label, days };
+}
+
+function toggleMetricSite(slug) {
+  if (_openSites.has(slug)) _openSites.delete(slug); else _openSites.add(slug);
+  renderMetrics();
+}
+
+function renderMetrics() {
+  if (!_metricsData) return;
+  const p = _currentPeriod;
+  const esc = s => String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const fmt = n => Number(n||0).toLocaleString('ru');
+  const wrap = document.getElementById('metricsContent');
+  const sites = [..._metricsData.sites].sort((a,b) => (b[p]||0) - (a[p]||0));
+
+  // ── Сводка ──
+  const totalUniq = (_metricsData.landing[p]||0) + sites.reduce((s,x)=>s+(x[p]||0), 0);
+  const hasViews = sites.some(x => x.pageviews);
+  const totalViews = hasViews ? sites.reduce((s,x)=>s+(x.pageviews?(x.pageviews[p]||0):0),0) : null;
+  const hasIps = sites.some(x => Array.isArray(x.ips));
+  const bots = hasIps ? sites.reduce((s,x)=>s+((x.ips||[]).filter(i=>i.bot).length),0) : null;
+  const freshDays = sites.filter(x=>x.yandex_refresh).map(x=>_fresh(x.yandex_refresh).days);
+  const freshest = freshDays.length ? Math.min(...freshDays) : null;
+
+  let cards = `<div class="m-stat m-stat--accent"><div class="m-stat__label">Уник. посетителей</div><div class="m-stat__value">${fmt(totalUniq)}</div></div>`;
+  if (totalViews !== null) cards += `<div class="m-stat"><div class="m-stat__label">Просмотров</div><div class="m-stat__value">${fmt(totalViews)}</div></div>`;
+  cards += `<div class="m-stat"><div class="m-stat__label">Активных сайтов</div><div class="m-stat__value">${sites.length}</div></div>`;
+  if (freshest !== null) cards += `<div class="m-stat"><div class="m-stat__label">Обновление Я.Карт</div><div class="m-stat__value">${freshest}<small>дн. назад мин.</small></div></div>`;
+  if (bots !== null) cards += `<div class="m-stat"><div class="m-stat__label">Ботов замечено</div><div class="m-stat__value">${bots}</div></div>`;
+
+  let html = `<div class="m-summary">${cards}</div>`;
+
+  // Функция рендера одной карточки (сайт или лендинг)
+  function renderMetricRow(s, isLanding) {
+    const ips = Array.isArray(s.ips) ? s.ips : null;
+    const expandable = !!ips;
+    const open = expandable && _openSites.has(s.slug);
+    const freshChip = (!isLanding && s.yandex_refresh)
+      ? (() => { const f = _fresh(s.yandex_refresh); return `<span class="m-fresh ${f.cls}"><span class="m-fresh__dot"></span>Я.Карты · ${f.label}</span>`; })()
+      : '';
+    const chev = expandable
+      ? '<svg class="m-site__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>'
+      : '';
+
+    let body = '';
+    if (expandable) {
+      const botCount = ips.filter(i=>i.bot).length;
+      const topCity = (() => {
+        const c = {}; ips.filter(i=>!i.bot).forEach(i=>c[i.city]=(c[i.city]||0)+(i.requests||0));
+        const e = Object.entries(c).sort((a,b)=>b[1]-a[1])[0]; return e ? e[0] : '—';
+      })();
+      const rows = ips.map(i => `
+        <tr>
+          <td class="ip-mono">${esc(i.ip)}</td>
+          <td>${i.bot ? '—' : esc(i.city)}</td>
+          <td class="ip-req">${fmt(i.requests)}</td>
+          <td>${i.bot ? '<span class="ip-bot">бот</span>' : '<span class="ip-human">человек</span>'}</td>
+          <td style="color:var(--muted)">${i.last_seen ? new Date(i.last_seen).toLocaleDateString('ru') : '—'}</td>
+          <td><button class="ip-log-btn" onclick="exportIpLog('${esc(s.slug)}','${esc(i.ip)}')">Лог ↓</button></td>
+        </tr>`).join('');
+      body = `
+      <div class="m-site__body">
+        <div class="m-meta">
+          ${s.pageviews ? `<div>Просмотров: <b>${fmt(s.pageviews[p])}</b></div>` : ''}
+          <div>Уникальных IP: <b>${ips.length}</b></div>
+          <div>Ботов: <b>${botCount}</b></div>
+          <div>Топ-город: <b>${esc(topCity)}</b></div>
+          ${(!isLanding && s.yandex_refresh) ? `<div>Обновление Я.Карт: <b>${new Date(s.yandex_refresh).toLocaleDateString('ru')}</b></div>` : ''}
+        </div>
+        <div class="ip-scroll">
+          <table class="ip-table">
+            <thead><tr><th>IP-адрес</th><th>Город</th><th>Запросов</th><th>Тип</th><th>Последний визит</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="m-toolbar">
+          <button class="ip-log-btn" onclick="exportIpLog('${esc(s.slug)}',null)">Выгрузить весь лог ↓</button>
+        </div>
+      </div>`;
+    }
+
+    const titleHtml = isLanding
+      ? `<div class="m-site__title">🏠 Лендинг uqqi.ru</div><div class="m-site__slug">главная страница</div>`
+      : `<div class="m-site__title">${esc(s.title)}</div><div class="m-site__slug">${esc(s.slug)}.uqqi.ru</div>`;
+
+    return `
+    <div class="m-site ${isLanding?'m-site--landing':''} ${expandable?'m-site--expandable':''} ${open?'open':''}">
+      <div class="m-site__head" ${expandable?`onclick="toggleMetricSite('${esc(s.slug)}')"`:''}>
+        <div>${titleHtml}</div>
+        <div class="m-site__spacer"></div>
+        ${freshChip}
+        <div class="m-site__count">${fmt(s[p])}<small>уник.</small></div>
+        ${chev}
+      </div>
+      ${body}
+    </div>`;
+  }
+
+  // ── Лендинг (раскрывается так же, как сайты) ──
+  const landingObj = Object.assign({ slug: '__landing__', title: 'Лендинг uqqi.ru' }, _metricsData.landing);
+  html += renderMetricRow(landingObj, true);
+
+  if (!sites.length) {
+    html += '<div class="empty-state">Сайтов пока нет.</div>';
+    wrap.innerHTML = html;
+    return;
+  }
+
+  html += sites.map(s => renderMetricRow(s, false)).join('');
+
+  wrap.innerHTML = html;
+}
+
+// Выгрузка лога по IP (или по всем, если ip=null) с сервера.
+async function exportIpLog(slug, ip) {
+  const url = `${PANEL}/api/metrics/${encodeURIComponent(slug)}/log` + (ip ? `?ip=${encodeURIComponent(ip)}` : '');
+  try {
+    const res = await fetch(url);
+    if (!res.ok) { toast('Не удалось выгрузить лог', 'err'); return; }
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `log_${slug}${ip ? '_' + ip.replace(/\./g,'-') : '_all'}.txt`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(a.href);
+    toast(ip ? `Лог по ${ip} выгружен` : 'Полный лог выгружен');
+  } catch (e) {
+    toast('Ошибка выгрузки', 'err');
+  }
+}
+
+function updateStats() {
+  const rows = document.querySelectorAll('#sitesTableBody tr').length;
+  document.getElementById('statTotal').textContent = rows;
+}
+
+// ── ПАРСЕР ────────────────────────────────────────────────────
+let taskId = null;
+let pollInterval = null;
+let lastLogLen = 0;
+
+function logLine(text, cls='') {
+  const wrap = document.getElementById('logWrap');
+  const div = document.createElement('div');
+  div.className = 'log-line' + (cls ? ' log-line--' + cls : '');
+  div.textContent = text;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function classifyLine(line) {
+  const l = line.toLowerCase();
+  if (l.startsWith('error') || l.includes('[err]') || l.includes('traceback') || l.includes('exception')) return 'err';
+  if (l.includes('[ok]') || l.includes('saved') || l.includes('создан')) return 'ok';
+  if (l.includes('warning') || l.includes('warn') || l.includes('skip')) return 'warn';
+  if (l.startsWith('[') && l.includes('/')) return 'ok';  // [1/30] Company name
+  return '';
+}
+
+async function startParser() {
+  const query  = document.getElementById('pQuery').value.trim();
+  const city   = document.getElementById('pCity').value.trim();
+  const limit  = parseInt(document.getElementById('pLimit').value) || 10;
+  const mode   = document.getElementById('pMode').value;
+
+  if (!query) { toast('Введите запрос', 'err'); return; }
+
+  document.getElementById('logWrap').innerHTML = '';
+  lastLogLen = 0;
+
+  logLine(`Фаза 1: «${query}${city ? ' ' + city : ''}» найти ${limit} (${mode === 'overwrite' ? 'перезаписать' : 'дополнить'})`, 'info');
+
+  const res = await fetch(`${PANEL}/api/parser/start`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({query, city, limit, delay: 900, only_without_website: true, open_cards: true, mode}),
+  });
+  if (res.status === 401) { window.location.href = `${PANEL}`; return; }
+  const data = await res.json();
+  if (!data.task_id) { logLine('Ошибка запуска: ' + (data.detail || 'неизвестно'), 'err'); return; }
+
+  taskId = data.task_id;
+  document.getElementById('runBtn').disabled = true;
+  const _sb = document.getElementById('stopBtn'); if(_sb) _sb.style.display = 'inline-flex';
+  const _ls = document.getElementById('logStatus'); if(_ls) _ls.style.display = 'flex';
+  // Восстанавливаем спиннер (мог быть заменён на точку при прошлом запуске)
+  const _spin = document.getElementById('logSpinner');
+  if (_spin) {
+    _spin.className = 'spinner';
+    _spin.style.display = '';
+  }
+  document.getElementById('logStatusText').textContent = 'Парсинг...';
+
+  pollInterval = setInterval(pollStatus, 1500);
+}
+
+async function pollStatus() {
+  if (!taskId) return;
+  try {
+    const res = await fetch(`${PANEL}/api/parser/status/${taskId}`);
+    if (res.status === 401) { window.location.href = `${PANEL}`; return; }
+    if (!res.ok) { logLine(`Ошибка сервера: ${res.status}`, 'err'); return; }
+    const data = await res.json();
+
+    // Дописываем новые строки лога
+    const lines = data.log || [];
+    for (let i = lastLogLen; i < lines.length; i++) {
+      logLine(lines[i], classifyLine(lines[i]));
+    }
+    lastLogLen = lines.length;
+
+    if (data.status === 'running') {
+      document.getElementById('logStatusText').textContent =
+        `Парсинг... найдено ${data.found ?? 0}`;
+      return;
+    }
+
+    // Завершено
+    clearInterval(pollInterval);
+    document.getElementById('runBtn').disabled = false;
+    const _sb2 = document.getElementById('stopBtn'); if(_sb2) _sb2.style.display = 'none';
+    const _lsp = document.getElementById('logSpinner'); if(_lsp) _lsp.style.display = 'none';
+
+    if (data.status === 'done') {
+      const spinner = document.getElementById('logSpinner');
+      if (spinner) {
+        const dot = document.createElement('div');
+        dot.className = 'dot dot--green';
+        dot.id = 'logSpinner';  // сохраняем id чтобы следующий запуск нашёл элемент
+        spinner.replaceWith(dot);
+      }
+      document.getElementById('logStatusText').textContent =
+        `Готово. Организаций без сайта: ${data.no_site ?? data.found}`;
+
+      // Обновляем список кандидатов
+      loadCandidates();
+    } else if (data.status === 'stopped') {
+      document.getElementById('logStatusText').textContent = 'Остановлено.';
+    } else {
+      document.getElementById('logStatusText').textContent = 'Ошибка: ' + (data.error || 'неизвестно');
+    }
+
+  } catch(e) {
+    logLine('Ошибка соединения: ' + e.message, 'err');
+  }
+}
+
+async function stopParser() {
+  if (!taskId) return;
+  await fetch(`${PANEL}/api/parser/stop/${taskId}`, {method:'POST'});
+  logLine('Запрос на остановку отправлен...', 'warn');
+}
+
+// ── КАНДИДАТЫ (Фаза 2) ─────────────────────────────────────────
+async function loadCandidates() {
+  const filter = document.getElementById('candFilter');
+  const filterVal = filter ? filter.value : '';
+  try {
+    const res = await fetch(`${PANEL}/api/candidates?query=${encodeURIComponent(filterVal)}`);
+    if (res.status === 401) { window.location.href = `${PANEL}`; return; }
+    const data = await res.json();
+
+    // Обновляем фильтр запросов
+    if (filter) {
+      const cur = filter.value;
+      filter.innerHTML = '<option value="">Все запросы</option>' +
+        (data.queries || []).map(q => `<option value="${escAttr(q)}">${escCand(q)}</option>`).join('');
+      filter.value = cur;
+    }
+
+    const list = document.getElementById('candList');
+    const cands = data.candidates || [];
+    if (!cands.length) {
+      list.innerHTML = '<div class="empty-state" style="padding:2rem;text-align:center;color:var(--muted)">Список пуст. Запустите поиск выше.</div>';
+      return;
+    }
+    list.innerHTML = cands.map(c => {
+      const done = c.status === 'site_created';
+      return `
+      <div class="cand-card" style="display:flex;align-items:center;gap:1rem;padding:.8rem 1rem;border:1px solid var(--line,#333);border-radius:10px;margin-bottom:.6rem;${done?'opacity:.6':''}">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600">${escCand(c.title)}</div>
+          <div style="font-size:.82rem;color:var(--muted)">${escCand(c.address || '')}</div>
+          <a href="${escAttr(c.yandex_url)}" target="_blank" style="font-size:.78rem;color:var(--accent,#c8643c)">Карточка на Яндексе ↗</a>
+        </div>
+        <span style="font-size:.75rem;color:var(--muted);white-space:nowrap">${escCand(c.query || '')}</span>
+        ${done
+          ? `<span style="color:#4caf50;font-weight:600;white-space:nowrap">✓ Сайт создан</span>`
+          : `<button class="run-btn" style="white-space:nowrap" onclick="createSiteFromCandidate(${c.id}, this)">Создать сайт</button>
+             <button class="action-btn action-btn--danger" onclick="deleteCandidate(${c.id})" title="Убрать">✕</button>`}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function createSiteFromCandidate(id, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Создаю… (30-60 сек)'; }
+  try {
+    const res = await fetch(`${PANEL}/api/candidates/${id}/create-site`, {method:'POST'});
+    const data = await res.json();
+    if (data.ok) {
+      toast('Сайт создан: ' + data.slug);
+      loadCandidates();
+    } else {
+      toast(data.detail || 'Ошибка', 'err');
+      if (btn) { btn.disabled = false; btn.textContent = 'Создать сайт'; }
+    }
+  } catch(e) {
+    toast('Ошибка', 'err');
+    if (btn) { btn.disabled = false; btn.textContent = 'Создать сайт'; }
+  }
+}
+
+async function deleteCandidate(id) {
+  await fetch(`${PANEL}/api/candidates/${id}`, {method:'DELETE'});
+  loadCandidates();
+}
+
+async function clearCandidates() {
+  if (!confirm('Очистить список кандидатов? (созданные сайты останутся)')) return;
+  const filter = document.getElementById('candFilter');
+  const q = filter ? filter.value : '';
+  await fetch(`${PANEL}/api/candidates?query=${encodeURIComponent(q)}`, {method:'DELETE'});
+  loadCandidates();
+}
+
+function escAttr(s){return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function escCand(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+// Загружаем кандидатов при открытии секции парсера
+document.addEventListener('DOMContentLoaded', () => { if (document.getElementById('candList')) loadCandidates(); });
+
+// Закрытие модалок по клику на оверлей
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+</script>
+</body>
+</html>

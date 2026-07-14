@@ -1,0 +1,55 @@
+{# Общий партиал: рендерит window.UQQI из данных компании #}
+<script>
+window.UQQI = {
+  title: {{ company.title|tojson }},
+  category: {{ (company.category or 'Организация')|tojson }},
+  address: {{ company.address|tojson }},
+  phone: {{ company.phone|tojson }},
+  tel: {{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','')|tojson }},
+  rating: {{ company.rating|tojson }},
+  reviewsCount: {{ company.reviews_count|tojson }},
+  logo: {{ company.logo_url|tojson }},
+  bookUrl: {{ company.book_url|tojson }},
+  yandexUrl: {{ company.yandex_url|tojson }},
+  routeUrl: {{ route_url|tojson }},
+  mapUrl: {{ yandex_map_url|tojson }},
+  status: {{ (status or '')|tojson }},
+  avgBill: {{ company.avg_bill|tojson }},
+
+  transitStop: {{ company.transit_stop|tojson }},
+
+  orgName: {{ company.org_name|tojson }},
+  orgType: {{ company.org_type|tojson }},
+  orgInn: {{ company.org_inn|tojson }},
+
+  hours: [
+    {% for e in company.hours %}
+    { day: {{ e.day|tojson }}, dayRu: {{ e.day_ru|tojson }}, time: {{ ('Выходной' if e.closed else e.time)|tojson }}, closed: {{ 'true' if e.closed else 'false' }} }{{ ',' if not loop.last }}
+    {% endfor %}
+  ],
+
+  features: [
+    {% for feat in company.features %}
+    { name: {{ feat|tojson }}, icon: {{ feat_icon(feat)|tojson }} }{{ ',' if not loop.last }}
+    {% endfor %}
+  ],
+
+  services: [
+    {% for item in company.menu_items %}
+    { name: {{ item.name|tojson }}, cat: {{ (item.category or '')|tojson }}, price: {{ (item.price or '')|tojson }}, desc: {{ (item.description or '')|tojson }}, img: {{ (item.image_url or '')|tojson }} }{{ ',' if not loop.last }}
+    {% endfor %}
+  ],
+
+  gallery: [
+    {% for photo in company.gallery_photos %}
+    {{ photo|tojson }}{{ ',' if not loop.last }}
+    {% endfor %}
+  ],
+
+  reviews: [
+    {% for r in company.reviews %}
+    { name: {{ r.author|tojson }}, av: {{ (r.avatar or '')|tojson }}, stars: {{ r.rating|int }}, date: {{ (r.date or '')|tojson }}, text: {{ r.text|tojson }} }{{ ',' if not loop.last }}
+    {% endfor %}
+  ],
+};
+</script>

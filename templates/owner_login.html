@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>uqqi — вход</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--bg:#0e0d0b;--surface:#1a1915;--border:#2e2c27;--accent:#c8a96e;--text:#e8e4db;--muted:#7a7568;--err:#eb5757}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+    .box{width:100%;max-width:360px}
+    .logo{font-size:1.4rem;font-weight:600;color:var(--accent);margin-bottom:.4rem;letter-spacing:.05em}
+    .sub{font-size:.82rem;color:var(--muted);margin-bottom:2rem}
+    .field{margin-bottom:.9rem}
+    .field label{display:block;font-size:.75rem;color:var(--muted);margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.06em}
+    .field input{width:100%;padding:.65rem .9rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:.95rem;font-family:inherit;transition:border-color .2s}
+    .field input:focus{outline:none;border-color:var(--accent)}
+    .error{background:#1f0e0e;border:1px solid #3d1515;color:var(--err);padding:.6rem .9rem;border-radius:8px;font-size:.82rem;margin-bottom:.9rem}
+    .btn{width:100%;padding:.7rem;border-radius:8px;background:var(--accent);color:#0e0d0b;font-size:.9rem;font-weight:600;font-family:inherit;border:none;cursor:pointer;transition:opacity .2s}
+    .btn:hover{opacity:.85}
+  </style>
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+  <link rel="manifest" href="/static/site.webmanifest">
+  <link rel="shortcut icon" href="/static/favicon.ico">
+</head>
+<body>
+  <div class="box">
+    <div class="logo">uqqi.ru</div>
+    <div class="sub">Панель управления</div>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="post">
+      <div class="field">
+        <label>Логин</label>
+        <input type="text" name="username" autofocus autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" name="password" autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn">Войти</button>
+    </form>
+  </div>
+</body>
+</html>
