@@ -454,6 +454,7 @@ section.block{padding:clamp(4.5rem,9vw,8rem) 0;}
 .faq-q svg{width:20px;height:20px;color:var(--muted);flex-shrink:0;transition:transform .35s var(--ease);}
 .faq-item.open .faq-q svg{transform:rotate(180deg);color:var(--terracotta);}
 .faq-a{overflow:hidden;max-height:0;transition:max-height .4s var(--ease);}
+.faq-item.open .faq-a{max-height:32rem;}
 .faq-a p{padding:0 .25rem 1.4rem;color:var(--muted);font-size:.92rem;line-height:1.7;max-width:660px;}
 
 /* ───── FINAL CTA ───── */
@@ -475,7 +476,7 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
 .foot-col a{display:block;font-size:.88rem;color:var(--muted);margin-bottom:.65rem;transition:color .2s;}
 .foot-col a:hover{color:var(--terracotta);}
 .foot-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;padding:1.5rem 0;font-size:.78rem;color:var(--muted);}
-.watermark{font-family:var(--display);font-weight:900;font-size:clamp(4rem,20vw,17rem);line-height:.78;letter-spacing:-.05em;text-align:center;background:linear-gradient(180deg,#F0D2BF 0%,var(--paper) 92%);-webkit-background-clip:text;background-clip:text;color:transparent;user-select:none;margin-bottom:-.12em;}
+.watermark{font-family:var(--display);font-weight:900;font-size:clamp(4rem,20vw,17rem);line-height:.92;padding-top:.12em;letter-spacing:-.05em;text-align:center;background:linear-gradient(180deg,#F0D2BF 0%,var(--paper) 92%);-webkit-background-clip:text;background-clip:text;color:transparent;user-select:none;margin-bottom:-.12em;}
 .watermark span{color:transparent;}
 
 @media(prefers-reduced-motion:reduce){
@@ -927,6 +928,17 @@ function showRandomSite(){
     }
   })();
 })();
+
+// FAQ-аккордеон: клик по вопросу раскрывает ответ (и закрывает остальные)
+document.querySelectorAll('.faq-q').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var item = btn.closest('.faq-item');
+    if(!item) return;
+    var wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(function(o){ o.classList.remove('open'); });
+    if(!wasOpen) item.classList.add('open');
+  });
+});
 </script>
 </body>
 </html>
