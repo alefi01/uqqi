@@ -1702,10 +1702,12 @@ async def collect_single_by_url(target_url: str, args: argparse.Namespace):
     # Mapframe/poi-ссылка (org_id в query как oid=) не редиректит на /org/:
     # карточка открывается оверлеем на карте города, вкладки каталога не
     # работают, лого не извлекается. Открываем канонический org-URL напрямую.
+    canonical_org = None
     if '/org/' not in urlsplit(target_url).path:
         m_oid = re.search(r'(?:[?&]oid=|oid%3D)(\d+)', target_url, re.I)
         if m_oid:
             target_url = f"https://yandex.ru/maps/org/{m_oid.group(1)}/"
+            canonical_org = target_url
             print(f"[SINGLE] Mapframe-ссылка → канонический org-URL: {target_url}", flush=True)
     try:
         from playwright.async_api import async_playwright
@@ -1732,7 +1734,14 @@ async def collect_single_by_url(target_url: str, args: argparse.Namespace):
             await page.wait_for_timeout(1500)
 
             final_url = page.url
-            place.url = normalize_org_url(final_url) or final_url
+            # Приоритет org-URL: из реального редиректа, иначе — канонический из oid.
+            # Сырой mapframe в place.url недопустим: _tab_url построит tab=menu
+            # вместо /prices/, каталог не спарсится (poi-оверлей их не отдаёт).
+            place.url = normalize_org_url(final_url) or canonical_org or final_url
+            if canonical_org and '/org/' not in urlsplit(place.url).path:
+                print(f"[SINGLE] ⚠ Страница не встала на /org/ ({final_url}), "
+                      f"использую канонический {canonical_org}", flush=True)
+                place.url = canonical_org
 
             place = await parse_detail_page(page, place, context)
 
