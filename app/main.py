@@ -244,6 +244,36 @@ def user_owns_site(slug: str, user_id: int | None, db: Session) -> bool:
     return bool(c and c.user_id == user_id)
 
 
+def _can_edit_site(company) -> bool:
+    """
+    Редактирование контента доступно ТОЛЬКО на оплаченной подписке.
+    Триал и неоплата — только просмотр (сайт живёт, но менять нельзя, пока
+    клиент не оплатил). Гейт на бэкенде — не полагаемся на скрытие кнопок.
+    """
+    from datetime import datetime as _dt
+    return bool(
+        company
+        and company.sub_status == "active"
+        and company.paid_until
+        and company.paid_until > _dt.utcnow()
+    )
+
+
+def _require_editable(slug: str, user_id: int | None, db: Session):
+    """Проверка владельца + существования + оплаты. Возвращает Company или 4xx."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+    if not _can_edit_site(company):
+        raise HTTPException(
+            status_code=403,
+            detail="Редактирование доступно после оплаты подписки.",
+        )
+    return company
+
+
 
 # ── Иконки особенностей ───────────────────────────────────────────────────────
 
@@ -807,6 +837,11 @@ async def cabinet_site_editor(
     company = db.query(Company).filter(Company.slug == slug).first()
     if not company or company.user_id != user_id:
         return RedirectResponse(f"https://lk.{settings.BASE_DOMAIN}/", status_code=302)
+    # Редактор доступен только на оплаченной подписке (триал/неоплата — просмотр).
+    # Бэкенд-эндпоинты сохранения защищены отдельно (_require_editable).
+    if not _can_edit_site(company):
+        return RedirectResponse(
+            f"https://lk.{settings.BASE_DOMAIN}/?edit_locked={slug}", status_code=302)
     return templates.TemplateResponse("admin_panel.html", {
         "request": request, "company": company, "from_cabinet": True,
     })
@@ -833,11 +868,7 @@ async def admin_save(
     db: Session = Depends(get_db),
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     # Сохраняем только разблокированные вкладки (флаг auto_* = False).
     # Рейтинг и галерея здесь не трогаются (только авто / отдельные эндпоинты).
@@ -873,11 +904,7 @@ async def admin_set_flag(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Переключает флаг автообновления вкладки."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
     if payload.flag not in ("auto_main", "auto_hours", "auto_socials", "auto_requisites"):
         raise HTTPException(status_code=422, detail="Неизвестный флаг")
     setattr(company, payload.flag, bool(payload.value))
@@ -897,11 +924,7 @@ async def admin_set_design(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Клиент выбирает дизайн A или B."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
     v = payload.variant.upper()
     if v not in ("A", "B"):
         raise HTTPException(status_code=422, detail="variant must be A or B")
@@ -924,11 +947,7 @@ async def gallery_toggle_manual(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Включает/выключает ручной режим галереи."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     company.gallery_manual = not company.gallery_manual
     db.commit()
@@ -943,11 +962,7 @@ async def gallery_upload(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Загружает фото в галерею с ресайзом/сжатием. Включает ручной режим."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     photos = company.gallery_photos
     if len(photos) >= MAX_GALLERY:
@@ -998,11 +1013,7 @@ async def gallery_delete(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Удаляет фото из галереи."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     photos = [p for p in company.gallery_photos if p != payload.url]
     company.gallery_photos = photos
@@ -1034,11 +1045,7 @@ async def gallery_reorder(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Сохраняет новый порядок фото (drag&drop)."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     current = set(company.gallery_photos)
     new_order = [u for u in payload.order if u in current]

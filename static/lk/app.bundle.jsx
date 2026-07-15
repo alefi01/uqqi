@@ -1143,7 +1143,11 @@ function App() {
               <h3>{menuSite.name}</h3>
               <p>{menuSite.slug}.uqqi.ru</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
-                <a className="btn btn--ghost btn--block" href={'/site/' + menuSite.slug + '/edit'}><i data-lucide="pencil"></i> Редактировать контент</a>
+                {menuSite.status === 'active'
+                  ? <a className="btn btn--ghost btn--block" href={'/site/' + menuSite.slug + '/edit'}><i data-lucide="pencil"></i> Редактировать контент</a>
+                  : <span className="tip-wrap" data-tip="Оплатите подписку, чтобы редактировать" style={{ display: 'block' }}>
+                      <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="pencil"></i> Редактировать контент</button>
+                    </span>}
                 {menuSite.canDelete === false
                   ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
                       <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>
