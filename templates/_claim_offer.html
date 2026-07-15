@@ -1,5 +1,6 @@
-{# Плавающее окошко «Приобрести этот сайт». Показывается только в claim-режиме (/demo).
-   Ожидает claim_offer = {title, city, url}. Подключается в site_a/b/c.html. #}
+{# Плавающее окошко «Приобрести этот сайт». Показывается на обычном адресе
+   обезличенного claim-сайта (claim_code && !user_id). Ожидает
+   claim_offer = {title, city, url}. Подключается в site_a/b/c.html. #}
 {% if claim_offer %}
 <div class="claim-offer" id="claimOffer">
   <button class="claim-offer__close" onclick="document.getElementById('claimOffer').classList.add('claim-offer--hidden')" aria-label="Закрыть">×</button>

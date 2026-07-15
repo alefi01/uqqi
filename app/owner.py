@@ -403,7 +403,8 @@ async def company_materials(company_id: int,
 
     base = settings.BASE_DOMAIN
     site_url  = f"https://{company.slug}.{base}/"
-    claim_url = f"{site_url}demo" if company.claim_code else ""
+    # Клиенту отправляем обычную ссылку на сайт — окно «Приобрести» на ней уже есть
+    claim_url = site_url if company.claim_code else ""
     city = _city_from_address_owner(company.address)
 
     # Дружелюбный текст предложения (реальная молодая команда, не мошенники)
@@ -1193,7 +1194,7 @@ async def parser_import(task_id: str,
             "title":      place.title,
             "slug":       slug,
             "claim_code": claim_code,
-            "claim_url":  f"https://{slug}.{settings.BASE_DOMAIN}/demo",
+            "claim_url":  f"https://{slug}.{settings.BASE_DOMAIN}/",
         })
 
     skipped = sum(1 for p in task.places if slugify(p.title) and

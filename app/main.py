@@ -654,22 +654,14 @@ async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
     return Response(content="\n".join(xml), media_type="application/xml")
 
 
-@app.get("/demo", response_class=HTMLResponse)
-async def demo_view(request: Request, db: Session = Depends(get_db)):
+@app.get("/demo")
+async def demo_view(request: Request):
     """
-    Claim-режим: показывает готовый сайт из панели + окошко «Приобрести».
-    Работает только для обезличенных сайтов с активным claim_code.
+    Устарело: /demo больше не нужен — окно «Приобрести» показывается на обычном
+    адресе (slug.uqqi.ru/) у обезличенного claim-сайта. Оставлен редиректом,
+    чтобы уже разосланные клиентам ссылки на /demo не ломались.
     """
-    if is_cabinet_host(request):
-        return RedirectResponse(url="/", status_code=302)
-    company = get_company_by_request(request, db)
-    # Окошко только у обезличенных сайтов из панели с активным claim
-    if not company or not company.claim_code or company.user_id:
-        # Не claim-сайт → обычная витрина
-        return RedirectResponse(url="/", status_code=302)
-    # Помечаем запрос как claim-просмотр (site_index обойдёт заглушки и покажет окошко)
-    request.state.claim_view = True
-    return await site_index(request, db)
+    return RedirectResponse(url="/", status_code=302)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -684,28 +676,22 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
         _track_visit(request, "__landing__", db)
         return templates.TemplateResponse("landing.html", {"request": request})
 
-    # claim-режим (заход по /demo) — показываем сайт + окошко «Приобрести».
-    # Сами claim-сайты и так без заглушки (см. _is_paid_active), bypass нужен только
-    # чтобы не мешал строящийся/деактивированный статус.
-    is_claim_view = getattr(request.state, "claim_view", False)
-    bypass_stub = is_claim_view
-
     # Деактивированный вручную сайт — дружелюбная заглушка
-    if not company.is_active and not bypass_stub:
+    if not company.is_active:
         return templates.TemplateResponse("site_inactive.html", {
             "request": request,
             "company": company,
         }, status_code=200)
 
     # Сайт ещё строится — заглушка "готовится"
-    if company.build_status in ("queued", "building") and not bypass_stub:
+    if company.build_status in ("queued", "building"):
         return templates.TemplateResponse("site_inactive.html", {
             "request": request, "company": company, "building": True,
         }, status_code=200)
 
     # Триал/подписка неактивны
     show_overlay = False
-    if not _is_paid_active(company) and not bypass_stub:
+    if not _is_paid_active(company):
         mode = _unpaid_show_mode(company)
         if mode == "stub":
             return templates.TemplateResponse("site_inactive.html", {
@@ -724,8 +710,10 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
 
     ctx = _build_site_context(request, company)
     ctx["unpaid_overlay"] = show_overlay
-    # Claim-окошко «Приобрести» — только в claim-режиме (заход по /demo)
-    if is_claim_view and company.claim_code and not company.user_id:
+    # Claim-окошко «Приобрести» — на ОБЫЧНОМ адресе у обезличенного claim-сайта.
+    # Клиенту отправляем реальную ссылку slug.uqqi.ru/ — там сразу и сайт, и
+    # предложение приобрести. Отдельная страница /demo больше не нужна.
+    if company.claim_code and not company.user_id:
         ctx["claim_offer"] = {
             "title": company.title,
             "city":  _city_from_address(company.address),
