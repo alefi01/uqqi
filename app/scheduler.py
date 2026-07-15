@@ -7,6 +7,7 @@ app/scheduler.py — фоновые задачи (asyncio):
 from __future__ import annotations
 
 import asyncio
+import time
 from datetime import datetime, timedelta
 
 from app.config import settings
@@ -15,6 +16,16 @@ from app.mailer import send_email, billing_reminder_html
 
 
 _RUNNING = False
+
+# Heartbeat планировщика: обновляется в _loop_monitor, читается /health.
+_HEARTBEAT_TS: float = 0.0
+
+
+def heartbeat_age() -> float | None:
+    """Секунд с последнего обновления heartbeat, либо None если ни разу."""
+    if not _HEARTBEAT_TS:
+        return None
+    return time.time() - _HEARTBEAT_TS
 
 
 async def _billing_check():
@@ -286,6 +297,70 @@ async def _loop_cleanup():
         await asyncio.sleep(86400)  # раз в сутки
 
 
+# ── Мониторинг ────────────────────────────────────────────────────────────────
+
+DISK_ALERT_PCT = 85       # порог заполнения диска для алерта
+BUILD_FAIL_ALERT = 3      # столько ошибок сборки за час → алерт
+
+
+def _check_disk():
+    """Диск заполнен > DISK_ALERT_PCT % → алерт в Telegram (троттл 6 ч)."""
+    try:
+        import shutil
+        from app.notifier import send_telegram
+        total, used, free = shutil.disk_usage("/")
+        pct = used * 100 // total
+        if pct >= DISK_ALERT_PCT:
+            free_gb = free / (1024 ** 3)
+            send_telegram(
+                f"🟠 uqqi: диск заполнен на {pct}% (свободно {free_gb:.1f} ГБ). "
+                f"Почисти логи/бэкапы/кеши.",
+                key="disk", throttle_sec=6 * 3600,
+            )
+    except Exception as e:
+        print(f"[MONITOR] disk check: {e}", flush=True)
+
+
+def _check_build_failures():
+    """За последний час BUILD_FAIL_ALERT+ сайтов в 'error' → алерт (троттл 1 ч)."""
+    try:
+        from app.notifier import send_telegram
+        db = SessionLocal()
+        try:
+            cutoff = datetime.utcnow() - timedelta(hours=1)
+            # last_parsed_at обновляется при попытке; для error берём created_at как запас
+            q = db.query(Company).filter(Company.build_status == "error")
+            recent = [c for c in q.all()
+                      if (c.last_parsed_at or c.created_at or datetime.min) >= cutoff]
+            n = len(recent)
+        finally:
+            db.close()
+        if n >= BUILD_FAIL_ALERT:
+            send_telegram(
+                f"🟠 uqqi: за последний час сборок в ошибке: {n}. "
+                f"Проверь journalctl -u uqqi (капча/парсер/память?).",
+                key="build_fail", throttle_sec=3600,
+            )
+    except Exception as e:
+        print(f"[MONITOR] build check: {e}", flush=True)
+
+
+async def _loop_monitor():
+    """
+    Раз в 60с обновляет heartbeat (его читает /health).
+    Раз в ~5 мин — проверки диска и ошибок сборки с алертами в Telegram.
+    """
+    global _HEARTBEAT_TS
+    tick = 0
+    while True:
+        _HEARTBEAT_TS = time.time()
+        if tick % 5 == 0:  # каждые ~5 минут
+            _check_disk()
+            _check_build_failures()
+        tick += 1
+        await asyncio.sleep(60)
+
+
 def start_scheduler():
     """Запускает фоновые задачи. Вызывается из main при старте."""
     global _RUNNING
@@ -297,4 +372,5 @@ def start_scheduler():
     loop.create_task(_loop_refresh())
     loop.create_task(_loop_watchdog())
     loop.create_task(_loop_cleanup())
-    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов)", flush=True)
+    loop.create_task(_loop_monitor())
+    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг)", flush=True)

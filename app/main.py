@@ -99,6 +99,64 @@ def on_startup():
         print(f"[APP] Восстановление сборок не запущено: {e}")
 
 
+# ── Health-check (для UptimeRobot и алертов) ──────────────────────────────────
+
+@app.get("/health")
+async def health():
+    """
+    Проверка живости: БД отвечает, планировщик крутится, очередь не залипла.
+    200 если всё ок, иначе 503 (внешний пинг увидит 'down').
+    Доступен на любом хосте без авторизации.
+    """
+    from sqlalchemy import text as _sql
+    checks: dict[str, str] = {}
+
+    # 1. БД отвечает
+    try:
+        db = SessionLocal()
+        try:
+            db.execute(_sql("SELECT 1"))
+        finally:
+            db.close()
+        checks["db"] = "ok"
+    except Exception as e:
+        checks["db"] = f"fail: {type(e).__name__}"
+
+    # 2. Планировщик жив (heartbeat обновлялся < 3 мин назад)
+    try:
+        from app.scheduler import heartbeat_age
+        age = heartbeat_age()
+        if age is None:
+            checks["scheduler"] = "starting"  # ещё не было первого тика
+        elif age < 180:
+            checks["scheduler"] = "ok"
+        else:
+            checks["scheduler"] = f"stale ({int(age)}s)"
+    except Exception as e:
+        checks["scheduler"] = f"fail: {type(e).__name__}"
+
+    # 3. Очередь не залипла: нет сборок в 'building' дольше 10 мин
+    try:
+        db = SessionLocal()
+        try:
+            cutoff = datetime.utcnow() - timedelta(minutes=10)
+            stuck = db.query(Company).filter(
+                Company.build_status == "building",
+                Company.last_parsed_at.is_(None) | (Company.last_parsed_at < cutoff),
+            ).count()
+        finally:
+            db.close()
+        checks["queue"] = "ok" if stuck == 0 else f"stuck: {stuck}"
+    except Exception as e:
+        checks["queue"] = f"fail: {type(e).__name__}"
+
+    healthy = all(v in ("ok", "starting") for v in checks.values())
+    return JSONResponse(
+        {"status": "ok" if healthy else "degraded", "checks": checks},
+        status_code=200 if healthy else 503,
+    )
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 RESERVED_LABELS = {"lk", "www", "api", "admin", "static", "mail"}
