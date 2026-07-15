@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     SUBSCRIPTION_PRICE: str = "990.00"  # цена за сайт в месяц, ₽
     SUBSCRIPTION_DAYS:  int = 30        # период подписки
 
+    # Telegram-бот: вывоз бэкапов БД + алерты мониторинга.
+    # Пустые дефолты — реальные значения только в .env (не коммитить).
+    TELEGRAM_BOT_TOKEN: str = ""   # токен от @BotFather
+    TELEGRAM_CHAT_ID:   str = ""   # ID чата/канала для доставки
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @property
