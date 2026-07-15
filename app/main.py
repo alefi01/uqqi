@@ -474,23 +474,14 @@ async def yukassa_webhook(request: Request, db: Session = Depends(get_db)):
     if not payment_id:
         return {"ok": True}
 
-    # Обрабатываем только успешную оплату
+    # Обрабатываем только успешную оплату.
+    # Fail-CLOSED: применяем ТОЛЬКО если сами подтвердили статус+сумму у ЮKassa.
+    # Телу webhook не доверяем (его можно подделать); при сбое проверки платёж
+    # остаётся pending и его подхватит реконсиляция в scheduler.
     if event == "payment.succeeded":
-        from app.cabinet import _apply_successful_payment
-        # Доп. проверка: подтверждаем статус у ЮKassa, если ключи настроены
-        verified = True
-        try:
-            from app.yukassa import get_payment
-            if settings.YUKASSA_SHOP_ID:
-                remote = get_payment(payment_id)
-                verified = remote.get("status") == "succeeded"
-        except Exception as e:
-            print(f"[YUKASSA] Не удалось проверить платёж {payment_id}: {e}", flush=True)
-            verified = True  # доверяем webhook если проверка недоступна
-
-        if verified:
-            applied = _apply_successful_payment(payment_id, db)
-            print(f"[YUKASSA] Платёж {payment_id} обработан (применён={applied})", flush=True)
+        from app.cabinet import _verify_and_apply_payment
+        applied, note = _verify_and_apply_payment(payment_id, db)
+        print(f"[YUKASSA] webhook {payment_id}: {note}", flush=True)
 
     elif event == "payment.canceled":
         from app.models import Payment

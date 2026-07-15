@@ -361,6 +361,47 @@ async def _loop_monitor():
         await asyncio.sleep(60)
 
 
+# ── Реконсиляция платежей (safety net к webhook) ──────────────────────────────
+
+async def _reconcile_pending_payments():
+    """
+    Сами перепроверяем pending-платежи у ЮKassa: webhook мог не дойти, или
+    проверка в момент webhook временно упала (fail-closed оставил pending).
+    Применяем только через _verify_and_apply_payment (статус + сумма).
+    Берём платежи за последние 48ч, чтобы не дёргать API по древним.
+    """
+    if not settings.YUKASSA_SHOP_ID:
+        return
+    db = SessionLocal()
+    try:
+        from app.models import Payment
+        from app.cabinet import _verify_and_apply_payment
+        cutoff = datetime.utcnow() - timedelta(hours=48)
+        pending = db.query(Payment).filter(
+            Payment.status == "pending",
+            Payment.created_at >= cutoff,
+        ).all()
+        for p in pending:
+            try:
+                applied, note = _verify_and_apply_payment(p.payment_id, db)
+                if applied:
+                    print(f"[RECONCILE] {p.payment_id}: {note}", flush=True)
+            except Exception as e:
+                print(f"[RECONCILE] {p.payment_id}: {e}", flush=True)
+    except Exception as e:
+        print(f"[RECONCILE] Ошибка: {e}", flush=True)
+    finally:
+        db.close()
+
+
+async def _loop_reconcile():
+    """Реконсиляция платежей — раз в 10 мин, первый прогон через 3 мин после старта."""
+    await asyncio.sleep(180)
+    while True:
+        await _reconcile_pending_payments()
+        await asyncio.sleep(600)
+
+
 def start_scheduler():
     """Запускает фоновые задачи. Вызывается из main при старте."""
     global _RUNNING
@@ -373,4 +414,5 @@ def start_scheduler():
     loop.create_task(_loop_watchdog())
     loop.create_task(_loop_cleanup())
     loop.create_task(_loop_monitor())
-    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг)", flush=True)
+    loop.create_task(_loop_reconcile())
+    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг + реконсиляция платежей)", flush=True)

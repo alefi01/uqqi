@@ -261,6 +261,44 @@ https://lk.uqqi.ru/api/yukassa/webhook
 
 События: `payment.succeeded`, `payment.canceled`.
 
+### Whitelist IP ЮKassa (доп. слой защиты webhook)
+
+Приложение уже проверяет каждый webhook напрямую у ЮKassa (статус + сумма,
+fail-closed) — подделать нельзя. Ограничение по IP на уровне nginx — **второй
+слой**: отсекает мусорные/поддельные POST'ы ещё до приложения.
+
+⚠️ **Список подсетей ЮKassa меняется** — возьми актуальный из офиц. доки
+(«IP-адреса, с которых приходят уведомления»):
+<https://yookassa.ru/developers/using-api/webhooks#ip>. Вшивать устаревший
+список опасно — заблокируешь реальные webhook'и.
+
+В `server`-блоке `lk.uqqi.ru` добавь отдельный `location` (подставь актуальные
+подсети вместо примера):
+
+```nginx
+location = /api/yukassa/webhook {
+    # Подсети ЮKassa (СВЕРЬ С ДОКОЙ — могут отличаться):
+    allow 185.71.76.0/27;
+    allow 185.71.77.0/27;
+    allow 77.75.153.0/25;
+    allow 77.75.156.11;
+    allow 77.75.156.35;
+    allow 77.75.154.128/25;
+    allow 2a02:5180::/32;
+    deny  all;
+
+    proxy_pass         http://127.0.0.1:8000;
+    proxy_set_header   Host              $host;
+    proxy_set_header   X-Real-IP         $remote_addr;
+    proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+}
+```
+
+`nginx -t && systemctl reload nginx`. Проверь после: тестовый платёж должен
+проходить (webhook доходит), а `curl -X POST https://lk.uqqi.ru/api/yukassa/webhook`
+с твоего IP — отдавать 403.
+
 ---
 
 ## 12.5. Бэкапы БД (ежедневный дамп + вывоз в Telegram)

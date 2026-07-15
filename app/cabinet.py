@@ -734,4 +734,60 @@ def _apply_successful_payment(payment_id: str, db: OrmSession) -> bool:
     return True
 
 
+def _verify_and_apply_payment(payment_id: str, db: OrmSession) -> tuple[bool, str]:
+    """
+    Проверяет платёж напрямую у ЮKassa и применяет ТОЛЬКО при:
+      • payment_id есть в нашей БД,
+      • ЮKassa вернула status == succeeded,
+      • оплаченная сумма совпадает с ожидаемой (Payment.amount).
+    Fail-CLOSED: при любой невозможности проверить (API недоступен, нет ключей,
+    сумма не сошлась) — НЕ применяет, оставляет pending (подхватит реконсиляция).
+    Возвращает (применён_ли_сейчас, заметка_для_лога).
+    """
+    from app.models import Payment
+    from decimal import Decimal, InvalidOperation
+
+    pay = db.query(Payment).filter(Payment.payment_id == payment_id).first()
+    if not pay:
+        return False, "payment_id нет в нашей БД — игнор"
+    if pay.processed:
+        return False, "уже обработан (идемпотентность)"
+
+    if not settings.YUKASSA_SHOP_ID or not settings.YUKASSA_SECRET_KEY:
+        return False, "ЮKassa не настроена — проверка невозможна, оставляю pending"
+
+    # Спрашиваем истину у ЮKassa (телу webhook не доверяем)
+    from app.yukassa import get_payment
+    try:
+        remote = get_payment(payment_id)
+    except Exception as e:
+        return False, f"проверка статуса не удалась ({e}) — оставляю pending"
+
+    status = remote.get("status", "")
+    if status == "canceled":
+        pay.status = "canceled"
+        pay.processed = True
+        db.commit()
+        return False, "ЮKassa: canceled"
+    if status != "succeeded":
+        return False, f"ЮKassa статус={status!r} — не применяю"
+
+    # Сверка суммы: реально оплачено vs ожидали
+    remote_amount = (remote.get("amount") or {}).get("value", "")
+    try:
+        if Decimal(str(remote_amount)) != Decimal(str(pay.amount)):
+            from app.notifier import send_telegram
+            send_telegram(
+                f"🔴 uqqi: платёж {payment_id} succeeded, но сумма НЕ совпала — "
+                f"оплачено {remote_amount}, ожидали {pay.amount}. Не применяю.",
+                key=f"amount_{payment_id}", throttle_sec=6 * 3600,
+            )
+            return False, f"сумма не совпала (оплачено {remote_amount}, ждали {pay.amount})"
+    except (InvalidOperation, TypeError):
+        return False, f"некорректная сумма от ЮKassa: {remote_amount!r}"
+
+    applied = _apply_successful_payment(payment_id, db)
+    return applied, "применён" if applied else "не применён (компания не найдена?)"
+
+
 # ── НАСТРОЙКИ ─────────────────────────────────────────────────────────────────
