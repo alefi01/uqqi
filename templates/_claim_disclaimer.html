@@ -1,0 +1,20 @@
+{# Юр-дисклеймер для обезличенных claim-сайтов (демо, ждёт покупателя).
+   Показывается только при is_claim_site. Подключается в site_a/b/c внизу.
+   Защита: claim-модель серая (сайты созданы автоматически без ведома владельца),
+   нужен видимый канал «удалить». #}
+{% if is_claim_site %}
+<div class="uqqi-demo-note" role="note">
+  <div class="uqqi-demo-note__in">
+    <b>Демо-версия.</b> Создано автоматически из открытых данных Яндекс.Карт.
+    Не является официальным сайтом компании.
+    Удалить — <a href="mailto:support@uqqi.ru?subject=Удалить демо-сайт {{ company.slug }}.uqqi.ru">support@uqqi.ru</a>
+  </div>
+</div>
+<style>
+  .uqqi-demo-note{background:#1A1714;color:rgba(255,255,255,.72);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:.8rem;line-height:1.5;border-top:1px solid rgba(255,255,255,.1);}
+  .uqqi-demo-note__in{max-width:1120px;margin:0 auto;padding:.85rem 20px;text-align:center;}
+  .uqqi-demo-note a{color:#E8B98F;text-decoration:underline;}
+</style>
+{% endif %}

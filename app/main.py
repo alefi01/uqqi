@@ -396,6 +396,9 @@ def _build_site_context(request: Request, company) -> dict:
     # noindex для неоплаченных, а также для демо-показа и claim-сайтов из панели
     seo_noindex = (not _is_paid_by_subscription(company)) or bool(getattr(company, "claim_code", None))
 
+    # Обезличенный claim-сайт (ждёт покупателя) — показываем юр-дисклеймер в подвале
+    is_claim_site = bool(getattr(company, "claim_code", None) and not company.user_id)
+
     return {
         "request":        request,
         "company":        company,
@@ -406,6 +409,7 @@ def _build_site_context(request: Request, company) -> dict:
         "feat_icon":      _feat_icon,
         "site_url":       site_url,
         "seo_noindex":    seo_noindex,
+        "is_claim_site":  is_claim_site,
     }
 
 
