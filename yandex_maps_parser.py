@@ -1156,15 +1156,23 @@ async def scrape_catalog(page) -> list:
         HARVEST_JS = r"""() => {
             const out = [];
             const sel = '.business-full-items-grouped-view__item, .related-item-photo-view, .related-item-list-view';
+            const pick = (img) => {
+                if (!img) return '';
+                let s = img.currentSrc || img.src || img.getAttribute('data-src') || '';
+                if (!s || !s.includes('avatars.mds.yandex.net')) {
+                    // ленивая картинка: URL может быть только в srcset до загрузки
+                    const ss = img.getAttribute('srcset') || '';
+                    const m = ss.match(/https:\/\/avatars\.mds\.yandex\.net\/[^\s]+/);
+                    if (m) s = m[0];
+                }
+                return s.includes('avatars.mds.yandex.net') ? s.replace(':443/', '/') : '';
+            };
             document.querySelectorAll(sel).forEach(item => {
                 const t = item.querySelector('[class*="__title"]');
                 const name = t ? (t.getAttribute('title') || t.textContent || '').trim() : '';
                 if (!name) return;
-                const img = item.querySelector('img');
-                let src = img ? (img.currentSrc || img.src || img.getAttribute('data-src') || '') : '';
-                if (src && src.includes('avatars.mds.yandex.net')) {
-                    out.push([name, src.replace(':443/', '/')]);
-                }
+                const src = pick(item.querySelector('img'));
+                if (src) out.push([name, src]);
             });
             return out;
         }"""
@@ -1178,9 +1186,12 @@ async def scrape_catalog(page) -> list:
             except Exception:
                 pass
 
+        # Мелкий шаг (≈один экран) даёт каждому ряду задержаться в зоне
+        # видимости достаточно, чтобы лениво-подгружаемое фото получило src.
+        # Грубый шаг 3000px пролетал ряды — фото не успевали и терялись.
         prev_count = -1
         stable = 0
-        for _ in range(25):
+        for _ in range(60):
             cur = await page.evaluate(r"""() => {
                 const items = document.querySelectorAll(
                     '.business-full-items-grouped-view__item, .related-item-photo-view, .related-item-list-view'
@@ -1191,13 +1202,13 @@ async def scrape_catalog(page) -> list:
             await _harvest()  # ловим картинки, пока карточки в зоне видимости
             if cur == prev_count:
                 stable += 1
-                if stable >= 3:  # 3 раза подряд без изменений — дошли до конца
+                if stable >= 4:  # 4 раза подряд без изменений — дошли до конца
                     break
             else:
                 stable = 0
             prev_count = cur
-            await page.mouse.wheel(0, 3000)
-            await page.wait_for_timeout(700)
+            await page.mouse.wheel(0, 1100)
+            await page.wait_for_timeout(550)
         # финальная пауза на догрузку последних картинок
         await page.wait_for_timeout(800)
         await _harvest()
