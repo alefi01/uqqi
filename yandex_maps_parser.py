@@ -1149,7 +1149,35 @@ async def scrape_catalog(page) -> list:
         except Exception:
             pass
         await page.wait_for_timeout(1000)
-        # Прокручиваем, пока растёт число товаров И загруженных картинок (lazy load)
+        # Прокручиваем, пока растёт число товаров И загруженных картинок (lazy load).
+        # Список виртуализируется: у прокрученных карточек <img> выгружается,
+        # поэтому URL картинок собираем ИНКРЕМЕНТАЛЬНО на каждом шаге в img_map
+        # (имя товара → url), а не одним махом в конце — иначе теряем ~2/3 фото.
+        HARVEST_JS = r"""() => {
+            const out = [];
+            const sel = '.business-full-items-grouped-view__item, .related-item-photo-view, .related-item-list-view';
+            document.querySelectorAll(sel).forEach(item => {
+                const t = item.querySelector('[class*="__title"]');
+                const name = t ? (t.getAttribute('title') || t.textContent || '').trim() : '';
+                if (!name) return;
+                const img = item.querySelector('img');
+                let src = img ? (img.currentSrc || img.src || img.getAttribute('data-src') || '') : '';
+                if (src && src.includes('avatars.mds.yandex.net')) {
+                    out.push([name, src.replace(':443/', '/')]);
+                }
+            });
+            return out;
+        }"""
+        img_map = {}
+
+        async def _harvest():
+            try:
+                for name, src in (await page.evaluate(HARVEST_JS)) or []:
+                    if name and name not in img_map:
+                        img_map[name] = src
+            except Exception:
+                pass
+
         prev_count = -1
         stable = 0
         for _ in range(25):
@@ -1160,6 +1188,7 @@ async def scrape_catalog(page) -> list:
                 const imgs = [...document.querySelectorAll('img')].filter(i => i.complete && i.naturalWidth > 0).length;
                 return items * 1000 + imgs;  // комбинированный счётчик
             }""")
+            await _harvest()  # ловим картинки, пока карточки в зоне видимости
             if cur == prev_count:
                 stable += 1
                 if stable >= 3:  # 3 раза подряд без изменений — дошли до конца
@@ -1171,6 +1200,7 @@ async def scrape_catalog(page) -> list:
             await page.wait_for_timeout(700)
         # финальная пауза на догрузку последних картинок
         await page.wait_for_timeout(800)
+        await _harvest()
 
         result = await page.evaluate(r"""() => {
             const items = [];
@@ -1318,7 +1348,19 @@ async def scrape_catalog(page) -> list:
             });
             return items;
         }""")
-        return result or []
+        result = result or []
+        # Заполняем пропущенные фото из инкрементально собранной map
+        # (виртуализация выгружает <img> прокрученных карточек → src пуст в финале)
+        filled = 0
+        for it in result:
+            if not it.get('image_url'):
+                url = img_map.get((it.get('name') or '').strip())
+                if url:
+                    it['image_url'] = url
+                    filled += 1
+        if filled:
+            print(f"[INFO] scrape_catalog: дозаполнено фото из map: {filled}", flush=True)
+        return result
     except Exception:
         return []
 
