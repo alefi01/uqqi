@@ -12,7 +12,6 @@ app/owner.py — роутер владельца (скрытая панель у
     POST /{PANEL_PATH}/api/parser/stop/{id}      — остановить
     POST /{PANEL_PATH}/api/parser/import/{id}    — импортировать результаты в БД
 
-    POST /{PANEL_PATH}/api/company/{id}/toggle
     DELETE /{PANEL_PATH}/api/company/{id}
 """
 
@@ -345,33 +344,6 @@ async def company_screenshot(company_id: int,
 
 # ── CLAIM / ДЕМО / МАТЕРИАЛЫ ДЛЯ ПРОДАЖИ ──────────────────────────────────────
 
-@router.post("/api/company/{company_id}/demo")
-async def toggle_demo(company_id: int,
-                       db: Session = Depends(get_db),
-                       _: bool = Depends(require_owner)):
-    """Снять заглушку на 7 дней (показать сайт вживую по обычному адресу). Повтор — продлевает."""
-    from datetime import datetime as _dt, timedelta as _td
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-    company.demo_until = _dt.utcnow() + _td(days=7)
-    db.commit()
-    return {"ok": True, "demo_until": company.demo_until.isoformat()}
-
-
-@router.post("/api/company/{company_id}/demo-off")
-async def toggle_demo_off(company_id: int,
-                           db: Session = Depends(get_db),
-                           _: bool = Depends(require_owner)):
-    """Вернуть заглушку досрочно."""
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-    company.demo_until = None
-    db.commit()
-    return {"ok": True}
-
-
 @router.post("/api/company/{company_id}/make-screenshot")
 async def make_screenshot(company_id: int,
                            db: Session = Depends(get_db),
@@ -429,22 +401,6 @@ async def company_materials(company_id: int,
         "screenshot": company.screenshot or "",
         "has_claim":  bool(company.claim_code),
     }
-
-
-class TogglePayload(BaseModel):
-    active: bool
-
-
-@router.post("/api/company/{company_id}/toggle")
-async def toggle_company(company_id: int, payload: TogglePayload,
-                          db: Session = Depends(get_db),
-                          _: bool = Depends(require_owner)):
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-    company.is_active = payload.active
-    db.commit()
-    return {"ok": True}
 
 
 @router.delete("/api/company/{company_id}")
@@ -712,38 +668,6 @@ async def set_variant(company_id: int, payload: VariantPayload,
     company.template_variant = v
     db.commit()
     return {"ok": True, "variant": v}
-
-
-# ── API: БИЛЛИНГ ──────────────────────────────────────────────────────────────
-
-class BillingPayload(BaseModel):
-    next_payment_date: str = ""   # YYYY-MM-DD
-    client_email:      str = ""
-
-
-@router.post("/api/company/{company_id}/billing")
-async def set_billing(company_id: int, payload: BillingPayload,
-                       db: Session = Depends(get_db),
-                       _: bool = Depends(require_owner)):
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-
-    from datetime import datetime as _dt
-    if payload.next_payment_date:
-        try:
-            company.next_payment_date = _dt.strptime(payload.next_payment_date, "%Y-%m-%d")
-            # сброс флагов уведомлений при смене даты
-            company.notified_7d = False
-            company.notified_3d = False
-        except ValueError:
-            raise HTTPException(status_code=422, detail="Дата в формате ГГГГ-ММ-ДД")
-    else:
-        company.next_payment_date = None
-
-    company.client_email = payload.client_email.strip()[:255]
-    db.commit()
-    return {"ok": True}
 
 
 # ── API: ПАРСЕР ───────────────────────────────────────────────────────────────
@@ -1057,11 +981,8 @@ async def _refresh_single_company(company, db) -> dict:
         if new_socials:
             company.social_links = new_socials
 
-    # Реквизиты — Яндекс отдаёт не всегда, пустым не затираем
-    if company.auto_requisites:
-        _upd("org_name", getattr(match, 'org_name', ''))
-        _upd("org_type", getattr(match, 'org_type', ''))
-        _upd("org_inn",  getattr(match, 'org_inn', ''))
+    # Реквизиты — только вручную (клиент вводит юр-данные сам), автообновление
+    # их НЕ трогает: Яндекс ИНН толком не отдаёт, а перезапись затёрла бы ручной ввод.
 
     # Поля, которые всегда обновляются автоматически (не редактируются вручную):
     # рейтинг, число оценок, логотип, кнопка записи, средний чек, особенности, каталог, отзыслан

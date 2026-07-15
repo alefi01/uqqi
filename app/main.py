@@ -881,10 +881,10 @@ async def admin_save(
         company.hours    = payload.hours
     if not company.auto_socials:
         company.social_links = payload.social_links
-    if not company.auto_requisites:
-        company.org_name = payload.org_name[:500]
-        company.org_type = payload.org_type[:50]
-        company.org_inn  = payload.org_inn[:20]
+    # Реквизиты — всегда вручную (галочка автообновления убрана из панели)
+    company.org_name = payload.org_name[:500]
+    company.org_type = payload.org_type[:50]
+    company.org_inn  = payload.org_inn[:20]
     db.commit()
     return {"ok": True}
 
