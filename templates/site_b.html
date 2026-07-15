@@ -271,11 +271,11 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
 
 <nav class="nav" id="nav">
   <a class="nav__brand" href="#top" onclick="event.preventDefault();window.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer;text-decoration:none;color:inherit">
-    <div class="nav__seal">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">{% else %}<b>{{ company.title[:1]|lower }}<span>.</span></b>{% endif %}</div>
+    {% if company.logo_url %}<div class="nav__seal"><img src="{{ company.logo_url }}" alt=""></div>{% endif %}
     <div class="nav__name">{{ company.title }}</div>
   </a>
   <div class="nav__links">
-    <a href="#catalog">{{ company.catalog_title or 'Услуги' }}</a>
+    {% if company.menu_items %}<a href="#catalog">{{ company.catalog_title or 'Услуги' }}</a>{% endif %}
     <a href="#photos">Фото</a>
     <a href="#reviews">Отзывы</a>
     <a href="#location">Как найти</a>
@@ -356,6 +356,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
 {% endif %}
 
 <!-- CATALOG (price list) -->
+{% if company.menu_items %}
 <section class="section section--alt" id="catalog">
   <div class="wrap reveal">
     <div class="sec-head"><div><span class="num">02</span><h2>{{ company.catalog_title or "Товары и услуги" }}</h2></div></div>
@@ -364,6 +365,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
     <div class="pagination" id="pagination"></div>
   </div>
 </section>
+{% endif %}
 
 <!-- PHOTOS -->
 {% if company.gallery_photos %}
@@ -421,7 +423,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brand">
-        <div class="nav__seal">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">{% else %}<b>{{ company.title[:1]|lower }}<span>.</span></b>{% endif %}</div>
+        {% if company.logo_url %}<div class="nav__seal"><img src="{{ company.logo_url }}" alt=""></div>{% endif %}
         <div class="foot-name">{{ company.title }}</div>
       </div>
       <div class="foot-src">{% if company.yandex_url %}Данные из <a href="{{ company.yandex_url }}" target="_blank" rel="noopener">Яндекс Карт</a> · {% endif %}сайт на <a href="https://uqqi.ru" target="_blank" rel="noopener">uqqi.ru</a></div>
