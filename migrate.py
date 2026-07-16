@@ -236,6 +236,38 @@ def main():
             print("[migrate] + payments.days")
             added += 1
 
+    # jobs (очередь фоновых Playwright-задач; Блок 9)
+    if not table_exists(cur, "jobs"):
+        cur.execute("""
+            CREATE TABLE jobs (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                type         VARCHAR(30),
+                payload      TEXT DEFAULT '{}',
+                status       VARCHAR(20) DEFAULT 'pending',
+                attempts     INTEGER DEFAULT 0,
+                max_attempts INTEGER DEFAULT 3,
+                timeout_sec  INTEGER DEFAULT 180,
+                progress     VARCHAR(255) DEFAULT '',
+                result       TEXT DEFAULT '',
+                error        TEXT DEFAULT '',
+                worker_pid   INTEGER,
+                created_at   DATETIME,
+                started_at   DATETIME,
+                finished_at  DATETIME
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_jobs_status ON jobs (status)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_jobs_type ON jobs (type)")
+        print("[migrate] + таблица jobs")
+        added += 1
+
+    # WAL: несколько процессов (app + воркеры) пишут в одну SQLite
+    try:
+        mode = cur.execute("PRAGMA journal_mode=WAL").fetchone()
+        print(f"[migrate] journal_mode = {mode[0] if mode else '?'}")
+    except Exception as e:
+        print(f"[migrate] WAL не включён: {e}")
+
     # Пометить существующие сайты как демо (без владельца) — разово при первой миграции.
     # Только если колонка user_id только что добавлена (все user_id пустые).
     try:
