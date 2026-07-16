@@ -744,6 +744,9 @@ def _apply_successful_payment(payment_id: str, db: OrmSession) -> bool:
     company.sub_status    = "active"
     company.is_active     = True
     company.trial_ends_at = None  # триал больше не релевантен
+    # Сбрасываем флаги напоминаний о продлении — для нового оплаченного периода
+    company.notified_7d = False
+    company.notified_3d = False
 
     pay.status    = "succeeded"
     pay.processed = True

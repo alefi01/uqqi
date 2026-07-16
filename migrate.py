@@ -45,6 +45,10 @@ COMPANY_COLUMNS = {
     "client_email":       "VARCHAR(255) DEFAULT ''",
     "notified_7d":        "BOOLEAN DEFAULT 0",
     "notified_3d":        "BOOLEAN DEFAULT 0",
+    "notified_trial_d3":  "BOOLEAN DEFAULT 0",
+    "notified_trial_d6":  "BOOLEAN DEFAULT 0",
+    "welcome_sent":       "BOOLEAN DEFAULT 0",
+    "last_report_at":     "DATETIME",
     # на случай свежей БД без ранних полей
     "logo_url":           "VARCHAR(500) DEFAULT ''",
     "menu_items":         "TEXT DEFAULT '[]'",

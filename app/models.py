@@ -157,8 +157,13 @@ class Company(Base):
     # Биллинг
     next_payment_date = Column(DateTime, nullable=True)  # дата следующей оплаты
     client_email      = Column(String(255), default="")  # email клиента для уведомлений
-    notified_7d       = Column(Boolean, default=False)   # отправлено уведомление за 7 дней
-    notified_3d       = Column(Boolean, default=False)   # отправлено уведомление за 3 дня
+    notified_7d       = Column(Boolean, default=False)   # напоминание о продлении за 7 дней (оплаченные)
+    notified_3d       = Column(Boolean, default=False)   # напоминание о продлении за 3 дня (оплаченные)
+    # Цепочка писем триала/удержания (идемпотентность — одноразовые флаги)
+    notified_trial_d3 = Column(Boolean, default=False)   # письмо «3 дня триала: метрики»
+    notified_trial_d6 = Column(Boolean, default=False)   # письмо «триал кончается завтра»
+    welcome_sent      = Column(Boolean, default=False)   # письмо «что дальше» после первой оплаты
+    last_report_at    = Column(DateTime, nullable=True)  # когда слали последний ежемесячный отчёт
 
     # Флаги
     is_active       = Column(Boolean, default=True)

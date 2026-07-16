@@ -12,7 +12,18 @@ from datetime import datetime, timedelta
 
 from app.config import settings
 from app.models import SessionLocal, Company
-from app.mailer import send_email, billing_reminder_html
+from app.mailer import (send_email, billing_reminder_html, trial_day3_html,
+                        trial_day6_html, welcome_paid_html, monthly_report_html)
+
+
+def _visitors_count(db, slug: str, days: int) -> int:
+    """Уники (по visitor_hash) для сайта за последние N дней — из visits."""
+    from sqlalchemy import text as _sql
+    cut = (datetime.utcnow().date() - timedelta(days=days)).strftime("%Y-%m-%d")
+    row = db.execute(_sql(
+        "SELECT COUNT(DISTINCT visitor_hash) FROM visits WHERE target = :t AND day >= :d"
+    ), {"t": slug, "d": cut}).scalar()
+    return int(row or 0)
 
 
 _RUNNING = False
@@ -107,29 +118,61 @@ async def _billing_check():
                 continue
             email = owner.email
 
-            # Дата окончания: активная подписка → paid_until, триал → trial_ends_at
-            end_date = None
-            if c.sub_status == "active" and c.paid_until:
-                end_date = c.paid_until
-            elif c.sub_status == "trial" and c.trial_ends_at:
-                end_date = c.trial_ends_at
-            if not end_date:
-                continue
+            # ── ТРИАЛ: цепочка писем (день 3 и день 6 из 7) ──
+            if c.sub_status == "trial" and c.trial_ends_at:
+                days_left = (c.trial_ends_at.date() - now.date()).days
+                # День 3 триала (осталось ~4 дня): метрики-тизер
+                if days_left == 4 and not c.notified_trial_d3:
+                    v = _visitors_count(db, c.slug, 3)
+                    if v <= 0:
+                        c.notified_trial_d3 = True  # нечего показать — пропускаем письмо
+                        db.commit()
+                    elif send_email(
+                            email, f"За 3 дня ваш сайт «{c.title}» посмотрели {v} чел.",
+                            trial_day3_html(c.title, v, c.slug)):
+                        c.notified_trial_d3 = True
+                        db.commit()
+                    # send не удался → флаг не ставим (ретрай при след. прогоне, если ещё day 3)
+                # День 6 триала (остался 1 день): заканчивается завтра + оплата
+                elif days_left == 1 and not c.notified_trial_d6:
+                    v = _visitors_count(db, c.slug, 6)
+                    if send_email(
+                            email, f"Триал сайта «{c.title}» заканчивается завтра",
+                            trial_day6_html(c.title, v, c.slug)):
+                        c.notified_trial_d6 = True
+                        db.commit()
 
-            days_left = (end_date.date() - now.date()).days
+            # ── ОПЛАЧЕННЫЕ: welcome, продление 7/3 дня, ежемесячный отчёт ──
+            elif c.sub_status == "active" and c.paid_until:
+                # Приветственное письмо после первой оплаты («что дальше»).
+                # Заодно стартуем отсчёт ежемесячного отчёта, чтобы он не ушёл сразу.
+                if not c.welcome_sent:
+                    if send_email(email, f"Сайт «{c.title}» оплачен — что дальше",
+                                  welcome_paid_html(c.title, c.slug)):
+                        c.welcome_sent = True
+                        c.last_report_at = now
+                        db.commit()
 
-            if days_left == 7 and not c.notified_7d:
-                if send_email(email,
-                              f"Сайт {c.title}: продление через 7 дней",
-                              billing_reminder_html(c.title, 7, end_date.strftime("%d.%m.%Y"))):
-                    c.notified_7d = True
-                    db.commit()
-            elif days_left == 3 and not c.notified_3d:
-                if send_email(email,
-                              f"Сайт {c.title}: продление через 3 дня",
-                              billing_reminder_html(c.title, 3, end_date.strftime("%d.%m.%Y"))):
-                    c.notified_3d = True
-                    db.commit()
+                days_left = (c.paid_until.date() - now.date()).days
+                if days_left == 7 and not c.notified_7d:
+                    if send_email(email, f"Сайт {c.title}: продление через 7 дней",
+                                  billing_reminder_html(c.title, 7, c.paid_until.strftime("%d.%m.%Y"))):
+                        c.notified_7d = True
+                        db.commit()
+                elif days_left == 3 and not c.notified_3d:
+                    if send_email(email, f"Сайт {c.title}: продление через 3 дня",
+                                  billing_reminder_html(c.title, 3, c.paid_until.strftime("%d.%m.%Y"))):
+                        c.notified_3d = True
+                        db.commit()
+
+                # Ежемесячный отчёт активному клиенту (не чаще раза в 30 дней)
+                if c.welcome_sent and (c.last_report_at is None
+                                       or (now - c.last_report_at) >= timedelta(days=30)):
+                    v = _visitors_count(db, c.slug, 30)
+                    if send_email(email, f"Отчёт за месяц по сайту «{c.title}»",
+                                  monthly_report_html(c.title, v, c.slug)):
+                        c.last_report_at = now
+                        db.commit()
     except Exception as e:
         print(f"[BILLING] Ошибка проверки: {e}", flush=True)
     finally:
