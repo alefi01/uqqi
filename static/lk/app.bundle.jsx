@@ -936,6 +936,7 @@ function App() {
   const [delPw, setDelPw] = useState('');
   const [delSite, setDelSite] = useState(null);
   const [delSiteText, setDelSiteText] = useState('');
+  const buildingRef = React.useRef(false);
   const [booted, setBooted] = useState(false);
   const [pendingClaim, setPendingClaim] = useState(null);
 
@@ -1031,12 +1032,16 @@ function App() {
   const [buildId, setBuildId] = useState(null);
 
   async function startBuild(url) {
+    if (buildingRef.current) return;   // защита от двойного клика (дубль сайта)
+    buildingRef.current = true;
     try {
       const res = await window.API.addSite(url);
       setBuildId(res.id);
       nav('building');
     } catch (ex) {
       ping(ex.message || 'Не удалось создать сайт');
+    } finally {
+      buildingRef.current = false;
     }
   }
   async function finishBuild() {
