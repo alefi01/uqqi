@@ -408,13 +408,13 @@ function SiteCard({ site, nav, onPay, onMenu }) {
       {!isBuilding && !isError && (
         <div className="sitecard__meta">
           <span><b>{site.city}</b></span>
-          <span>Тариф: <b>990 ₽ / мес</b></span>
+          <span>Тариф: <b>от 1990 ₽ / мес</b></span>
           <span>Создан: <b>{site.created}</b></span>
         </div>
       )}
 
       <div className="sitecard__actions">
-        {needsPay && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>{site.status === 'unpaid' ? 'Оплатить, чтобы возобновить' : 'Оплатить 990 ₽'}</button>}
+        {needsPay && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>{site.status === 'unpaid' ? 'Оплатить, чтобы возобновить' : 'Оплатить'}</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
         {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
       </div>
@@ -588,15 +588,25 @@ const INCLUDED = [
 ];
 
 // ---- Сводка оплаты (внутри кабинета) ----
+// Тарифы — синхронно с PLANS в app/cabinet.py
+const PLANS_LK = [
+  { id: 'month',   label: 'Месяц',    amount: 1990,  perMonth: 1990, period: '30 дней',  save: '' },
+  { id: 'quarter', label: '3 месяца', amount: 4990,  perMonth: 1663, period: '90 дней',  save: 'выгода 980 ₽' },
+  { id: 'year',    label: 'Год',      amount: 15990, perMonth: 1332, period: '365 дней', save: 'выгода 7890 ₽' },
+];
+const fmtRub = n => n.toLocaleString('ru-RU');
+
 function ScreenPayment({ nav, site, onProceed }) {
   const s = site || {};
   const [busy, setBusy] = useStateB(false);
   const [err, setErr] = useStateB('');
+  const [plan, setPlan] = useStateB('quarter');
+  const sel = PLANS_LK.find(p => p.id === plan) || PLANS_LK[1];
 
   async function pay() {
     setErr(''); setBusy(true);
     try {
-      const res = await window.API.createPayment(s.id);
+      const res = await window.API.createPayment(s.id, plan);
       if (res.confirmation_url) {
         window.location.href = res.confirmation_url;  // редирект на ЮKassa
       } else {
@@ -624,10 +634,28 @@ function ScreenPayment({ nav, site, onProceed }) {
           </div>
         </div>
 
-        <div style={{ marginTop: '1.2rem' }}>
-          <div className="sumrow"><span className="k">Тариф</span><span className="v">Стандарт — 990 ₽ / месяц</span></div>
-          <div className="sumrow"><span className="k">Период</span><span className="v">30 дней</span></div>
-          <div className="sum-total"><span className="k" style={{ color: 'var(--ink)', fontWeight: 600 }}>Итого сегодня</span><span className="amt">990 ₽</span></div>
+        <p className="field__label" style={{ margin: '1.3rem 0 .7rem' }}>Выберите тариф</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
+          {PLANS_LK.map(p => (
+            <div key={p.id} onClick={() => setPlan(p.id)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '.8rem 1rem',
+                border: '2px solid ' + (plan === p.id ? 'var(--terracotta)' : 'var(--line)'),
+                borderRadius: 'var(--r-lg)', cursor: 'pointer',
+                background: plan === p.id ? 'var(--terracotta-wash)' : 'transparent' }}>
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.95rem' }}>
+                  {p.label}
+                  {p.save && <span style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginLeft: '.5rem' }}>{p.save}</span>}
+                </div>
+                <div className="muted" style={{ fontSize: '.78rem', marginTop: '.1rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
+              </div>
+              <div style={{ fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{fmtRub(p.amount)} ₽</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '1.1rem' }}>
+          <div className="sum-total"><span className="k" style={{ color: 'var(--ink)', fontWeight: 600 }}>Итого сегодня</span><span className="amt">{fmtRub(sel.amount)} ₽</span></div>
         </div>
 
         <hr className="divider" style={{ margin: '1.3rem 0' }} />
@@ -637,7 +665,7 @@ function ScreenPayment({ nav, site, onProceed }) {
         </ul>
 
         {err && <div className="field__err" style={{ marginTop: '1rem' }}>{err}</div>}
-        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.5rem' }} onClick={pay} disabled={busy}><i data-lucide="lock"></i> {busy ? 'Создаём платёж…' : 'Перейти к оплате'}</button>
+        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.5rem' }} onClick={pay} disabled={busy}><i data-lucide="lock"></i> {busy ? 'Создаём платёж…' : 'Перейти к оплате — ' + fmtRub(sel.amount) + ' ₽'}</button>
         <p className="legal" style={{ textAlign: 'center', marginTop: '.8rem' }}>Оплата проходит через ЮKassa. Мы не храним данные вашей карты.</p>
       </div>
     </div>

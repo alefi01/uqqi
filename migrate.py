@@ -212,7 +212,8 @@ def main():
                 user_id      INTEGER,
                 company_id   INTEGER,
                 company_slug VARCHAR(120) DEFAULT '',
-                amount       VARCHAR(20) DEFAULT '990.00',
+                amount       VARCHAR(20) DEFAULT '1990.00',
+                days         INTEGER DEFAULT 30,
                 status       VARCHAR(20) DEFAULT 'pending',
                 processed    BOOLEAN DEFAULT 0,
                 created_at   DATETIME,
@@ -223,6 +224,13 @@ def main():
         cur.execute("CREATE INDEX IF NOT EXISTS ix_payments_user ON payments (user_id)")
         print("[migrate] + таблица payments")
         added += 1
+    else:
+        # Добавляем недостающие колонки в существующую payments (тарифы)
+        pay_cols = existing_columns(cur, "payments")
+        if "days" not in pay_cols:
+            cur.execute("ALTER TABLE payments ADD COLUMN days INTEGER DEFAULT 30")
+            print("[migrate] + payments.days")
+            added += 1
 
     # Пометить существующие сайты как демо (без владельца) — разово при первой миграции.
     # Только если колонка user_id только что добавлена (все user_id пустые).

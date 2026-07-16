@@ -611,8 +611,20 @@ async def create_ticket(payload: TicketPayload,
 
 # ── ПЛАТЕЖИ (ЮKassa) ──────────────────────────────────────────────────────────
 
+# Тарифы подписки. amount — строка (сравнивается с ЮKassa через Decimal),
+# days — на сколько продлевать paid_until. months — для подачи «X ₽/мес».
+# ВАЖНО: дублируется на фронте (billing.jsx/app.bundle.jsx) — менять синхронно.
+PLANS = {
+    "month":   {"amount": "1990.00",  "days": 30,  "months": 1,  "label": "Месяц"},
+    "quarter": {"amount": "4990.00",  "days": 90,  "months": 3,  "label": "3 месяца"},
+    "year":    {"amount": "15990.00", "days": 365, "months": 12, "label": "Год"},
+}
+DEFAULT_PLAN = "quarter"
+
+
 class PaymentCreatePayload(BaseModel):
     site_id: int
+    plan: str = DEFAULT_PLAN
 
 
 @router.post("/payment/create")
@@ -631,16 +643,21 @@ async def payment_create(payload: PaymentCreatePayload,
     if company.build_status not in ("ready",):
         raise HTTPException(status_code=400, detail="Сайт ещё не готов")
 
-    amount = settings.SUBSCRIPTION_PRICE
+    plan = PLANS.get(payload.plan)
+    if not plan:
+        raise HTTPException(status_code=422, detail="Неизвестный тариф")
+    amount = plan["amount"]
+    days = plan["days"]
     return_url = f"https://lk.{settings.BASE_DOMAIN}/?paid={company.id}"
-    description = f"Подписка uqqi.ru — {company.slug}.{settings.BASE_DOMAIN}"
+    description = f"Подписка uqqi.ru ({plan['label']}) — {company.slug}.{settings.BASE_DOMAIN}"
 
     try:
         result = create_payment(
             amount=amount,
             description=description,
             return_url=return_url,
-            metadata={"company_id": company.id, "user_id": user.id, "slug": company.slug},
+            metadata={"company_id": company.id, "user_id": user.id,
+                      "slug": company.slug, "plan": payload.plan},
         )
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e))
@@ -655,6 +672,7 @@ async def payment_create(payload: PaymentCreatePayload,
         company_id=company.id,
         company_slug=company.slug,
         amount=amount,
+        days=days,
         status="pending",
     )
     db.add(pay)
@@ -719,10 +737,10 @@ def _apply_successful_payment(payment_id: str, db: OrmSession) -> bool:
         db.commit()
         return False
 
-    # Продлеваем: от max(сейчас, текущий paid_until) + 30 дней
+    # Продлеваем: от max(сейчас, текущий paid_until) + срок тарифа
     now = _dt.utcnow()
     base = company.paid_until if (company.paid_until and company.paid_until > now) else now
-    company.paid_until    = base + _td(days=settings.SUBSCRIPTION_DAYS)
+    company.paid_until    = base + _td(days=(pay.days or settings.SUBSCRIPTION_DAYS))
     company.sub_status    = "active"
     company.is_active     = True
     company.trial_ends_at = None  # триал больше не релевантен

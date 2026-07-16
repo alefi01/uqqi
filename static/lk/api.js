@@ -37,7 +37,7 @@ const API = {
   cancelSubscription(id)            { return this._req('POST', '/sites/' + id + '/cancel'); },
 
   // ── Оплата ──
-  createPayment(siteId)             { return this._req('POST', '/payment/create', { site_id: siteId }); },
+  createPayment(siteId, plan)       { return this._req('POST', '/payment/create', { site_id: siteId, plan: plan || 'quarter' }); },
   paymentStatus(paymentId)          { return this._req('GET', '/payment/' + paymentId + '/status'); },
   payments()                        { return this._req('GET', '/payments'); },
 

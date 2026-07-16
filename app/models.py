@@ -369,7 +369,8 @@ class Payment(Base):
     user_id       = Column(Integer, index=True)
     company_id    = Column(Integer, index=True)
     company_slug  = Column(String(120), default="")
-    amount        = Column(String(20), default="990.00")
+    amount        = Column(String(20), default="1990.00")
+    days          = Column(Integer, default=30)             # срок продления из тарифа (30/90/365)
     status        = Column(String(20), default="pending")  # pending / succeeded / canceled
     processed     = Column(Boolean, default=False)          # webhook уже применён (защита от дублей)
     created_at    = Column(DateTime, default=datetime.utcnow)

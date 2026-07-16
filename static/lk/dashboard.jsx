@@ -60,13 +60,13 @@ function SiteCard({ site, nav, onPay, onMenu }) {
       {!isBuilding && !isError && (
         <div className="sitecard__meta">
           <span><b>{site.city}</b></span>
-          <span>Тариф: <b>990 ₽ / мес</b></span>
+          <span>Тариф: <b>от 1990 ₽ / мес</b></span>
           <span>Создан: <b>{site.created}</b></span>
         </div>
       )}
 
       <div className="sitecard__actions">
-        {needsPay && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>{site.status === 'unpaid' ? 'Оплатить, чтобы возобновить' : 'Оплатить 990 ₽'}</button>}
+        {needsPay && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>{site.status === 'unpaid' ? 'Оплатить, чтобы возобновить' : 'Оплатить'}</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
         {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
       </div>
