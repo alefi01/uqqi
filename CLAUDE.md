@@ -14,7 +14,7 @@ SaaS для малого бизнеса: автоматически генери
 (claim) → 7 дней бесплатно → подписка за каждый сайт.
 
 **Тарифы** (`PLANS` в `app/cabinet.py`, дефолт `quarter`): месяц 1990 ₽ (30 дн),
-3 месяца 4990 ₽ (90 дн), год 15990 ₽ (365 дн). `payment_create` принимает `plan`,
+3 месяца 4980 ₽ (90 дн), год 15960 ₽ (365 дн). `payment_create` принимает `plan`,
 пишет `amount`+`days` в `Payment`; `_apply_successful_payment` продлевает на
 `pay.days`. Фронт-дубль тарифов: `PLANS_LK` в `billing.jsx` и `app.bundle.jsx`
 (прод грузит `.jsx`) — менять синхронно с бэком. `app.bundle.js`/`app.jsx`

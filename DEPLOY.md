@@ -96,7 +96,6 @@ SMTP_FROM=support@uqqi.ru
 # ЮKassa
 YUKASSA_SHOP_ID=<shop_id>
 YUKASSA_SECRET_KEY=<secret_key>
-SUBSCRIPTION_PRICE=990.00
 ```
 
 Права:

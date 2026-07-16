@@ -15,8 +15,8 @@ const INCLUDED = [
 // Тарифы — синхронно с PLANS в app/cabinet.py
 const PLANS_LK = [
   { id: 'month',   label: 'Месяц',    amount: 1990,  perMonth: 1990, period: '30 дней',  save: '' },
-  { id: 'quarter', label: '3 месяца', amount: 4990,  perMonth: 1663, period: '90 дней',  save: 'выгода 980 ₽' },
-  { id: 'year',    label: 'Год',      amount: 15990, perMonth: 1332, period: '365 дней', save: 'выгода 7890 ₽' },
+  { id: 'quarter', label: '3 месяца', amount: 4980,  perMonth: 1660, period: '90 дней',  save: 'выгода 990 ₽' },
+  { id: 'year',    label: 'Год',      amount: 15960, perMonth: 1330, period: '365 дней', save: 'выгода 7920 ₽' },
 ];
 const fmtRub = n => n.toLocaleString('ru-RU');
 

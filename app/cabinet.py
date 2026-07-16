@@ -616,8 +616,8 @@ async def create_ticket(payload: TicketPayload,
 # ВАЖНО: дублируется на фронте (billing.jsx/app.bundle.jsx) — менять синхронно.
 PLANS = {
     "month":   {"amount": "1990.00",  "days": 30,  "months": 1,  "label": "Месяц"},
-    "quarter": {"amount": "4990.00",  "days": 90,  "months": 3,  "label": "3 месяца"},
-    "year":    {"amount": "15990.00", "days": 365, "months": 12, "label": "Год"},
+    "quarter": {"amount": "4980.00",  "days": 90,  "months": 3,  "label": "3 месяца"},
+    "year":    {"amount": "15960.00", "days": 365, "months": 12, "label": "Год"},
 }
 DEFAULT_PLAN = "quarter"
 

@@ -32,8 +32,7 @@ class Settings(BaseSettings):
     # ЮKassa (приём платежей)
     YUKASSA_SHOP_ID:    str = ""   # идентификатор магазина
     YUKASSA_SECRET_KEY: str = ""   # секретный ключ API
-    SUBSCRIPTION_PRICE: str = "990.00"  # цена за сайт в месяц, ₽
-    SUBSCRIPTION_DAYS:  int = 30        # период подписки
+    SUBSCRIPTION_DAYS:  int = 30        # fallback срока продления (реальный — Payment.days из тарифа PLANS в cabinet.py)
 
     # Telegram-бот: вывоз бэкапов БД + алерты мониторинга.
     # Пустые дефолты — реальные значения только в .env (не коммитить).
