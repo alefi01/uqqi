@@ -21,7 +21,7 @@ const TITLES = {
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
 
-const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings']);
+const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings', 'metrics']);
 
 function plusDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
@@ -38,6 +38,7 @@ function App() {
   const [delPw, setDelPw] = useState('');
   const [delSite, setDelSite] = useState(null);
   const [delSiteText, setDelSiteText] = useState('');
+  const [metrics, setMetrics] = useState(null);
   const buildingRef = React.useRef(false);
   const [booted, setBooted] = useState(false);
   const [pendingClaim, setPendingClaim] = useState(null);
@@ -156,6 +157,17 @@ function App() {
     nav('payment-success');
     loadSites();
   }
+  async function openMetrics(site) {
+    setMenuSite(null);
+    setMetrics(null);
+    nav('metrics');
+    try {
+      setMetrics(await window.API.siteMetrics(site.id));
+    } catch (ex) {
+      ping(ex.message || 'Не удалось загрузить статистику');
+      nav('sites');
+    }
+  }
   function askDeleteSite(site) {
     if (site.canDelete === false) {
       ping('Дождитесь окончания trial-периода');
@@ -231,6 +243,7 @@ function App() {
   else if (screen === 'subscriptions') body = <ScreenSubscriptions nav={nav} sites={sites} payments={payments} onPay={openPay} />;
   else if (screen === 'support') body = <ScreenSupport email={email} tickets={tickets} onSubmit={submitTicket} />;
   else if (screen === 'settings') body = <ScreenSettings email={email} onDelete={() => setConfirmDel(true)} />;
+  else if (screen === 'metrics') body = <ScreenMetrics nav={nav} metrics={metrics} />;
 
   return (
     <div className="app">
@@ -292,6 +305,7 @@ function App() {
               <h3>{menuSite.name}</h3>
               <p>{menuSite.slug}.uqqi.ru</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
+                <button className="btn btn--ghost btn--block" onClick={() => openMetrics(menuSite)}><i data-lucide="bar-chart-2"></i> Статистика</button>
                 {menuSite.status === 'active'
                   ? <a className="btn btn--ghost btn--block" href={'/site/' + menuSite.slug + '/edit'}><i data-lucide="pencil"></i> Редактировать контент</a>
                   : <span className="tip-wrap" data-tip="Оплатите подписку, чтобы редактировать" style={{ display: 'block' }}>

@@ -537,6 +537,71 @@ async def site_status(site_id: int,
     return _site_dict(c)
 
 
+@router.get("/sites/{site_id}/metrics")
+async def site_metrics(site_id: int,
+                        user: User = Depends(require_user),
+                        db: OrmSession = Depends(get_db)):
+    """
+    Метрика конкретного сайта клиента для дашборда ЛК.
+    Только агрегаты по ЕГО сайту: уники, просмотры (без ботов), динамика по дням,
+    статус подписки. Никаких IP/городов/User-Agent/ботов — это только owner-панель.
+    """
+    from sqlalchemy import text as _sql
+    from datetime import datetime as _dt, timedelta as _td
+
+    c = db.query(Company).filter(Company.id == site_id, Company.user_id == user.id).first()
+    if not c:
+        raise HTTPException(status_code=404)
+
+    slug = c.slug
+    now = _dt.utcnow()
+
+    def uniq(days: int) -> int:
+        cut = (now.date() - _td(days=days)).strftime("%Y-%m-%d")
+        return int(db.execute(_sql(
+            "SELECT COUNT(DISTINCT visitor_hash) FROM visits WHERE target = :t AND day >= :d"
+        ), {"t": slug, "d": cut}).scalar() or 0)
+
+    def views(days: int) -> int:
+        cut = now - _td(days=days)
+        return int(db.execute(_sql(
+            "SELECT COUNT(*) FROM visit_logs WHERE target = :t AND is_bot = 0 AND created_at >= :c"
+        ), {"t": slug, "c": cut}).scalar() or 0)
+
+    # Динамика уников по дням за последние 30 дней (для графика)
+    since = (now.date() - _td(days=29)).strftime("%Y-%m-%d")
+    rows = db.execute(_sql(
+        "SELECT day, COUNT(DISTINCT visitor_hash) FROM visits "
+        "WHERE target = :t AND day >= :d GROUP BY day"
+    ), {"t": slug, "d": since}).fetchall()
+    by_day = {r[0]: int(r[1]) for r in rows}
+    daily = []
+    for i in range(29, -1, -1):
+        d = (now.date() - _td(days=i)).strftime("%Y-%m-%d")
+        daily.append({"day": d, "unique": by_day.get(d, 0)})
+
+    # Статус подписки (без внутренней кухни)
+    sub = {"status": c.sub_status, "until": None, "trialDays": None}
+    if c.sub_status == "active" and c.paid_until:
+        sub["until"] = c.paid_until.strftime("%d.%m.%Y")
+        if c.paid_until < now:
+            sub["status"] = "unpaid"
+    elif c.sub_status == "trial" and c.trial_ends_at:
+        delta = (c.trial_ends_at - now).days
+        sub["trialDays"] = max(0, delta + 1)
+        if c.trial_ends_at < now:
+            sub["status"] = "unpaid"
+
+    return {
+        "slug":    slug,
+        "title":   c.title,
+        "unique":  {"d7": uniq(7), "d30": uniq(30), "d90": uniq(90)},
+        "views":   {"d7": views(7), "d30": views(30), "d90": views(90)},
+        "daily":   daily,
+        "subscription": sub,
+    }
+
+
 class SiteDeletePayload(BaseModel):
     password: str = ""
     confirm:  str = ""   # название или адрес (slug) сайта

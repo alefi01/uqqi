@@ -33,6 +33,7 @@ const API = {
   claimSite(code)                   { return this._req('POST', '/claim/' + encodeURIComponent(code)); },
   claimInfo(code)                   { return this._req('GET', '/claim/' + encodeURIComponent(code) + '/info'); },
   siteStatus(id)                    { return this._req('GET', '/sites/' + id + '/status'); },
+  siteMetrics(id)                   { return this._req('GET', '/sites/' + id + '/metrics'); },
   deleteSite(id, body)              { return this._req('DELETE', '/sites/' + id, body || {}); },
   cancelSubscription(id)            { return this._req('POST', '/sites/' + id + '/cancel'); },
 

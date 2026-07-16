@@ -919,7 +919,49 @@ const TITLES = {
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
 
-const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings']);
+// ---- Статистика сайта (функциональная версия; визуал — по макету Claude Design) ----
+function ScreenMetrics({ nav, metrics }) {
+  const m = metrics;
+  if (!m) {
+    return <div className="wrap-md"><div className="card" style={{ padding: '1.6rem' }}><div className="spin"></div></div></div>;
+  }
+  const maxD = Math.max(1, ...m.daily.map(d => d.unique));
+  const sub = m.subscription || {};
+  return (
+    <div className="wrap-md">
+      <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
+      <div className="card" style={{ padding: '1.6rem' }}>
+        <span className="eyebrow">Статистика</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 1.1rem' }}>{m.title}</h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '.6rem' }}>
+          {[['7 дней', 'd7'], ['30 дней', 'd30'], ['90 дней', 'd90']].map(([lbl, k]) => (
+            <div key={k} style={{ padding: '.9rem', textAlign: 'center', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>{m.unique[k]}</div>
+              <div className="muted" style={{ fontSize: '.72rem' }}>уник. / {lbl}</div>
+            </div>
+          ))}
+        </div>
+        <p className="muted" style={{ fontSize: '.82rem', marginTop: '.8rem' }}>Просмотров за 30 дней: <b style={{ color: 'var(--ink)' }}>{m.views.d30}</b></p>
+
+        <p className="field__label" style={{ margin: '1.3rem 0 .5rem' }}>Посетители по дням (30 дней)</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px' }}>
+          {m.daily.map((d, i) => (
+            <div key={i} title={d.day + ': ' + d.unique} style={{ flex: 1, background: 'var(--terracotta)', opacity: d.unique ? .85 : .15, height: Math.max(3, d.unique / maxD * 80) + 'px', borderRadius: '2px' }}></div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '1.3rem', padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)', fontSize: '.86rem', color: 'var(--ink-2)' }}>
+          {sub.status === 'active' && <span>Подписка активна до <b style={{ color: 'var(--ink)' }}>{sub.until}</b></span>}
+          {sub.status === 'trial' && <span>Пробный период — осталось <b style={{ color: 'var(--ink)' }}>{sub.trialDays} дн.</b></span>}
+          {sub.status === 'unpaid' && <span style={{ color: 'var(--danger)' }}>Подписка не активна</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings', 'metrics']);
 
 function plusDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
@@ -936,6 +978,7 @@ function App() {
   const [delPw, setDelPw] = useState('');
   const [delSite, setDelSite] = useState(null);
   const [delSiteText, setDelSiteText] = useState('');
+  const [metrics, setMetrics] = useState(null);
   const buildingRef = React.useRef(false);
   const [booted, setBooted] = useState(false);
   const [pendingClaim, setPendingClaim] = useState(null);
@@ -1054,6 +1097,17 @@ function App() {
     nav('payment-success');
     loadSites();
   }
+  async function openMetrics(site) {
+    setMenuSite(null);
+    setMetrics(null);
+    nav('metrics');
+    try {
+      setMetrics(await window.API.siteMetrics(site.id));
+    } catch (ex) {
+      ping(ex.message || 'Не удалось загрузить статистику');
+      nav('sites');
+    }
+  }
   function askDeleteSite(site) {
     if (site.canDelete === false) {
       ping('Дождитесь окончания trial-периода');
@@ -1129,6 +1183,7 @@ function App() {
   else if (screen === 'subscriptions') body = <ScreenSubscriptions nav={nav} sites={sites} payments={payments} onPay={openPay} />;
   else if (screen === 'support') body = <ScreenSupport email={email} tickets={tickets} onSubmit={submitTicket} />;
   else if (screen === 'settings') body = <ScreenSettings email={email} onDelete={() => setConfirmDel(true)} />;
+  else if (screen === 'metrics') body = <ScreenMetrics nav={nav} metrics={metrics} />;
 
   return (
     <div className="app">
@@ -1190,6 +1245,7 @@ function App() {
               <h3>{menuSite.name}</h3>
               <p>{menuSite.slug}.uqqi.ru</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
+                <button className="btn btn--ghost btn--block" onClick={() => openMetrics(menuSite)}><i data-lucide="bar-chart-2"></i> Статистика</button>
                 {menuSite.status === 'active'
                   ? <a className="btn btn--ghost btn--block" href={'/site/' + menuSite.slug + '/edit'}><i data-lucide="pencil"></i> Редактировать контент</a>
                   : <span className="tip-wrap" data-tip="Оплатите подписку, чтобы редактировать" style={{ display: 'block' }}>
