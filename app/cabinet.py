@@ -365,9 +365,17 @@ async def claim_site(code: str,
     return {"ok": True, **result}
 
 
+class AccountDeletePayload(BaseModel):
+    password: str = ""
+
+
 @router.delete("/account")
-async def delete_account(user: User = Depends(require_user),
+async def delete_account(payload: AccountDeletePayload,
+                          user: User = Depends(require_user),
                           db: OrmSession = Depends(get_db)):
+    # Подтверждение паролем (защита от случайного/чужого удаления)
+    if not _check_pw(payload.password, user.password_hash):
+        raise HTTPException(status_code=403, detail="Неверный пароль")
     # Отвязываем/удаляем сайты юзера, чистим сессии, удаляем юзера
     db.query(Company).filter(Company.user_id == user.id).delete()
     db.query(DbSession).filter(DbSession.identity == f"user:{user.id}").delete()
@@ -529,8 +537,14 @@ async def site_status(site_id: int,
     return _site_dict(c)
 
 
+class SiteDeletePayload(BaseModel):
+    password: str = ""
+    confirm:  str = ""   # название или адрес (slug) сайта
+
+
 @router.delete("/sites/{site_id}")
 async def delete_site(site_id: int,
+                       payload: SiteDeletePayload,
                        user: User = Depends(require_user),
                        db: OrmSession = Depends(get_db)):
     from datetime import datetime as _dt
@@ -542,6 +556,17 @@ async def delete_site(site_id: int,
             and c.build_status == "ready":
         raise HTTPException(status_code=403,
             detail="Дождитесь окончания trial-периода.")
+    # Подтверждение: верный пароль ИЛИ точное название/адрес сайта
+    ok = False
+    if payload.password and _check_pw(payload.password, user.password_hash):
+        ok = True
+    else:
+        conf = (payload.confirm or "").strip().lower()
+        if conf and conf in (c.slug.lower(), (c.title or "").strip().lower()):
+            ok = True
+    if not ok:
+        raise HTTPException(status_code=403,
+            detail="Подтвердите удаление паролем или названием сайта.")
     db.delete(c)
     db.commit()
     return {"ok": True}

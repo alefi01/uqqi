@@ -33,7 +33,7 @@ const API = {
   claimSite(code)                   { return this._req('POST', '/claim/' + encodeURIComponent(code)); },
   claimInfo(code)                   { return this._req('GET', '/claim/' + encodeURIComponent(code) + '/info'); },
   siteStatus(id)                    { return this._req('GET', '/sites/' + id + '/status'); },
-  deleteSite(id)                    { return this._req('DELETE', '/sites/' + id); },
+  deleteSite(id, body)              { return this._req('DELETE', '/sites/' + id, body || {}); },
   cancelSubscription(id)            { return this._req('POST', '/sites/' + id + '/cancel'); },
 
   // ── Оплата ──
@@ -47,7 +47,7 @@ const API = {
 
   // ── Настройки ──
   changePassword(current, next)     { return this._req('POST', '/account/password', { current, next }); },
-  deleteAccount()                   { return this._req('DELETE', '/account'); },
+  deleteAccount(password)           { return this._req('DELETE', '/account', { password: password || '' }); },
 };
 
 window.API = API;

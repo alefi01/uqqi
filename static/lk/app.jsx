@@ -35,6 +35,9 @@ function App() {
   const [payTarget, setPayTarget] = useState(null);
   const [menuSite, setMenuSite] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [delPw, setDelPw] = useState('');
+  const [delSite, setDelSite] = useState(null);
+  const [delSiteText, setDelSiteText] = useState('');
   const [booted, setBooted] = useState(false);
   const [pendingClaim, setPendingClaim] = useState(null);
 
@@ -148,15 +151,21 @@ function App() {
     nav('payment-success');
     loadSites();
   }
-  async function deleteSite(site) {
+  function askDeleteSite(site) {
     if (site.canDelete === false) {
       ping('Дождитесь окончания trial-периода');
       return;
     }
+    setMenuSite(null);
+    setDelSiteText('');
+    setDelSite(site);
+  }
+  async function confirmDeleteSite() {
+    if (!delSite) return;
     try {
-      await window.API.deleteSite(site.id);
-      setSites(prev => prev.filter(s => s.id !== site.id));
-      setMenuSite(null);
+      await window.API.deleteSite(delSite.id, { confirm: delSiteText });
+      setSites(prev => prev.filter(s => s.id !== delSite.id));
+      setDelSite(null); setDelSiteText('');
       ping('Сайт удалён');
     } catch (ex) {
       ping(ex.message || 'Не удалось удалить сайт');
@@ -176,8 +185,13 @@ function App() {
     setEmail(''); setSites([]); setScreen('login');
   }
   async function deleteAccount() {
-    try { await window.API.deleteAccount(); } catch (e) {}
-    setConfirmDel(false); setEmail(''); setScreen('login'); ping('Аккаунт удалён');
+    try {
+      await window.API.deleteAccount(delPw);
+    } catch (ex) {
+      ping(ex.message || 'Не удалось удалить аккаунт');
+      return;
+    }
+    setConfirmDel(false); setDelPw(''); setEmail(''); setScreen('login'); ping('Аккаунт удалён');
   }
 
   if (!booted) {
@@ -282,8 +296,26 @@ function App() {
                   ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
                       <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>
                     </span>
-                  : <button className="btn btn--danger btn--block" onClick={() => deleteSite(menuSite)}><i data-lucide="trash-2"></i> Удалить сайт</button>
+                  : <button className="btn btn--danger btn--block" onClick={() => askDeleteSite(menuSite)}><i data-lucide="trash-2"></i> Удалить сайт</button>
                 }
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* delete site modal */}
+        {delSite && (
+          <div className="scrim" onClick={() => { setDelSite(null); setDelSiteText(''); }}>
+            <div className="modal" onClick={e => e.stopPropagation()}>
+              <h3>Удалить сайт?</h3>
+              <p>Сайт <b>{delSite.name}</b> ({delSite.slug}.uqqi.ru) будет удалён безвозвратно.</p>
+              <p className="muted" style={{ fontSize: '.84rem', marginTop: '.6rem' }}>Введите название сайта для подтверждения:</p>
+              <input className="input" placeholder={delSite.name} value={delSiteText} onChange={e => setDelSiteText(e.target.value)} style={{ margin: '.5rem 0 .2rem' }} />
+              <div className="modal__actions">
+                <button className="btn btn--ghost btn--block" onClick={() => { setDelSite(null); setDelSiteText(''); }}>Отмена</button>
+                <button className="btn btn--danger btn--block"
+                        disabled={delSiteText.trim().toLowerCase() !== (delSite.name || '').trim().toLowerCase() && delSiteText.trim().toLowerCase() !== (delSite.slug || '').toLowerCase()}
+                        onClick={confirmDeleteSite}>Удалить</button>
               </div>
             </div>
           </div>
@@ -291,13 +323,14 @@ function App() {
 
         {/* delete account modal */}
         {confirmDel && (
-          <div className="scrim" onClick={() => setConfirmDel(false)}>
+          <div className="scrim" onClick={() => { setConfirmDel(false); setDelPw(''); }}>
             <div className="modal" onClick={e => e.stopPropagation()}>
               <h3>Удалить аккаунт?</h3>
               <p>Это действие необратимо. Все сайты будут отключены, а данные удалены навсегда.</p>
+              <input className="input" type="password" placeholder="Введите пароль для подтверждения" value={delPw} onChange={e => setDelPw(e.target.value)} style={{ margin: '.8rem 0 .2rem' }} />
               <div className="modal__actions">
-                <button className="btn btn--ghost btn--block" onClick={() => setConfirmDel(false)}>Отмена</button>
-                <button className="btn btn--danger btn--block" onClick={deleteAccount}>Удалить</button>
+                <button className="btn btn--ghost btn--block" onClick={() => { setConfirmDel(false); setDelPw(''); }}>Отмена</button>
+                <button className="btn btn--danger btn--block" disabled={!delPw} onClick={deleteAccount}>Удалить</button>
               </div>
             </div>
           </div>
