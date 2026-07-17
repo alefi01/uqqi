@@ -310,9 +310,11 @@ async def change_password(payload: PasswordPayload,
 
 def _bind_claim_to_user(code: str, user: User, db: OrmSession):
     """
-    Привязывает claim-сайт к пользователю, даёт триал 7 дней, гасит claim_code.
-    Триал даётся всегда (даже если аккаунтный триал использован) — это подарок-крючок.
-    Возвращает dict с инфо о сайте или None, если код невалиден/уже использован.
+    Привязывает claim-сайт к аккаунту: он появляется в ЛК клиента. НО сайт
+    остаётся ОБЕЗЛИЧЕННЫМ (is_claim=True, paid_once=False) — noindex + дисклеймер,
+    пока не оплачен. «Своим» его делает только оплата (paid_once). При привязке
+    выдаём Pro-триал 7 дней (крючок: клиент видит премиум-дизайн + чат как превью).
+    Гасим лишь секретный claim_code. Возвращает dict с инфо о сайте или None.
     """
     from datetime import datetime as _dt, timedelta as _td
     code = (code or "").strip()
@@ -324,12 +326,13 @@ def _bind_claim_to_user(code: str, user: User, db: OrmSession):
     ).first()
     if not company:
         return None
-    company.user_id       = user.id
-    company.claim_code    = None
-    company.demo_until    = None
-    company.sub_status    = "trial"
-    company.trial_ends_at = _dt.utcnow() + _td(days=7)
-    company.is_active     = True
+    company.user_id    = user.id
+    company.claim_code = None            # секретный токен привязки гасим
+    company.is_claim   = True            # но сайт остаётся серым/обезличенным до оплаты
+    company.paid_once  = False
+    company.demo_until = None
+    company.is_active  = True
+    company.pro_until  = _dt.utcnow() + _td(days=7)   # Pro-триал: превью премиум-дизайна + чата
     db.commit()
     return {
         "slug":  company.slug,

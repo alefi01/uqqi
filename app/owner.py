@@ -738,7 +738,7 @@ async def _create_site_from_url(yandex_url: str, fallback_title: str, db):
         slug=slug, title=place.title, address=place.address, phone=place.phone,
         rating=place.rating, category=place.categories or "Организация",
         coordinates=place.coordinates, yandex_url=place.url or yandex_url,
-        claim_code=claim_code, template_variant="B", admin_password_hash="",
+        claim_code=claim_code, template_variant="B", is_claim=True, admin_password_hash="",
     )
     company.last_parsed_at = _dt.utcnow()
     company.hours          = parse_hours(place.hours)
@@ -1080,6 +1080,7 @@ async def parser_import(task_id: str,
             yandex_url          = place.url,
             claim_code          = claim_code,
             template_variant    = "B",
+            is_claim            = True,  # серый origin: обезличен (noindex+дисклеймер) до оплаты
             admin_password_hash = "",   # legacy-колонка NOT NULL в БД — кладём пустую строку
         )
         from datetime import datetime as _dt
