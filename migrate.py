@@ -32,6 +32,10 @@ COMPANY_COLUMNS = {
     "transit_stop":       "TEXT DEFAULT '{}'",
     "template_variant":   "VARCHAR(1) DEFAULT 'A'",
     "claim_code":         "VARCHAR(40)",
+    # Freemium/Pro (редизайн подписки)
+    "pro_until":          "DATETIME",
+    "is_claim":           "BOOLEAN DEFAULT 0",
+    "paid_once":          "BOOLEAN DEFAULT 0",
     "screenshot":         "VARCHAR(200) DEFAULT ''",
     "demo_until":         "DATETIME",
     "gallery_manual":     "BOOLEAN DEFAULT 0",
@@ -267,6 +271,21 @@ def main():
         print(f"[migrate] journal_mode = {mode[0] if mode else '?'}")
     except Exception as e:
         print(f"[migrate] WAL не включён: {e}")
+
+    # Бэкфилл is_claim для существующих серых claim-сайтов — разово, только когда
+    # колонка is_claim была ТОЛЬКО ЧТО добавлена (иначе не трогаем — вдруг правили руками).
+    # Метим лишь ещё не забранные claim-сайты (claim_code задан); уже забранные
+    # (claim_code погашен) НЕ обезличиваем задним числом — они остаются как есть.
+    if "is_claim" not in cols:
+        try:
+            n = cur.execute(
+                "UPDATE companies SET is_claim = 1 "
+                "WHERE claim_code IS NOT NULL AND claim_code != ''"
+            ).rowcount
+            if n:
+                print(f"[migrate] помечено claim-сайтов (is_claim=1): {n}")
+        except Exception as e:
+            print(f"[migrate] бэкфилл is_claim пропущен: {e}")
 
     # Пометить существующие сайты как демо (без владельца) — разово при первой миграции.
     # Только если колонка user_id только что добавлена (все user_id пустые).

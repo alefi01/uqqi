@@ -100,8 +100,18 @@ class Company(Base):
 
     # Подписка/триал этого сайта
     sub_status      = Column(String(20), default="trial")   # trial / active / unpaid
-    trial_ends_at   = Column(DateTime, nullable=True)        # конец пробного периода
-    paid_until      = Column(DateTime, nullable=True)        # оплачено до (для active)
+    trial_ends_at   = Column(DateTime, nullable=True)        # конец пробного периода (legacy, вестигиально)
+    paid_until      = Column(DateTime, nullable=True)        # оплачено до (legacy, вестигиально)
+
+    # Freemium/Pro (редизайн подписки):
+    #   pro_until — до когда активен Pro (пишут и Pro-триал, и оплата); активен, если > now.
+    #   is_claim  — сайт создан из owner-панели (серый origin); персистентный
+    #               (claim_code гасится при привязке, а этот флаг остаётся).
+    #   paid_once — была ли хоть одна успешная оплата → легитимизирует claim-сайт навсегда.
+    pro_until       = Column(DateTime, nullable=True)
+    is_claim        = Column(Boolean, default=False)
+    paid_once       = Column(Boolean, default=False)
+
     build_status    = Column(String(20), default="ready")   # queued / building / ready / error
 
     # Основные данные
