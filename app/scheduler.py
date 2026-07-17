@@ -12,8 +12,8 @@ from datetime import datetime, timedelta
 
 from app.config import settings
 from app.models import SessionLocal, Company
-from app.mailer import (send_email, billing_reminder_html, trial_day3_html,
-                        trial_day6_html, welcome_paid_html, monthly_report_html)
+from app.mailer import (send_email, billing_reminder_html,
+                        welcome_paid_html, monthly_report_html)
 
 
 def _visitors_count(db, slug: str, days: int) -> int:
@@ -118,32 +118,10 @@ async def _billing_check():
                 continue
             email = owner.email
 
-            # ── ТРИАЛ: цепочка писем (день 3 и день 6 из 7) ──
-            if c.sub_status == "trial" and c.trial_ends_at:
-                days_left = (c.trial_ends_at.date() - now.date()).days
-                # День 3 триала (осталось ~4 дня): метрики-тизер
-                if days_left == 4 and not c.notified_trial_d3:
-                    v = _visitors_count(db, c.slug, 3)
-                    if v <= 0:
-                        c.notified_trial_d3 = True  # нечего показать — пропускаем письмо
-                        db.commit()
-                    elif send_email(
-                            email, f"За 3 дня ваш сайт «{c.title}» посмотрели {v} чел.",
-                            trial_day3_html(c.title, v, c.slug)):
-                        c.notified_trial_d3 = True
-                        db.commit()
-                    # send не удался → флаг не ставим (ретрай при след. прогоне, если ещё day 3)
-                # День 6 триала (остался 1 день): заканчивается завтра + оплата
-                elif days_left == 1 and not c.notified_trial_d6:
-                    v = _visitors_count(db, c.slug, 6)
-                    if send_email(
-                            email, f"Триал сайта «{c.title}» заканчивается завтра",
-                            trial_day6_html(c.title, v, c.slug)):
-                        c.notified_trial_d6 = True
-                        db.commit()
-
-            # ── ОПЛАЧЕННЫЕ: welcome, продление 7/3 дня, ежемесячный отчёт ──
-            elif c.sub_status == "active" and c.paid_until:
+            # ── ОПЛАЧЕННЫЕ Pro: welcome, продление 7/3 дня, ежемесячный отчёт ──
+            # (Триал-письма day3/day6 убраны: в freemium триал — это Pro-триал без
+            #  таймера подписки; sub_status "trial" больше не выставляется.)
+            if c.sub_status == "active" and c.paid_until:
                 # Приветственное письмо после первой оплаты («что дальше»).
                 # Заодно стартуем отсчёт ежемесячного отчёта, чтобы он не ушёл сразу.
                 if not c.welcome_sent:

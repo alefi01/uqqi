@@ -450,30 +450,13 @@ class AddSitePayload(BaseModel):
     url: str
 
 
-def _is_unpaid_paid_site(c) -> bool:
-    """True если это платный сайт (не триал), который не оплачен."""
-    from datetime import datetime as _dt
-    if c.build_status in ("queued", "building", "error"):
-        return False
-    # Платный неоплаченный: sub_status unpaid, или active с истёкшим paid_until
-    if c.sub_status == "unpaid":
-        return True
-    if c.sub_status == "active" and c.paid_until and c.paid_until < _dt.utcnow():
-        return True
-    return False
-
-
 def _can_add_site(user, sites) -> tuple[bool, str]:
     """
-    Можно ли создать новый сайт.
-    Нельзя, пока есть строящийся или неоплаченный платный сайт.
+    Можно ли создать новый сайт. Freemium: сайты бесплатны, лимита по оплате нет —
+    нельзя лишь пока предыдущий ещё строится (парсинг = 1 одновременно).
     """
-    # Пока что-то строится — нельзя
     if any(c.build_status in ("queued", "building") for c in sites):
         return False, "Дождитесь завершения создания текущего сайта."
-    # Есть неоплаченный платный — нельзя
-    if any(_is_unpaid_paid_site(c) for c in sites):
-        return False, "Сначала оплатите предыдущий сайт."
     return True, ""
 
 
@@ -501,33 +484,31 @@ async def add_site(payload: AddSitePayload,
     if not can_add:
         raise HTTPException(status_code=409, detail=reason)
 
-    # Триал положен только если ещё не использован. Иначе — сразу платный.
-    is_trial = not user.trial_used
-
     import secrets as _s
     tmp_slug = f"building-{_s.token_hex(4)}"
+    # Freemium: сайт бесплатен и живёт сразу после сборки. Pro-триал (если ещё не
+    # использован на аккаунте) начисляет build_site ПО ГОТОВНОСТИ — так триал не
+    # сгорает на неудачной сборке (старый баг: trial_used ставился при создании).
     company = Company(
         slug=tmp_slug,
         title="Создаётся…",
         user_id=user.id,
         is_demo=False,
+        is_claim=False,        # self-service — легитимный сайт с рождения
         yandex_url=url,
         build_status="queued",
-        sub_status="trial" if is_trial else "unpaid",
+        sub_status="free",
         is_active=False,
         admin_password_hash="",
     )
     db.add(company)
-    # Помечаем триал использованным сразу при создании триал-сайта
-    if is_trial:
-        user.trial_used = True
     db.commit()
     db.refresh(company)
 
     from app.build_queue import enqueue
     enqueue(company.id)
 
-    return {"ok": True, "id": company.id, "trial": is_trial}
+    return {"ok": True, "id": company.id}
 
 
 @router.get("/sites/{site_id}/status")
@@ -708,9 +689,9 @@ async def create_ticket(payload: TicketPayload,
 # days — на сколько продлевать paid_until. months — для подачи «X ₽/мес».
 # ВАЖНО: дублируется на фронте (billing.jsx/app.bundle.jsx) — менять синхронно.
 PLANS = {
-    "month":   {"amount": "1990.00",  "days": 30,  "months": 1,  "label": "Месяц"},
-    "quarter": {"amount": "4980.00",  "days": 90,  "months": 3,  "label": "3 месяца"},
-    "year":    {"amount": "15960.00", "days": 365, "months": 12, "label": "Год"},
+    "month":   {"amount": "990.00",  "days": 30,  "months": 1,  "label": "Месяц"},
+    "quarter": {"amount": "2490.00", "days": 90,  "months": 3,  "label": "3 месяца"},
+    "year":    {"amount": "8900.00", "days": 365, "months": 12, "label": "Год"},
 }
 DEFAULT_PLAN = "quarter"
 
@@ -742,7 +723,7 @@ async def payment_create(payload: PaymentCreatePayload,
     amount = plan["amount"]
     days = plan["days"]
     return_url = f"https://lk.{settings.BASE_DOMAIN}/?paid={company.id}"
-    description = f"Подписка uqqi.ru ({plan['label']}) — {company.slug}.{settings.BASE_DOMAIN}"
+    description = f"Pro uqqi.ru ({plan['label']}) — {company.slug}.{settings.BASE_DOMAIN}"
 
     try:
         result = create_payment(
@@ -830,13 +811,14 @@ def _apply_successful_payment(payment_id: str, db: OrmSession) -> bool:
         db.commit()
         return False
 
-    # Продлеваем: от max(сейчас, текущий paid_until) + срок тарифа
+    # Продлеваем Pro от max(сейчас, текущий pro_until) + срок тарифа
     now = _dt.utcnow()
-    base = company.paid_until if (company.paid_until and company.paid_until > now) else now
-    company.paid_until    = base + _td(days=(pay.days or settings.SUBSCRIPTION_DAYS))
-    company.sub_status    = "active"
-    company.is_active     = True
-    company.trial_ends_at = None  # триал больше не релевантен
+    base = company.pro_until if (company.pro_until and company.pro_until > now) else now
+    company.pro_until  = base + _td(days=(pay.days or settings.SUBSCRIPTION_DAYS))
+    company.paid_once  = True          # легитимизирует серый claim-сайт НАВСЕГДА
+    company.paid_until = company.pro_until   # держим legacy-поле согласованным
+    company.sub_status = "active"
+    company.is_active  = True
     # Сбрасываем флаги напоминаний о продлении — для нового оплаченного периода
     company.notified_7d = False
     company.notified_3d = False

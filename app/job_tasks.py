@@ -14,7 +14,7 @@ import importlib
 import json as _json
 from datetime import datetime, timedelta
 
-from app.models import SessionLocal, Company
+from app.models import SessionLocal, Company, User
 from app.parser import (
     slugify, parse_hours, parse_gallery, parse_social_links,
     parse_news, parse_features, parse_menu_items, parse_reviews,
@@ -142,13 +142,23 @@ async def build_site(company_id: int):
         company.last_parsed_at = now
         company.build_status   = "ready"
         company.is_active      = True
-        if company.sub_status == "trial":
-            company.trial_ends_at = now + timedelta(days=TRIAL_DAYS)
-            db.commit()
-            job_log(company_id, f"✅ Готово (триал): {slug}.uqqi.ru до {company.trial_ends_at:%d.%m.%Y}")
+        company.sub_status     = "free"   # freemium: сайт бесплатен и живёт сразу
+
+        # Pro-триал 7 дней — self-service сайту, один раз на аккаунт (крючок:
+        # распробовать премиум-дизайн + чат). Начисляем ПО ГОТОВНОСТИ, а не при
+        # создании — так триал не сгорает на неудачной сборке. Claim-сайты
+        # (is_claim, user_id ещё NULL при сборке) Pro-триал получают при привязке.
+        granted = False
+        if company.user_id and not company.is_claim:
+            u = db.query(User).filter(User.id == company.user_id).first()
+            if u and not u.trial_used:
+                company.pro_until = now + timedelta(days=TRIAL_DAYS)
+                u.trial_used = True
+                granted = True
+        db.commit()
+        if granted:
+            job_log(company_id, f"✅ Готово: {slug}.uqqi.ru — бесплатный, Pro-триал до {company.pro_until:%d.%m.%Y}")
         else:
-            company.sub_status = "unpaid"
-            db.commit()
-            job_log(company_id, f"✅ Готово (платный, ждёт оплаты): {slug}.uqqi.ru")
+            job_log(company_id, f"✅ Готово: {slug}.uqqi.ru — бесплатный")
     finally:
         db.close()
