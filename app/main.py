@@ -422,12 +422,11 @@ def _build_site_context(request: Request, company) -> dict:
         route_url = f"https://yandex.ru/maps/?ll={lon}%2C{lat}&mode=routes&rtext=~{lat}%2C{lon}"
 
     site_url = f"https://{company.slug}.{settings.BASE_DOMAIN}/"
-    # Неоплаченные/неактивные сайты закрываем от индексации
-    # noindex для неоплаченных, а также для демо-показа и claim-сайтов из панели
-    seo_noindex = (not _is_paid_by_subscription(company)) or bool(getattr(company, "claim_code", None))
+    # Индексируем только легитимные (свои) сайты; серые непроплаченные и демо — noindex.
+    seo_noindex = not _indexable(company)
 
-    # Обезличенный claim-сайт (ждёт покупателя) — показываем юр-дисклеймер в подвале
-    is_claim_site = bool(getattr(company, "claim_code", None) and not company.user_id)
+    # Юр-дисклеймер в подвале — пока сайт не легитимизирован (серый и ещё не оплачен).
+    is_claim_site = not is_legit(company)
 
     return {
         "request":        request,
@@ -576,58 +575,27 @@ async def lk_claim_page(request: Request, code: str):
     raise HTTPException(status_code=404)
 
 
-def _is_paid_active(company) -> bool:
-    """True если сайт оплачен/идёт триал/активен демо-показ/это claim-сайт из панели."""
+def pro_active(company) -> bool:
+    """True, если активна Pro-подписка (Pro-триал ИЛИ оплата) — pro_until в будущем."""
     from datetime import datetime as _dt
-    now = _dt.utcnow()
-    if getattr(company, "is_demo", False):
-        return True
-    # Claim-сайт из панели (ждёт покупателя) — показываем без заглушки, он всё равно noindex
-    if getattr(company, "claim_code", None) and not company.user_id:
-        return True
-    # Демо-показ из owner-панели («снять заглушку на 7 дней»)
-    demo_until = getattr(company, "demo_until", None)
-    if demo_until and demo_until > now:
-        return True
-    if company.sub_status == "active":
-        return bool(company.paid_until and company.paid_until > now)
-    if company.sub_status == "trial":
-        return bool(company.trial_ends_at and company.trial_ends_at > now)
-    return False
+    return bool(company and company.pro_until and company.pro_until > _dt.utcnow())
 
 
-def _is_paid_by_subscription(company) -> bool:
-    """True если оплачено подпиской/триалом (БЕЗ учёта demo_until). Для sitemap."""
-    from datetime import datetime as _dt
-    now = _dt.utcnow()
-    if company.sub_status == "active":
-        return bool(company.paid_until and company.paid_until > now)
-    if company.sub_status == "trial":
-        return bool(company.trial_ends_at and company.trial_ends_at > now)
-    return False
-
-
-# Сколько дней показываем неоплаченный платный сайт с overlay, прежде чем заглушка
-UNPAID_OVERLAY_DAYS = 3
-
-
-def _unpaid_show_mode(company) -> str:
+def is_legit(company) -> bool:
     """
-    Режим показа неоплаченного сайта:
-    - 'overlay' — показать сайт с напоминанием (первые 3 дня платного)
-    - 'stub'    — полная заглушка
-    Триал истёк → сразу 'stub'.
+    «Сайт свой» (легитимизирован): self-service — всегда; серый claim-сайт из
+    owner-панели — только после первой оплаты (paid_once). Демо-витрины лендинга
+    легитимны формально, но из индексации отсекаются отдельно (is_demo).
     """
-    from datetime import datetime as _dt, timedelta as _td
-    now = _dt.utcnow()
-    # Истёкший триал → сразу заглушка
-    if company.sub_status == "trial":
-        return "stub"
-    # Платный неоплаченный (unpaid) — считаем от created_at
-    created = company.created_at or now
-    if now - created < _td(days=UNPAID_OVERLAY_DAYS):
-        return "overlay"
-    return "stub"
+    return bool(
+        company
+        and (not getattr(company, "is_claim", False) or getattr(company, "paid_once", False))
+    )
+
+
+def _indexable(company) -> bool:
+    """Участвует в индексации/sitemap/robots: легитимный клиентский сайт, не демо."""
+    return bool(is_legit(company) and not getattr(company, "is_demo", False))
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
@@ -637,8 +605,8 @@ async def robots_txt(request: Request, db: Session = Depends(get_db)):
     # Поддомен клиентского сайта
     if host != settings.BASE_DOMAIN and host != f"www.{settings.BASE_DOMAIN}" and not is_cabinet_host(request):
         company = get_company_by_request(request, db)
-        # Неоплаченный/неактивный сайт — запрещаем индексацию
-        if company and not _is_paid_active(company):
+        # Нелегитимный (серый непроплаченный) или демо — запрещаем индексацию
+        if company and not _indexable(company):
             return "User-agent: *\nDisallow: /\n"
         return (
             "User-agent: *\nAllow: /\n"
@@ -667,13 +635,13 @@ async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
             Company.build_status == "ready",
         ).all()
         for c in companies:
-            # Только реальные клиентские сайты (с владельцем), оплаченные.
-            # Демо-показ и claim-сайты из панели НЕ индексируем.
-            if c.user_id and c.claim_code is None and _is_paid_by_subscription(c):
+            # Только легитимные клиентские сайты (self-service или оплаченный claim).
+            # Серые непроплаченные и демо-витрины НЕ индексируем.
+            if _indexable(c):
                 urls.append(f"https://{c.slug}.{settings.BASE_DOMAIN}/")
     elif not is_cabinet_host(request):
         company = get_company_by_request(request, db)
-        if company and company.user_id and company.claim_code is None and _is_paid_by_subscription(company):
+        if company and _indexable(company):
             urls.append(f"https://{company.slug}.{settings.BASE_DOMAIN}/")
 
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -719,16 +687,8 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
             "request": request, "company": company, "building": True,
         }, status_code=200)
 
-    # Триал/подписка неактивны
-    show_overlay = False
-    if not _is_paid_active(company):
-        mode = _unpaid_show_mode(company)
-        if mode == "stub":
-            return templates.TemplateResponse("site_inactive.html", {
-                "request": request, "company": company, "unpaid": True,
-            }, status_code=200)
-        # mode == 'overlay' — показываем сайт, но с напоминанием поверх
-        show_overlay = True
+    # Freemium: сайт бесплатен и всегда виден (кроме ручной деактивации и сборки выше).
+    # Серые непроплаченные claim-сайты показываются, но noindex + дисклеймер (см. контекст).
 
     # Превью конкретного варианта из админки (?variant=A|B|C) — не считаем как визит
     preview = request.query_params.get("variant", "").upper()
@@ -739,7 +699,7 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
         _track_visit(request, company.slug, db)
 
     ctx = _build_site_context(request, company)
-    ctx["unpaid_overlay"] = show_overlay
+    ctx["unpaid_overlay"] = False  # overlay-напоминание в freemium не используется
     # Claim-окошко «Приобрести» — на ОБЫЧНОМ адресе у обезличенного claim-сайта.
     # Клиенту отправляем реальную ссылку slug.uqqi.ru/ — там сразу и сайт, и
     # предложение приобрести. Отдельная страница /demo больше не нужна.
