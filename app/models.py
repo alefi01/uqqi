@@ -99,7 +99,7 @@ class Company(Base):
     is_demo         = Column(Boolean, default=False)  # витрина для лендинга, без подписки
 
     # Подписка/триал этого сайта
-    sub_status      = Column(String(20), default="trial")   # trial / active / unpaid
+    sub_status      = Column(String(20), default="free")    # freemium: free / active (Pro). legacy trial/unpaid не используются
     trial_ends_at   = Column(DateTime, nullable=True)        # конец пробного периода (legacy, вестигиально)
     paid_until      = Column(DateTime, nullable=True)        # оплачено до (legacy, вестигиально)
 
