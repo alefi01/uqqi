@@ -443,10 +443,15 @@ def _build_site_context(request: Request, company) -> dict:
 
 
 def _variant_template(request: Request, company) -> str:
-    """Выбирает файл витрины: мобильный → C, иначе выбранный A/B."""
+    """
+    Выбирает файл витрины: мобильный → C, иначе выбранный A/B.
+    Премиум-дизайн (B) отдаётся только при активном Pro; без Pro — бесплатный A.
+    """
     if _is_mobile(request):
         return "site_c.html"
     variant = (company.template_variant or "A").upper()
+    if variant == "B" and not pro_active(company):
+        return "site_a.html"   # премиум-дизайн погас (Pro не активен) → бесплатный
     return "site_b.html" if variant == "B" else "site_a.html"
 
 

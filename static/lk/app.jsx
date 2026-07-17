@@ -134,11 +134,11 @@ function App() {
   const [canAddReason, setCanAddReason] = useState('');
   const [buildId, setBuildId] = useState(null);
 
-  async function startBuild(url) {
+  async function startBuild(url, design) {
     if (buildingRef.current) return;   // защита от двойного клика (дубль сайта)
     buildingRef.current = true;
     try {
-      const res = await window.API.addSite(url);
+      const res = await window.API.addSite(url, design);
       setBuildId(res.id);
       nav('building');
     } catch (ex) {

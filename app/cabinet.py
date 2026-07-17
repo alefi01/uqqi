@@ -442,6 +442,7 @@ def _site_dict(c: Company) -> dict:
 
 class AddSitePayload(BaseModel):
     url: str
+    design: str = "A"   # "A" бесплатный / "B" премиум (показывается только при Pro)
 
 
 def _can_add_site(user, sites) -> tuple[bool, str]:
@@ -478,11 +479,14 @@ async def add_site(payload: AddSitePayload,
     if not can_add:
         raise HTTPException(status_code=409, detail=reason)
 
+    design = payload.design if payload.design in ("A", "B") else "A"
+
     import secrets as _s
     tmp_slug = f"building-{_s.token_hex(4)}"
     # Freemium: сайт бесплатен и живёт сразу после сборки. Pro-триал (если ещё не
     # использован на аккаунте) начисляет build_site ПО ГОТОВНОСТИ — так триал не
     # сгорает на неудачной сборке (старый баг: trial_used ставился при создании).
+    # Выбранный дизайн храним сразу; премиум (B) отрендерится только при Pro.
     company = Company(
         slug=tmp_slug,
         title="Создаётся…",
@@ -492,6 +496,7 @@ async def add_site(payload: AddSitePayload,
         yandex_url=url,
         build_status="queued",
         sub_status="free",
+        template_variant=design,
         is_active=False,
         admin_password_hash="",
     )

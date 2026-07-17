@@ -29,7 +29,7 @@ const API = {
 
   // ── Сайты ──
   sites()                           { return this._req('GET', '/sites'); },
-  addSite(url)                      { return this._req('POST', '/sites/add', { url }); },
+  addSite(url, design)              { return this._req('POST', '/sites/add', { url, design }); },
   claimSite(code)                   { return this._req('POST', '/claim/' + encodeURIComponent(code)); },
   claimInfo(code)                   { return this._req('GET', '/claim/' + encodeURIComponent(code) + '/info'); },
   siteStatus(id)                    { return this._req('GET', '/sites/' + id + '/status'); },

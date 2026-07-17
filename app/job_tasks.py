@@ -113,7 +113,8 @@ async def build_site(company_id: int):
         company.category     = place.categories or "Организация"
         company.coordinates  = place.coordinates or ""
         company.yandex_url   = place.url or target_url
-        company.template_variant = "A"
+        # template_variant НЕ трогаем: он выбран при создании (self-service) или
+        # выставлен "B" для claim-сайтов (owner.py). Перезапись затирала выбор.
         company.hours        = parse_hours(place.hours)
         company.gallery_photos = parse_gallery(place.gallery_photos)[:12]
         company.social_links = parse_social_links(place.social_links)

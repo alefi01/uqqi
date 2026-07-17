@@ -165,6 +165,7 @@ function validYandex(text) {
 // ---- экран «Добавить сайт» ----
 function ScreenAddSite({ nav, onStartBuild }) {
   const [url, setUrl] = useStateD('');
+  const [design, setDesign] = useStateD('A');
   const valid = validYandex(url);
   return (
     <div className="wrap-md">
@@ -183,7 +184,22 @@ function ScreenAddSite({ nav, onStartBuild }) {
           <i data-lucide="lightbulb" style={{ width: 18, height: 18, color: 'var(--gold-dim)', flex: 'none' }}></i>
           <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Где взять ссылку: откройте карточку компании в Яндекс Картах, нажмите кнопку <b>«Поделиться»</b> и скопируйте ссылку. Можно вставить скопированное целиком — вместе с названием и адресом.</span>
         </div>
-        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.3rem' }} disabled={valid !== true} onClick={() => onStartBuild(url)}>Создать сайт</button>
+        <div className="field" style={{ marginTop: '1.3rem' }}>
+          <label className="field__label">Дизайн сайта</label>
+          <div style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem' }}>
+            {[{ id: 'A', name: 'Базовый', note: 'Бесплатно' }, { id: 'B', name: 'Премиум', note: 'Pro' }].map(d => (
+              <div key={d.id} onClick={() => setDesign(d.id)}
+                style={{ flex: 1, padding: '.8rem 1rem', cursor: 'pointer',
+                  border: '2px solid ' + (design === d.id ? 'var(--terracotta)' : 'var(--line)'),
+                  borderRadius: 'var(--r-lg)', background: design === d.id ? 'var(--terracotta-wash)' : 'transparent' }}>
+                <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.92rem' }}>{d.name}</div>
+                <div className="muted" style={{ fontSize: '.76rem', marginTop: '.15rem' }}>{d.note}</div>
+              </div>
+            ))}
+          </div>
+          {design === 'B' && <span className="field__hint" style={{ marginTop: '.5rem', display: 'block' }}>Премиум активен, пока действует Pro (в т.ч. пробный период). Без Pro покажется базовый дизайн.</span>}
+        </div>
+        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.3rem' }} disabled={valid !== true} onClick={() => onStartBuild(url, design)}>Создать сайт</button>
       </div>
     </div>
   );
