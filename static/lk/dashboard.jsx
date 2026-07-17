@@ -8,11 +8,12 @@ function StatusBadge({ site }) {
   const map = {
     building: { cls: 'badge--building', ic: 'loader', txt: 'Создаётся…' },
     error:    { cls: 'badge--error', ic: 'alert-triangle', txt: 'Ошибка сборки' },
-    trial:    { cls: 'badge--trial', ic: null, txt: `Пробный период — осталось ${site.trialDays} дн.` },
-    active:   { cls: 'badge--active', ic: null, txt: `Активна до ${site.until}` },
-    unpaid:   { cls: 'badge--unpaid', ic: null, txt: 'Не оплачено' },
+    free:     { cls: 'badge--active', ic: null, txt: 'Бесплатный' },
+    protrial: { cls: 'badge--trial', ic: null, txt: `Pro-триал — осталось ${site.proDays} дн.` },
+    pro:      { cls: 'badge--active', ic: null, txt: `Pro до ${site.proUntil}` },
+    claim:    { cls: 'badge--unpaid', ic: null, txt: 'Демо — оплатите, чтобы забрать' },
   };
-  const m = map[site.status] || map.active;
+  const m = map[site.status] || map.free;
   return (
     <span className={'badge ' + m.cls}>
       {m.ic ? <i data-lucide={m.ic} style={{ width: 13, height: 13 }} className={site.status === 'building' ? 'spin-ic' : ''}></i> : <span className="dot"></span>}
@@ -25,7 +26,6 @@ function StatusBadge({ site }) {
 function SiteCard({ site, nav, onPay, onMenu }) {
   const isBuilding = site.status === 'building';
   const isError = site.status === 'error';
-  const needsPay = site.status === 'trial' || site.status === 'unpaid';
   return (
     <div className="card sitecard">
       <div className="sitecard__top">
@@ -60,13 +60,15 @@ function SiteCard({ site, nav, onPay, onMenu }) {
       {!isBuilding && !isError && (
         <div className="sitecard__meta">
           <span><b>{site.city}</b></span>
-          <span>Тариф: <b>от 1990 ₽ / мес</b></span>
+          <span>Pro: <b>от 990 ₽ / мес</b></span>
           <span>Создан: <b>{site.created}</b></span>
         </div>
       )}
 
       <div className="sitecard__actions">
-        {needsPay && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>{site.status === 'unpaid' ? 'Оплатить, чтобы возобновить' : 'Оплатить'}</button>}
+        {site.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оплатить, чтобы забрать сайт</button>}
+        {(site.status === 'free' || site.status === 'protrial') && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оформить Pro</button>}
+        {site.status === 'pro' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
         {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
       </div>
@@ -136,9 +138,10 @@ function ScreenMetrics({ nav, metrics }) {
         </div>
 
         <div style={{ marginTop: '1.3rem', padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)', fontSize: '.86rem', color: 'var(--ink-2)' }}>
-          {sub.status === 'active' && <span>Подписка активна до <b style={{ color: 'var(--ink)' }}>{sub.until}</b></span>}
-          {sub.status === 'trial' && <span>Пробный период — осталось <b style={{ color: 'var(--ink)' }}>{sub.trialDays} дн.</b></span>}
-          {sub.status === 'unpaid' && <span style={{ color: 'var(--danger)' }}>Подписка не активна</span>}
+          {sub.status === 'pro' && <span>Pro активен до <b style={{ color: 'var(--ink)' }}>{sub.until}</b></span>}
+          {sub.status === 'protrial' && <span>Pro-триал — осталось <b style={{ color: 'var(--ink)' }}>{sub.proDays} дн.</b></span>}
+          {sub.status === 'free' && <span>Бесплатный сайт · <b style={{ color: 'var(--ink)' }}>Pro</b> откроет премиум-дизайн и чат</span>}
+          {sub.status === 'claim' && <span style={{ color: 'var(--danger)' }}>Демо-сайт — оплатите, чтобы забрать</span>}
         </div>
       </div>
     </div>

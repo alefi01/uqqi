@@ -4,19 +4,18 @@
 const { useState: useStateB } = React;
 
 const INCLUDED = [
-  'Сайт на адресе название.uqqi.ru',
-  'Данные из Яндекс Карт: фото, отзывы, часы',
-  'Редактирование контента без программиста',
-  'Онлайн-запись и приём заявок',
-  'Поддержка и обновления',
+  'Премиум-дизайны сайта',
+  'Чат на сайте — заявки приходят вам в Telegram',
+  'Снятие пометки «демо» и индексация в поиске (для demo-сайтов)',
+  'Приоритетная поддержка',
 ];
 
 // ---- Сводка оплаты (внутри кабинета) ----
-// Тарифы — синхронно с PLANS в app/cabinet.py
+// Тарифы Pro — синхронно с PLANS в app/cabinet.py
 const PLANS_LK = [
-  { id: 'month',   label: 'Месяц',    amount: 1990,  perMonth: 1990, period: '30 дней',  save: '' },
-  { id: 'quarter', label: '3 месяца', amount: 4980,  perMonth: 1660, period: '90 дней',  save: 'выгода 990 ₽' },
-  { id: 'year',    label: 'Год',      amount: 15960, perMonth: 1330, period: '365 дней', save: 'выгода 7920 ₽' },
+  { id: 'month',   label: 'Месяц',    amount: 990,  perMonth: 990, period: '30 дней',  save: '' },
+  { id: 'quarter', label: '3 месяца', amount: 2490, perMonth: 830, period: '90 дней',  save: 'выгода 480 ₽' },
+  { id: 'year',    label: 'Год',      amount: 8900, perMonth: 742, period: '365 дней', save: 'выгода 2 980 ₽' },
 ];
 const fmtRub = n => n.toLocaleString('ru-RU');
 
@@ -47,7 +46,7 @@ function ScreenPayment({ nav, site, onProceed }) {
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
-        <span className="eyebrow">Оплата подписки</span>
+        <span className="eyebrow">Оформление Pro</span>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 1.2rem' }}>{s.name || 'Ваш сайт'}</h2>
 
         <div className="row" style={{ padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
@@ -137,8 +136,8 @@ function ScreenPaymentProcessing({ onConfirmed }) {
       tries++;
       try {
         const data = await window.API.sites();
-        const anyActive = (data.sites || []).some(s => s.status === 'active');
-        if (anyActive) { clearInterval(iv); onConfirmed(); return; }
+        const anyPaid = (data.sites || []).some(s => s.status === 'pro');
+        if (anyPaid) { clearInterval(iv); onConfirmed(); return; }
       } catch (e) {}
       if (tries > 15) { clearInterval(iv); onConfirmed(); }
     }, 2000);
@@ -188,8 +187,9 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <StatusBadge site={s} />
-                  {(s.status === 'trial' || s.status === 'unpaid') && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оплатить</button>}
-                  {s.status === 'active' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить</button>}
+                  {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
+                  {(s.status === 'free' || s.status === 'protrial') && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                  {s.status === 'pro' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
                 </div>
               </div>
             </div>

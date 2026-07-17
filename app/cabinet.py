@@ -400,36 +400,27 @@ def _site_dict(c: Company) -> dict:
     """Сериализует компанию для фронта кабинета."""
     from datetime import datetime as _dt
 
-    # Определяем статус для бейджа
-    status = "active"
-    trial_days = None
-    until = None
+    now = _dt.utcnow()
+    pro_active = bool(c.pro_until and c.pro_until > now)
+    is_legit   = (not c.is_claim) or bool(c.paid_once)   # «сайт свой»
+    pro_until  = c.pro_until.strftime("%d.%m.%Y") if c.pro_until else None
+    pro_days   = max(0, (c.pro_until - now).days + 1) if pro_active else None
 
+    # Статус для бейджа/меню в ЛК
     if c.build_status in ("queued", "building"):
         status = "building"
     elif c.build_status == "error":
         status = "error"
-    elif c.sub_status == "trial":
-        status = "trial"
-        if c.trial_ends_at:
-            delta = (c.trial_ends_at - _dt.utcnow()).days
-            trial_days = max(0, delta + 1)
-            if c.trial_ends_at < _dt.utcnow():
-                status = "unpaid"  # триал истёк
-    elif c.sub_status == "active":
-        status = "active"
-        if c.paid_until:
-            until = c.paid_until.strftime("%d.%m.%Y")
-            if c.paid_until < _dt.utcnow():
-                status = "unpaid"
-    elif c.sub_status == "unpaid":
-        status = "unpaid"
+    elif not is_legit:
+        status = "claim"       # серый claim-сайт: обезличен, «оплатить, чтобы стало вашим»
+    elif pro_active and c.paid_once:
+        status = "pro"         # оплаченный Pro
+    elif pro_active:
+        status = "protrial"    # Pro-триал (self-service, ещё не платил)
+    else:
+        status = "free"        # бесплатный сайт
 
-    # Можно ли удалять: нельзя только активный готовый триал
-    can_delete = not (
-        c.sub_status == "trial" and c.trial_ends_at and c.trial_ends_at > _dt.utcnow()
-        and c.build_status == "ready"
-    )
+    can_delete = c.build_status not in ("queued", "building")
 
     return {
         "id":        c.id,
@@ -437,8 +428,11 @@ def _site_dict(c: Company) -> dict:
         "slug":      c.slug,
         "city":      (c.address or "").split(",")[-1].strip() if c.address else "",
         "status":    status,
-        "trialDays": trial_days,
-        "until":     until,
+        "proActive": pro_active,
+        "isLegit":   is_legit,
+        "isClaim":   bool(c.is_claim),
+        "proUntil":  pro_until,
+        "proDays":   pro_days,
         "created":   c.created_at.strftime("%d.%m.%Y") if c.created_at else "",
         "icon":      "store",
         "build_status": c.build_status,
@@ -564,17 +558,23 @@ async def site_metrics(site_id: int,
         d = (now.date() - _td(days=i)).strftime("%Y-%m-%d")
         daily.append({"day": d, "unique": by_day.get(d, 0)})
 
-    # Статус подписки (без внутренней кухни)
-    sub = {"status": c.sub_status, "until": None, "trialDays": None}
-    if c.sub_status == "active" and c.paid_until:
-        sub["until"] = c.paid_until.strftime("%d.%m.%Y")
-        if c.paid_until < now:
-            sub["status"] = "unpaid"
-    elif c.sub_status == "trial" and c.trial_ends_at:
-        delta = (c.trial_ends_at - now).days
-        sub["trialDays"] = max(0, delta + 1)
-        if c.trial_ends_at < now:
-            sub["status"] = "unpaid"
+    # Статус Pro-подписки (без внутренней кухни)
+    pro_active = bool(c.pro_until and c.pro_until > now)
+    is_legit   = (not c.is_claim) or bool(c.paid_once)
+    if not is_legit:
+        pstatus = "claim"
+    elif pro_active and c.paid_once:
+        pstatus = "pro"
+    elif pro_active:
+        pstatus = "protrial"
+    else:
+        pstatus = "free"
+    sub = {
+        "status":    pstatus,
+        "proActive": pro_active,
+        "until":     c.pro_until.strftime("%d.%m.%Y") if c.pro_until else None,
+        "proDays":   max(0, (c.pro_until - now).days + 1) if pro_active else None,
+    }
 
     return {
         "slug":    slug,
@@ -596,15 +596,10 @@ async def delete_site(site_id: int,
                        payload: SiteDeletePayload,
                        user: User = Depends(require_user),
                        db: OrmSession = Depends(get_db)):
-    from datetime import datetime as _dt
     c = db.query(Company).filter(Company.id == site_id, Company.user_id == user.id).first()
     if not c:
         raise HTTPException(status_code=404)
-    # Нельзя удалять активный триал (защита от абуза: удалить+создать заново)
-    if c.sub_status == "trial" and c.trial_ends_at and c.trial_ends_at > _dt.utcnow() \
-            and c.build_status == "ready":
-        raise HTTPException(status_code=403,
-            detail="Дождитесь окончания trial-периода.")
+    # Freemium: удаление доступно всегда (лимита по триалу/оплате нет).
     # Подтверждение: верный пароль ИЛИ точное название/адрес сайта
     ok = False
     if payload.password and _check_pw(payload.password, user.password_hash):
