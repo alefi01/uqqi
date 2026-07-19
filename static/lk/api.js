@@ -30,6 +30,8 @@ const API = {
   // ── Сайты ──
   sites()                           { return this._req('GET', '/sites'); },
   addSite(url, design)              { return this._req('POST', '/sites/add', { url, design }); },
+  telegramStatus()                  { return this._req('GET', '/telegram'); },
+  telegramDisconnect()              { return this._req('POST', '/telegram/disconnect'); },
   claimSite(code)                   { return this._req('POST', '/claim/' + encodeURIComponent(code)); },
   claimInfo(code)                   { return this._req('GET', '/claim/' + encodeURIComponent(code) + '/info'); },
   siteStatus(id)                    { return this._req('GET', '/sites/' + id + '/status'); },

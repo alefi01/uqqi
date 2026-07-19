@@ -265,6 +265,44 @@ function ScreenSupport({ email, tickets, onSubmit }) {
   );
 }
 
+// ---- Подключение Telegram (чат с сайтов, Pro) ----
+function TelegramCard() {
+  const [st, setSt] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  async function load() {
+    try { setSt(await window.API.telegramStatus()); }
+    catch (e) { setSt({ connected: false, link: '', botConfigured: false }); }
+  }
+  React.useEffect(() => { load(); }, []);
+  async function disconnect() {
+    setBusy(true);
+    try { await window.API.telegramDisconnect(); await load(); }
+    finally { setBusy(false); }
+  }
+  return (
+    <div className="card" style={{ padding: '1.4rem 1.5rem' }}>
+      <p className="field__label" style={{ marginBottom: '.6rem' }}>Чат на сайте → Telegram <span style={{ fontSize: '.68rem', fontWeight: 700, color: 'var(--terracotta)', border: '1px solid var(--terracotta)', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>PRO</span></p>
+      <p className="muted" style={{ fontSize: '.84rem', lineHeight: 1.6 }}>Сообщения посетителей с ваших Pro-сайтов приходят вам в Telegram. Отвечайте прямо из Telegram (кнопка «Ответить») — ответ появится в чате на сайте.</p>
+      {!st && <p className="muted" style={{ marginTop: '.8rem', fontSize: '.84rem' }}>Загрузка…</p>}
+      {st && st.connected && (
+        <div className="between" style={{ marginTop: '.9rem', gap: '1rem' }}>
+          <span className="field__hint" style={{ color: 'var(--success-soft)' }}>✓ Telegram подключён</span>
+          <button className="btn btn--ghost btn--sm" onClick={disconnect} disabled={busy}>Отключить</button>
+        </div>
+      )}
+      {st && !st.connected && st.botConfigured && (
+        <div style={{ marginTop: '.9rem', display: 'flex', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <a className="btn btn--primary btn--sm" href={st.link} target="_blank" rel="noopener">Подключить Telegram</a>
+          <button className="btn btn--ghost btn--sm" onClick={load}>Я нажал «Старт» — проверить</button>
+        </div>
+      )}
+      {st && !st.connected && !st.botConfigured && (
+        <p className="field__err" style={{ marginTop: '.9rem' }}>Бот пока не настроен. Напишите в поддержку.</p>
+      )}
+    </div>
+  );
+}
+
 // ---- Настройки аккаунта ----
 function ScreenSettings({ email, onDelete }) {
   const [pw, setPw] = useStateB('');
@@ -308,6 +346,8 @@ function ScreenSettings({ email, onDelete }) {
           <div><button className="btn btn--dark" onClick={savePassword} disabled={busy}>{busy ? 'Сохраняем…' : 'Сохранить пароль'}</button></div>
         </div>
       </div>
+
+      <TelegramCard />
 
       <div className="card" style={{ padding: '1.4rem 1.5rem', borderColor: 'color-mix(in srgb,var(--danger) 25%,var(--line))' }}>
         <p className="field__label" style={{ marginBottom: '.5rem', color: 'var(--danger)' }}>Опасная зона</p>

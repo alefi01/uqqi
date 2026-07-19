@@ -1,0 +1,84 @@
+{# Чат-виджет на витрине (Pro). Показывается только при chat_enabled.
+   Самодостаточный: инлайн CSS+JS, тот же origin (slug.uqqi.ru), без внешних зависимостей.
+   Сообщения посетителя → владельцу в Telegram; ответы владельца прилетают поллингом. #}
+{% if chat_enabled %}
+<style>
+  #uqqi-chat-btn{position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:50%;
+    background:#c65d3b;color:#fff;border:none;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25);
+    display:flex;align-items:center;justify-content:center;z-index:99998;font-size:24px;line-height:1}
+  #uqqi-chat-panel{position:fixed;right:18px;bottom:84px;width:min(340px,calc(100vw - 36px));
+    max-height:min(70vh,520px);background:#fff;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.28);
+    display:none;flex-direction:column;overflow:hidden;z-index:99999;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  #uqqi-chat-panel.open{display:flex}
+  #uqqi-chat-head{background:#c65d3b;color:#fff;padding:12px 14px;font-weight:600;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+  #uqqi-chat-head span.close{cursor:pointer;opacity:.85;font-size:20px;line-height:1}
+  #uqqi-chat-body{flex:1;overflow-y:auto;padding:12px;background:#f7f5f2;display:flex;flex-direction:column;gap:8px}
+  #uqqi-chat-body .m{max-width:80%;padding:8px 11px;border-radius:12px;font-size:14px;line-height:1.4;word-wrap:break-word}
+  #uqqi-chat-body .m.in{align-self:flex-end;background:#c65d3b;color:#fff;border-bottom-right-radius:3px}
+  #uqqi-chat-body .m.out{align-self:flex-start;background:#fff;color:#222;border:1px solid #e6e1da;border-bottom-left-radius:3px}
+  #uqqi-chat-hint{font-size:12px;color:#8a8178;text-align:center;padding:4px 12px}
+  #uqqi-chat-form{display:flex;gap:6px;padding:10px;border-top:1px solid #eee;background:#fff}
+  #uqqi-chat-input{flex:1;border:1px solid #ddd;border-radius:10px;padding:9px 11px;font-size:14px;outline:none;font-family:inherit}
+  #uqqi-chat-send{background:#c65d3b;color:#fff;border:none;border-radius:10px;padding:0 14px;cursor:pointer;font-size:14px}
+  #uqqi-chat-send:disabled{opacity:.5;cursor:default}
+</style>
+<button id="uqqi-chat-btn" aria-label="Написать">&#128172;</button>
+<div id="uqqi-chat-panel" role="dialog" aria-label="Чат">
+  <div id="uqqi-chat-head">Напишите нам<span class="close" id="uqqi-chat-close">&times;</span></div>
+  <div id="uqqi-chat-body"></div>
+  <div id="uqqi-chat-hint">Ответ придёт сюда же — окно можно не закрывать.</div>
+  <form id="uqqi-chat-form">
+    <input id="uqqi-chat-input" type="text" placeholder="Ваше сообщение…" maxlength="2000" autocomplete="off">
+    <button id="uqqi-chat-send" type="submit">&#10148;</button>
+  </form>
+</div>
+<script>
+(function(){
+  var SLUG = {{ company.slug|tojson }};
+  var KEY = 'uqqi_vid';
+  var vid = '';
+  try { vid = localStorage.getItem(KEY) || ''; } catch(e){}
+  if(!vid){ vid = 'v' + Math.random().toString(36).slice(2) + Date.now().toString(36); try{ localStorage.setItem(KEY, vid); }catch(e){} }
+
+  var btn=document.getElementById('uqqi-chat-btn'), panel=document.getElementById('uqqi-chat-panel'),
+      body=document.getElementById('uqqi-chat-body'), form=document.getElementById('uqqi-chat-form'),
+      input=document.getElementById('uqqi-chat-input'), sendBtn=document.getElementById('uqqi-chat-send'),
+      closeBtn=document.getElementById('uqqi-chat-close');
+  var lastId=0, polling=null, opened=false;
+
+  function add(text, cls){
+    var d=document.createElement('div'); d.className='m '+cls; d.textContent=text; body.appendChild(d);
+    body.scrollTop=body.scrollHeight;
+  }
+  function poll(){
+    fetch('/api/chat/'+encodeURIComponent(SLUG)+'/poll?visitor_id='+encodeURIComponent(vid)+'&after='+lastId)
+      .then(function(r){ return r.ok?r.json():{messages:[]}; })
+      .then(function(d){ (d.messages||[]).forEach(function(m){ lastId=Math.max(lastId,m.id); add(m.text,'out'); }); })
+      .catch(function(){});
+  }
+  function open(){
+    if(opened) return; opened=true; panel.classList.add('open');
+    if(!body.dataset.greeted){ add('Здравствуйте! Напишите ваш вопрос — мы ответим.','out'); body.dataset.greeted='1'; }
+    poll(); polling=setInterval(poll, 4000); input.focus();
+  }
+  function close(){ opened=false; panel.classList.remove('open'); if(polling){clearInterval(polling);polling=null;} }
+  btn.addEventListener('click', function(){ opened?close():open(); });
+  closeBtn.addEventListener('click', close);
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var t=(input.value||'').trim(); if(!t) return;
+    sendBtn.disabled=true;
+    fetch('/api/chat/'+encodeURIComponent(SLUG)+'/send', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({visitor_id:vid, text:t})
+    }).then(function(r){
+      if(r.ok){ add(t,'in'); input.value=''; }
+      else if(r.status===429){ add('Слишком много сообщений, попробуйте позже.','out'); }
+      else { add('Не удалось отправить. Попробуйте позже.','out'); }
+    }).catch(function(){ add('Нет связи. Попробуйте позже.','out'); })
+      .finally(function(){ sendBtn.disabled=false; input.focus(); });
+  });
+})();
+</script>
+{% endif %}
