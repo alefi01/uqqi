@@ -68,6 +68,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(owner_router)
 from app.cabinet import router as cabinet_router
 app.include_router(cabinet_router)
+from app.chat import router as chat_router
+app.include_router(chat_router)
 
 SESSION_COOKIE = "admin_session"
 SESSION_TTL    = timedelta(days=7)
@@ -705,6 +707,12 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
 
     ctx = _build_site_context(request, company)
     ctx["unpaid_overlay"] = False  # overlay-напоминание в freemium не используется
+    # Чат-виджет (Pro): показываем, только если Pro активен И владелец подключил Telegram.
+    ctx["chat_enabled"] = False
+    if pro_active(company) and company.user_id:
+        from app.models import User as _User
+        _owner = db.query(_User).filter(_User.id == company.user_id).first()
+        ctx["chat_enabled"] = bool(_owner and _owner.tg_chat_id)
     # Claim-окошко «Приобрести» — на ОБЫЧНОМ адресе у обезличенного claim-сайта.
     # Клиенту отправляем реальную ссылку slug.uqqi.ru/ — там сразу и сайт, и
     # предложение приобрести. Отдельная страница /demo больше не нужна.

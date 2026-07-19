@@ -80,6 +80,10 @@ class User(Base):
     trial_used      = Column(Boolean, default=False)
     pending_claim_code = Column(String(40), default="")  # claim-код, ожидающий подтверждения email
 
+    # Чат с сайта → Telegram владельца (Pro-фича).
+    tg_chat_id      = Column(String(40), default="")   # chat_id владельца (куда шлём сообщения с сайта)
+    tg_link_token   = Column(String(64), default="")   # одноразовый токен deep-link подключения
+
     created_at      = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self) -> str:
@@ -436,6 +440,29 @@ class Job(Base):
 
     def __repr__(self) -> str:
         return f"<Job {self.id} {self.type} {self.status}>"
+
+
+class ChatMessage(Base):
+    """
+    Сообщение чата на сайте (Pro-фича). Двусторонний:
+      direction='in'  — от посетителя сайта → пересылаем владельцу в Telegram;
+      direction='out' — ответ владельца из Telegram → посетитель забирает поллингом.
+    Переписка одного посетителя связывается через visitor_id (генерит виджет).
+    """
+
+    __tablename__ = "chat_messages"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    company_id    = Column(Integer, index=True)
+    visitor_id    = Column(String(40), index=True)      # id посетителя (localStorage виджета)
+    direction     = Column(String(3))                    # 'in' | 'out'
+    text          = Column(Text, default="")
+    notify_msg_id = Column(Integer, nullable=True)        # message_id пересылки владельцу (для маршрутизации ответа reply-to)
+    tg_update_id  = Column(Integer, nullable=True, index=True)  # update_id ответа владельца (дедуп поллинга)
+    created_at    = Column(DateTime, default=datetime.utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<ChatMessage {self.id} c{self.company_id} {self.direction}>"
 
 
 # ── Init ──────────────────────────────────────────────────────────────────────

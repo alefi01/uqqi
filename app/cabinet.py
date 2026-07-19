@@ -637,6 +637,32 @@ async def cancel_subscription(site_id: int,
     return {"ok": True, "active_until": c.paid_until.strftime("%d.%m.%Y") if c.paid_until else None}
 
 
+# ── TELEGRAM (чат с сайтов, Pro) ──────────────────────────────────────────────
+
+@router.get("/telegram")
+async def telegram_status(user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Статус подключения Telegram владельца + deep-link для привязки."""
+    connected = bool(user.tg_chat_id)
+    link = ""
+    bot = (settings.TELEGRAM_BOT_USERNAME or "").strip()
+    if not connected:
+        if not user.tg_link_token:
+            user.tg_link_token = secrets.token_urlsafe(12)
+            db.commit()
+        if bot:
+            link = f"https://t.me/{bot}?start={user.tg_link_token}"
+    return {"connected": connected, "link": link, "botConfigured": bool(bot)}
+
+
+@router.post("/telegram/disconnect")
+async def telegram_disconnect(user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Отвязать Telegram — сообщения с сайта перестанут приходить."""
+    user.tg_chat_id = ""
+    user.tg_link_token = ""
+    db.commit()
+    return {"ok": True}
+
+
 # ── ПОДДЕРЖКА ─────────────────────────────────────────────────────────────────
 
 class TicketPayload(BaseModel):

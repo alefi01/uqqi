@@ -190,6 +190,14 @@ def main():
             cur.execute("ALTER TABLE users ADD COLUMN pending_claim_code VARCHAR(40) DEFAULT ''")
             print("[migrate] + users.pending_claim_code")
             added += 1
+        if "tg_chat_id" not in ucols:
+            cur.execute("ALTER TABLE users ADD COLUMN tg_chat_id VARCHAR(40) DEFAULT ''")
+            print("[migrate] + users.tg_chat_id")
+            added += 1
+        if "tg_link_token" not in ucols:
+            cur.execute("ALTER TABLE users ADD COLUMN tg_link_token VARCHAR(64) DEFAULT ''")
+            print("[migrate] + users.tg_link_token")
+            added += 1
 
     # parse_candidates (двухфазный парсинг: кандидаты без сайта)
     if not table_exists(cur, "parse_candidates"):
@@ -263,6 +271,27 @@ def main():
         cur.execute("CREATE INDEX IF NOT EXISTS ix_jobs_status ON jobs (status)")
         cur.execute("CREATE INDEX IF NOT EXISTS ix_jobs_type ON jobs (type)")
         print("[migrate] + таблица jobs")
+        added += 1
+
+    # chat_messages (чат на сайте ↔ Telegram владельца; Pro-фича)
+    if not table_exists(cur, "chat_messages"):
+        cur.execute("""
+            CREATE TABLE chat_messages (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id    INTEGER,
+                visitor_id    VARCHAR(40),
+                direction     VARCHAR(3),
+                text          TEXT DEFAULT '',
+                notify_msg_id INTEGER,
+                tg_update_id  INTEGER,
+                created_at    DATETIME
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_company ON chat_messages (company_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_visitor ON chat_messages (visitor_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_update ON chat_messages (tg_update_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_created ON chat_messages (created_at)")
+        print("[migrate] + таблица chat_messages")
         added += 1
 
     # WAL: несколько процессов (app + воркеры) пишут в одну SQLite

@@ -423,6 +423,128 @@ async def _loop_reconcile():
         await asyncio.sleep(600)
 
 
+# ── Telegram: чат с сайтов (Pro) ──────────────────────────────────────────────
+# Приём апдейтов бота long-poll'ом getUpdates (без вебхука). Обрабатываем:
+#  • /start <token> — привязка Telegram владельца (deep-link из ЛК);
+#  • Reply на пересланное сообщение — ответ владельца посетителю.
+
+from pathlib import Path as _Path
+_TG_OFFSET_PATH = _Path(__file__).resolve().parent.parent / "logs" / "tg_offset"
+_tg_offset = 0
+
+
+def _tg_load_offset():
+    global _tg_offset
+    try:
+        _tg_offset = int(_TG_OFFSET_PATH.read_text().strip())
+    except Exception:
+        _tg_offset = 0
+
+
+def _tg_save_offset(n: int):
+    try:
+        _TG_OFFSET_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _TG_OFFSET_PATH.write_text(str(n))
+    except Exception:
+        pass
+
+
+def _handle_tg_update(up: dict):
+    from app.models import SessionLocal, User, Company, ChatMessage
+    from app.telegram_bot import tg_send_message
+
+    msg = up.get("message") or {}
+    chat = msg.get("chat") or {}
+    chat_id = chat.get("id")
+    text = (msg.get("text") or "").strip()
+    update_id = up.get("update_id")
+    if not chat_id or not text:
+        return
+
+    # /start <token> — привязка владельца по одноразовому токену из ЛК
+    if text.startswith("/start"):
+        parts = text.split(maxsplit=1)
+        token = parts[1].strip() if len(parts) > 1 else ""
+        db = SessionLocal()
+        try:
+            u = db.query(User).filter(User.tg_link_token == token).first() if token else None
+            if u:
+                u.tg_chat_id = str(chat_id)
+                u.tg_link_token = ""
+                db.commit()
+                tg_send_message(str(chat_id),
+                    "✅ Telegram подключён. Сюда будут приходить сообщения с вашего сайта. "
+                    "Отвечайте на них через «Ответить» (Reply).")
+            else:
+                tg_send_message(str(chat_id),
+                    "Чтобы подключить уведомления, откройте «Подключить Telegram» в личном кабинете uqqi.ru.")
+        finally:
+            db.close()
+        return
+
+    # Ответ владельца: Reply на пересланное сообщение посетителя
+    reply = msg.get("reply_to_message") or {}
+    reply_mid = reply.get("message_id")
+    db = SessionLocal()
+    try:
+        # дедуп по update_id (переобработка после рестарта)
+        if update_id and db.query(ChatMessage).filter(ChatMessage.tg_update_id == update_id).first():
+            return
+        src = None
+        if reply_mid:
+            src = db.query(ChatMessage).filter(
+                ChatMessage.notify_msg_id == reply_mid,
+                ChatMessage.direction == "in",
+            ).first()
+        if not src:
+            tg_send_message(str(chat_id),
+                "Чтобы ответить посетителю, используйте «Ответить» (Reply) на его сообщение с сайта.")
+            return
+        c = db.query(Company).filter(Company.id == src.company_id).first()
+        owner = db.query(User).filter(User.id == c.user_id).first() if c else None
+        if not owner or str(owner.tg_chat_id) != str(chat_id):
+            return  # отвечает не владелец этого сайта
+        out = ChatMessage(company_id=src.company_id, visitor_id=src.visitor_id,
+                          direction="out", text=text[:2000], tg_update_id=update_id)
+        db.add(out)
+        db.commit()
+    finally:
+        db.close()
+
+
+def _tg_poll_once() -> int:
+    """Один цикл getUpdates + обработка (блокирующий, крутится в потоке)."""
+    from app.telegram_bot import tg_get_updates
+    global _tg_offset
+    updates = tg_get_updates(_tg_offset, 20)
+    for up in updates:
+        _tg_offset = max(_tg_offset, (up.get("update_id") or 0) + 1)
+        try:
+            _handle_tg_update(up)
+        except Exception as e:
+            print(f"[TG] handle error: {e}", flush=True)
+    if updates:
+        _tg_save_offset(_tg_offset)
+    return len(updates)
+
+
+async def _loop_telegram():
+    """Long-poll апдейтов бота (чат с сайтов). Блокирующие вызовы — в отдельном потоке."""
+    if not (settings.TELEGRAM_BOT_TOKEN or "").strip():
+        print("[TG] бот не настроен — чат-поллинг выключен", flush=True)
+        return
+    _tg_load_offset()
+    await asyncio.sleep(5)
+    while True:
+        try:
+            n = await asyncio.to_thread(_tg_poll_once)
+            if n == 0:
+                await asyncio.sleep(2)
+        except Exception as e:
+            print(f"[TG] poll error: {e}", flush=True)
+            await asyncio.sleep(10)
+
+
 def start_scheduler():
     """Запускает фоновые задачи. Вызывается из main при старте."""
     global _RUNNING
@@ -436,4 +558,5 @@ def start_scheduler():
     loop.create_task(_loop_cleanup())
     loop.create_task(_loop_monitor())
     loop.create_task(_loop_reconcile())
-    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг + реконсиляция платежей)", flush=True)
+    loop.create_task(_loop_telegram())
+    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг + реконсиляция платежей + telegram-чат)", flush=True)

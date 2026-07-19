@@ -34,10 +34,12 @@ class Settings(BaseSettings):
     YUKASSA_SECRET_KEY: str = ""   # секретный ключ API
     SUBSCRIPTION_DAYS:  int = 30        # fallback срока продления (реальный — Payment.days из тарифа PLANS в cabinet.py)
 
-    # Telegram-бот: вывоз бэкапов БД + алерты мониторинга.
+    # Telegram-бот: вывоз бэкапов БД + алерты мониторинга + чат с сайтов (Pro).
     # Пустые дефолты — реальные значения только в .env (не коммитить).
     TELEGRAM_BOT_TOKEN: str = ""   # токен от @BotFather
-    TELEGRAM_CHAT_ID:   str = ""   # ID чата/канала для доставки
+    TELEGRAM_CHAT_ID:   str = ""   # ID чата/канала для алертов/бэкапов
+    TELEGRAM_BOT_USERNAME: str = ""  # username бота без @ (для deep-link t.me/<bot>?start=)
+    TELEGRAM_PROXY:     str = ""   # опц. SOCKS5/HTTPS-прокси для Bot API (если заблокирован)
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
