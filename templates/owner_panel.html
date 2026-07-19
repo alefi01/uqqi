@@ -288,6 +288,9 @@
               <button class="action-btn" onclick="showBuildLog({{ c.id }})" title="Лог сборки сайта">
                 Лог
               </button>
+              <button class="action-btn" onclick="grantProTrial({{ c.id }}, this)" title="Выдать сайту Pro-триал 7 дней (премиум-дизайн + чат; claim остаётся обезличенным до оплаты)">
+                🎁 Pro-триал
+              </button>
               {% if c.claim_code %}
               <button class="action-btn action-btn--claim" onclick="showMaterials({{ c.id }})" title="Материалы для клиента: текст, ссылка, скриншот">
                 📦 Клиенту
@@ -608,6 +611,29 @@ async function refreshData(id, btn) {
       setTimeout(() => location.reload(), 1200);
     } else {
       toast(data.detail || data.error || 'Ошибка обновления', 'err');
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  } catch (e) {
+    toast('Сетевая ошибка', 'err');
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+async function grantProTrial(id, btn) {
+  if (btn.disabled) return;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Выдаю…';
+  try {
+    const res = await fetch(`${PANEL}/api/company/${id}/pro-trial`, {method:'POST'});
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      toast(`Pro-триал до ${data.until}`, 'ok');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      toast(data.detail || data.error || 'Ошибка', 'err');
       btn.disabled = false;
       btn.textContent = orig;
     }

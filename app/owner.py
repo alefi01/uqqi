@@ -877,6 +877,22 @@ async def refresh_company(company_id: int,
     return result
 
 
+@router.post("/api/company/{company_id}/pro-trial")
+async def grant_pro_trial(company_id: int,
+                          db: Session = Depends(get_db),
+                          _: bool = Depends(require_owner)):
+    """Выдать сайту Pro-триал 7 дней (pro_until = now+7д). paid_once НЕ трогаем —
+    claim-сайт остаётся обезличенным до реальной оплаты. Триал даёт премиум-дизайн
+    (если template_variant='B') и чат как превью."""
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404)
+    from datetime import datetime as _dt, timedelta as _td
+    company.pro_until = _dt.utcnow() + _td(days=7)
+    db.commit()
+    return {"ok": True, "until": company.pro_until.strftime("%d.%m.%Y")}
+
+
 async def _refresh_single_company(company, db) -> dict:
     """Перепарсивает одну компанию ПО ПРЯМОМУ URL (не поиском по названию!).
     Проверяет org_id: если спарсенная карточка — другая организация, данные НЕ трогаются."""
