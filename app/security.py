@@ -9,6 +9,8 @@ import os
 from collections import defaultdict, deque
 from datetime import datetime
 
+from app.config import settings
+
 # ── ACCESS-ЛОГ ────────────────────────────────────────────────────────────────
 ACCESS_LOG_PATH = "logs/access.log"
 _log_ready = False
@@ -73,7 +75,14 @@ def check_rate_limit(ip: str, path: str) -> bool:
     Ограничиваем только чувствительные endpoint'ы (не всё подряд).
     """
     key_prefix, rule = _match_rule(path)
-    # Вход в панель (путь панели + /login)
+    # Вход в owner-панель: POST на секретный путь /{PANEL_PATH} (ТОЧНОЕ совпадение —
+    # чтобы лимитировать только сабмит логина, а не рабочие действия /{PANEL_PATH}/api/...).
+    # Middleware зовёт check_rate_limit только для POST, так что GET-страницу входа не заденет.
+    if rule is None:
+        panel = "/" + (settings.PANEL_PATH or "").strip("/")
+        if panel != "/" and path.rstrip("/") == panel.rstrip("/"):
+            key_prefix, rule = "panel-login", PANEL_LOGIN_RULE
+    # (legacy-эвристик по /login — безвреден, оставлен для совместимости)
     if rule is None and path.endswith("/login") and "/api/" not in path:
         key_prefix, rule = "panel-login", PANEL_LOGIN_RULE
     if rule is None:
