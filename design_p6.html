@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- DATA: title / category -->
+<title>Цветочная мастерская «Полынь» — букеты и растения, Нижний Новгород</title>
+<meta name="description" content="Цветочная мастерская «Полынь»: авторские букеты, комнатные растения, доставка за 2 часа. Рейтинг 4,9 на Яндекс.Картах.">
+<!--
+  ШРИФТЫ (подключить локально, 2 семейства):
+  1) Prata — 400 (кириллическая антиква для заголовков)
+  2) Manrope — 400, 500, 700 (кириллица)
+-->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prata&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef0e9; --tx:#2c322a; --tx-soft:#75806f; --card:#ffffff; --line:#dde1d6;
+  --moss:oklch(0.45 0.07 140); --moss-soft:oklch(0.9 0.03 140);
+  --clay:oklch(0.62 0.09 45);
+  --serif:"Prata",Georgia,serif; --sans:"Manrope",system-ui,-apple-system,sans-serif;
+  --r:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--moss);text-decoration:none}
+a:hover{color:oklch(0.55 0.08 140)}
+img{display:block;max-width:100%}
+h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.12;text-wrap:balance;letter-spacing:0}
+.wrap{max-width:1220px;margin:0 auto;padding:0 clamp(16px,3vw,44px)}
+.rv{opacity:0;transform:translateY(24px) scale(.985);transition:opacity .7s cubic-bezier(.22,.7,.3,1),transform .7s cubic-bezier(.22,.7,.3,1)}
+.rv.in{opacity:1;transform:none}
+.rv-d1{transition-delay:.1s}.rv-d2{transition-delay:.2s}.rv-d3{transition-delay:.3s}
+@media (prefers-reduced-motion: reduce){.rv{opacity:1;transform:none;transition:none}*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+/* header */
+.hd{display:flex;align-items:center;gap:18px;padding:20px 0;font-size:14px}
+.hd-brand{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-size:20px}
+.hd-mono{width:40px;height:40px;border-radius:12px;background:var(--moss);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-size:17px}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+.hd-phone{font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums}
+/* ══ BENTO HERO: всё первым экраном — плитки ══ */
+.bento{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:minmax(84px,auto);gap:14px;padding-bottom:14px}
+.tile{border-radius:var(--r);background:var(--card);padding:clamp(20px,2.4vw,32px);position:relative;overflow:hidden;transition:transform .35s cubic-bezier(.22,.7,.3,1),box-shadow .35s;will-change:transform}
+.tile:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(44,50,42,.12)}
+.t-title{grid-column:1/8;grid-row:span 3;display:flex;flex-direction:column;justify-content:space-between;background:var(--moss);color:#fff}
+.t-title .kick{font-size:11.5px;letter-spacing:.26em;text-transform:uppercase;font-weight:700;color:oklch(0.85 0.05 140)}
+.t-title h1{font-size:clamp(34px,4.2vw,62px);margin:18px 0}
+.t-title p{font-size:15px;color:oklch(0.88 0.03 140);max-width:44ch}
+.t-title a{color:#fff}
+.t-photo{grid-column:8/13;grid-row:span 4;padding:0}
+.t-photo img{width:100%;height:100%;object-fit:cover;transform:scale(1.04);will-change:transform}
+.t-rate{grid-column:1/4;grid-row:span 2;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.t-rate b{font-family:var(--serif);font-size:clamp(40px,3.6vw,56px);line-height:1;font-variant-numeric:tabular-nums}
+.t-rate .stars{color:var(--clay);letter-spacing:2px;font-size:13px}
+.t-rate small{color:var(--tx-soft);font-size:12.5px}
+.t-status{grid-column:4/8;grid-row:span 1;display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+.dot{width:8px;height:8px;border-radius:50%;background:#5fae72;flex:none}
+.t-cta{grid-column:4/8;grid-row:span 1;background:var(--clay);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700;font-size:15.5px;cursor:pointer}
+.t-cta:hover{box-shadow:0 18px 40px oklch(0.62 0.09 45/.35)}
+.t-cta .arr{transition:transform .3s}
+.t-cta:hover .arr{transform:translateX(6px)}
+@media(max-width:860px){
+  .t-title{grid-column:1/13;grid-row:span 3}
+  .t-photo{grid-column:1/13;grid-row:span 3}
+  .t-rate{grid-column:1/6}
+  .t-status{grid-column:6/13}
+  .t-cta{grid-column:1/13}
+}
+section{padding:clamp(44px,6vw,84px) 0}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:18px;margin-bottom:clamp(22px,3vw,38px);flex-wrap:wrap}
+.sec-head h2{font-size:clamp(26px,3vw,40px)}
+.sec-head small{font-size:13px;color:var(--tx-soft)}
+/* каталог — витринные карточки с «стеблем» цены */
+.cat{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.ci{background:var(--card);border-radius:var(--r);overflow:hidden;transition:transform .35s cubic-bezier(.22,.7,.3,1),box-shadow .35s;will-change:transform;display:flex;flex-direction:column}
+.ci:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(44,50,42,.13)}
+.ci-ph{aspect-ratio:1/1;overflow:hidden}
+.ci-ph img{width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.22,.7,.3,1)}
+.ci:hover .ci-ph img{transform:scale(1.06)}
+.ci-body{padding:16px 20px 20px;display:flex;flex-direction:column;gap:4px;flex:1}
+.ci h3{font-family:var(--sans);font-weight:700;font-size:15.5px}
+.ci-note{font-size:13px;color:var(--tx-soft)}
+.ci-price{margin-top:auto;padding-top:12px;font-family:var(--serif);font-size:19px;color:var(--moss);font-variant-numeric:tabular-nums}
+/* без фото: плитка с крупной антиквой на моховой подложке — не «дыра», а типографическая карточка */
+.ci.nophoto .ci-body{background:var(--moss-soft);border-radius:var(--r);margin:10px;padding:22px 20px;flex:1}
+.ci.nophoto h3{font-family:var(--serif);font-weight:400;font-size:19px}
+/* галерея — плёнка 2 колонки со сдвигом */
+.gal{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gal .col{display:grid;gap:14px}
+.gal .col:last-child{margin-top:44px}
+.gal figure{border-radius:var(--r);overflow:hidden}
+.gal figure:nth-child(odd){aspect-ratio:4/5}.gal figure:nth-child(even){aspect-ratio:1/1}
+.gal img{width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.22,.7,.3,1)}
+.gal figure:hover img{transform:scale(1.05)}
+@media(min-width:861px){.gal{grid-template-columns:1fr 1fr 1fr}.gal .col:nth-child(2){margin-top:44px}.gal .col:last-child{margin-top:0}}
+/* отзывы — письма */
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.rev{background:var(--card);border-radius:var(--r);padding:24px 26px;transition:transform .35s,box-shadow .35s;position:relative}
+.rev::before{content:"❧";position:absolute;right:22px;top:18px;color:var(--moss-soft);font-size:26px}
+.rev:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(44,50,42,.12)}
+.rev p{font-size:15px;line-height:1.7;color:#4c5546}
+.rev-who{margin-top:16px;font-size:13px;color:var(--tx-soft);display:flex;justify-content:space-between;gap:12px}
+.rev-who b{color:var(--tx);font-size:14.5px}
+.rev-stars{color:var(--clay);letter-spacing:2px;font-size:12px}
+/* особенности — травяной ряд */
+.feat-row{display:flex;flex-wrap:wrap;gap:10px}
+.feat{background:var(--card);border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:500;transition:background .25s,color .25s}
+.feat:hover{background:var(--moss);color:#fff}
+/* контакты — снова bento */
+.con-bento{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.cb-map{grid-column:1/8;grid-row:span 2;border-radius:var(--r);overflow:hidden;position:relative;min-height:360px}
+.cb-map iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:grayscale(.55) sepia(.1)}
+.cb-info{grid-column:8/13}
+.cb-hours{grid-column:8/13}
+@media(max-width:860px){.cb-map{grid-column:1/13}.cb-info,.cb-hours{grid-column:1/13}}
+.con-line{margin:6px 0;font-size:14.5px;color:var(--tx-soft)}
+.con-line b{display:block;color:var(--tx);font-size:16.5px;font-weight:700}
+.hr{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--tx-soft)}
+.hr:last-child{border-bottom:0}
+.hr.today{color:var(--tx);font-weight:700}
+.socials{display:flex;gap:10px;margin-top:16px}
+.soc{width:42px;height:42px;border-radius:14px;background:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--tx)!important;transition:all .25s}
+.soc:hover{background:var(--moss);color:#fff!important;transform:translateY(-2px)}
+footer{padding:32px 0 110px;color:var(--tx-soft);font-size:13px;text-align:center}
+.legal-slot{margin-top:12px;min-height:1em}
+.call-fab{display:none}
+@media(max-width:720px){
+  .call-fab{position:fixed;left:18px;bottom:18px;z-index:50;display:flex;align-items:center;gap:10px;background:var(--moss);color:#fff!important;padding:15px 22px;border-radius:999px;font-weight:700;font-size:15px;box-shadow:0 10px 30px oklch(0.45 0.07 140/.4);max-width:calc(100vw - 122px)}
+  footer{padding-bottom:130px}
+}
+/* DEMO ONLY — удалить в проде */
+.demo-toggle{position:fixed;left:14px;bottom:18px;z-index:99;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12.5px;box-shadow:0 6px 20px rgba(44,50,42,.14);display:flex;gap:8px;align-items:center;cursor:pointer;user-select:none}
+body.low-data .only-full{display:none!important}
+body.low-data .ci-ph{display:none}
+body.low-data .ci .ci-body{background:var(--moss-soft);border-radius:var(--r);margin:10px}
+@media(max-width:720px){.demo-toggle{bottom:84px}}
+</style>
+</head>
+<body>
+
+<!-- DEMO ONLY: состояние «мало данных». Удалить в проде. -->
+<label class="demo-toggle"><input type="checkbox" id="demoLow"> демо: мало данных</label>
+
+<header>
+  <div class="wrap hd">
+    <div class="hd-brand">
+      <span class="hd-mono">П</span><!-- DATA: logo_url или монограмма -->
+      <span>Полынь</span><!-- DATA: title (короткая форма) -->
+    </div>
+    <div class="hd-right">
+      <a class="hd-phone" href="tel:+78312765432">+7 831 276-54-32</a><!-- DATA: phone -->
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ══ BENTO-HERO: рейтинг, статус и запись — отдельные плитки ══ -->
+<section style="padding-top:6px;padding-bottom:0">
+  <div class="wrap bento">
+    <div class="tile t-title rv">
+      <span class="kick">Цветочная мастерская · Нижний Новгород</span><!-- DATA: category + город -->
+      <div>
+        <h1>Цветочная мастерская «Полынь»</h1><!-- DATA: title (~60 знаков — плитка тянется по высоте) -->
+        <p><!-- DATA: about_text (первые ~160 знаков; нет — подзаголовок из category) -->Авторские букеты из сезонных цветов, кашпо с комнатными растениями и доставка по городу за два часа.</p>
+      </div>
+      <span style="font-size:13px;color:oklch(0.85 0.05 140)">Рождественская, 24 · <a href="https://yandex.ru/maps/?rtext=~56.328,43.986" rel="nofollow">маршрут →</a></span><!-- DATA: address + route -->
+    </div>
+    <div class="tile t-photo rv rv-d1 only-full">
+      <!-- DATA: gallery_photos[0]; нет фото → плитка опускается, сетка перестраивается (t-title растянуть на 12 колонок на бэке) -->
+      <img id="pxHero" src="https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=900&q=75" alt="Букет из сезонных цветов">
+    </div>
+    <div class="tile t-rate rv rv-d2">
+      <b id="ratingNum" data-rating="4.9">0,0</b><!-- DATA: rating -->
+      <span class="stars">★★★★★</span>
+      <small>178 оценок на Яндекс.Картах</small><!-- DATA: reviews_count -->
+    </div>
+    <div class="tile t-status rv rv-d2"><span class="dot"></span>Открыто до 21:00<span style="color:var(--tx-soft);font-weight:400;font-size:13px">· средний чек 2 500 ₽</span></div><!-- DATA: status + avg_bill -->
+    <a class="tile t-cta rv rv-d3" href="#" rel="nofollow">Заказать букет<span class="arr">→</span></a><!-- DATA: book_url; нет → плитка-ссылка на tel: -->
+  </div>
+</section>
+
+<!-- DATA: features; пусто → секция опускается -->
+<section style="padding-bottom:0">
+  <div class="wrap feat-row rv">
+    <span class="feat">Доставка за 2 часа</span><span class="feat">Оплата картой</span><span class="feat">Открытка бесплатно</span><span class="feat">Свежая поставка по вт и пт</span><span class="feat">Собираем по фото</span><span class="feat">Уход за растениями</span>
+  </div>
+</section>
+
+<!-- ══ КАТАЛОГ ══  DATA: catalog_title + menu_items; пусто → секция опускается -->
+<section id="catalog">
+  <div class="wrap">
+    <div class="sec-head rv"><h2>Букеты и растения</h2><small>цены — из Яндекс.Карт</small></div><!-- DATA: catalog_title -->
+    <div class="cat">
+      <!-- DATA: menu_items → .ci; без фото → класс nophoto (типографическая плитка, не дыра) -->
+      <article class="ci rv"><div class="ci-ph"><img src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=600&q=70" alt="" loading="lazy"></div><div class="ci-body"><h3>Букет недели</h3><p class="ci-note">сезонный, сборка дня</p><p class="ci-price">2 400 ₽</p></div></article>
+      <article class="ci rv rv-d1"><div class="ci-ph"><img src="https://images.unsplash.com/photo-1487530811176-3780de880c2d?w=600&q=70" alt="" loading="lazy"></div><div class="ci-body"><h3>Авторский букет L</h3><p class="ci-note">по референсу или настроению</p><p class="ci-price">4 500 ₽</p></div></article>
+      <article class="ci rv rv-d2"><div class="ci-ph"><img src="https://images.unsplash.com/photo-1508610048659-a06b669e3321?w=600&q=70" alt="" loading="lazy"></div><div class="ci-body"><h3>Монобукет из пионов</h3><p class="ci-note">в сезон, 9 стеблей</p><p class="ci-price">3 900 ₽</p></div></article>
+      <article class="ci nophoto rv"><div class="ci-body"><h3>Кашпо с монстерой</h3><p class="ci-note">керамика ручной работы</p><p class="ci-price">3 200 ₽</p></div></article>
+      <article class="ci nophoto rv rv-d1"><div class="ci-body"><h3>Сухоцветы в вазе</h3><p class="ci-note">стоят годами</p><p class="ci-price">1 800 ₽</p></div></article>
+      <article class="ci nophoto rv rv-d2"><div class="ci-body"><h3>Подписка на цветы</h3><p class="ci-note">букет каждую неделю</p><p class="ci-price">от 1 900 ₽/нед</p></div></article>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ГАЛЕРЕЯ — колонки со сдвигом ══  DATA: gallery_photos[1..]; 0–1 → секция опускается -->
+<section id="gallery" class="only-full" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><h2>Из мастерской</h2></div>
+    <div class="gal rv rv-d1">
+      <div class="col">
+        <figure><img src="https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=600&q=75" alt="Флорист за работой" loading="lazy"></figure>
+        <figure><img src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=600&q=75" alt="Розы" loading="lazy"></figure>
+      </div>
+      <div class="col">
+        <figure><img src="https://images.unsplash.com/photo-1508610048659-a06b669e3321?w=600&q=75" alt="Пионы" loading="lazy"></figure>
+        <figure><img src="https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?w=600&q=75" alt="Сухоцветы" loading="lazy"></figure>
+      </div>
+      <div class="col">
+        <figure><img src="https://images.unsplash.com/photo-1453747063559-36695c8771bd?w=600&q=75" alt="Витрина мастерской" loading="lazy"></figure>
+        <figure><img src="https://images.unsplash.com/photo-1487070183336-b863922373d4?w=600&q=75" alt="Букет в крафте" loading="lazy"></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ОТЗЫВЫ ══  DATA: reviews; 0 → секция опускается -->
+<section id="reviews" class="only-full" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><h2>Отзывы</h2><small>с Яндекс.Карт</small></div>
+    <div class="rev-grid">
+      <blockquote class="rev rv"><p>Заказывала букет маме на юбилей по одной фотографии из Пинтереста — собрали точнее, чем я мечтала. Привезли ровно к торту.</p><div class="rev-who"><b>Вера С.</b><span class="rev-stars">★★★★★</span></div></blockquote>
+      <blockquote class="rev rv rv-d1"><p>Подписка на цветы — лучшее, что я дарил жене. Каждый вторник новый букет, и ни разу не повторились за три месяца.</p><div class="rev-who"><b>Михаил</b><span class="rev-stars">★★★★★</span></div></blockquote>
+      <blockquote class="rev rv rv-d2"><p>Спасли мой фикус — рассказали, чем болеет, пересадили при мне. Тёплое место, а не просто магазин.</p><div class="rev-who"><b>Дарья К.</b><span class="rev-stars">★★★★★</span></div></blockquote>
+    </div>
+  </div>
+</section>
+
+<!-- ══ КОНТАКТЫ — bento ══ -->
+<section id="contacts" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><h2>Заходите</h2><small>трамвай «Рождественская» — 100 м</small></div><!-- DATA: transit_stop -->
+    <div class="con-bento rv rv-d1">
+      <div class="cb-map">
+        <!-- DATA: yandex_map_iframe -->
+        <iframe src="https://yandex.ru/map-widget/v1/?ll=43.986%2C56.328&z=16&pt=43.986,56.328" loading="lazy" title="Карта"></iframe>
+      </div>
+      <div class="tile cb-info">
+        <p class="con-line"><b>Нижний Новгород, Рождественская, 24</b></p><!-- DATA: address -->
+        <p class="con-line"><a href="tel:+78312765432" style="font-weight:700;font-size:18px;color:var(--tx)">+7 831 276-54-32</a></p><!-- DATA: phone -->
+        <div class="socials"><!-- DATA: social_links -->
+          <a class="soc" href="#" aria-label="ВКонтакте">VK</a>
+          <a class="soc" href="#" aria-label="Телеграм">TG</a>
+        </div>
+      </div>
+      <div class="tile cb-hours"><!-- DATA: hours -->
+        <div class="hr today"><span>Пн–Сб</span><span>9:00–21:00</span></div>
+        <div class="hr"><span>Вс</span><span>10:00–19:00</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Цветочная мастерская «Полынь» · данные — Яндекс.Карты · сайт создан на <a href="https://uqqi.ru">uqqi.ru</a></p>
+    <div class="legal-slot"><!-- SLOT: legal / disclaimer --></div>
+  </div>
+</footer>
+
+<a class="call-fab" href="tel:+78312765432">☏ Позвонить</a><!-- DATA: phone -->
+
+<script>
+(function(){
+"use strict";
+var rm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+if("IntersectionObserver" in window && !rm){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{threshold:.1,rootMargin:"0px 0px -6% 0px"});
+  document.querySelectorAll(".rv").forEach(function(el){io.observe(el)});
+}else{document.querySelectorAll(".rv").forEach(function(el){el.classList.add("in")})}
+var rn=document.getElementById("ratingNum"),target=parseFloat(rn.dataset.rating);
+if(rm){rn.textContent=target.toFixed(1).replace(".",",")}
+else{var t0=null;requestAnimationFrame(function step(t){if(!t0)t0=t;var p=Math.min((t-t0)/1100,1);p=1-Math.pow(1-p,3);rn.textContent=(target*p).toFixed(1).replace(".",",");if(p<1)requestAnimationFrame(step)})}
+if(!rm){
+  var ph=document.getElementById("pxHero"),tick=false;
+  if(ph)addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){ph.style.transform="scale(1.04) translateY("+(scrollY*0.05).toFixed(1)+"px)";tick=false})},{passive:true});
+}
+/* DEMO ONLY — удалить в проде */
+var d=document.getElementById("demoLow");if(d)d.addEventListener("change",function(){document.body.classList.toggle("low-data",d.checked)});
+})();
+</script>
+</body>
+</html>
