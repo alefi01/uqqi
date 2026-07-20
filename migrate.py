@@ -198,6 +198,10 @@ def main():
             cur.execute("ALTER TABLE users ADD COLUMN tg_link_token VARCHAR(64) DEFAULT ''")
             print("[migrate] + users.tg_link_token")
             added += 1
+        if "verify_sent_at" not in ucols:
+            cur.execute("ALTER TABLE users ADD COLUMN verify_sent_at DATETIME")
+            print("[migrate] + users.verify_sent_at")
+            added += 1
 
     # parse_candidates (двухфазный парсинг: кандидаты без сайта)
     if not table_exists(cur, "parse_candidates"):

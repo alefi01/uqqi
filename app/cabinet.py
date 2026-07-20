@@ -166,6 +166,7 @@ async def register(payload: RegisterPayload, request: Request, db: OrmSession = 
             raise HTTPException(status_code=409, detail="Этот email уже зарегистрирован")
         # неподтверждённый — пересоздаём токен и шлём заново
         existing.verify_token = secrets.token_urlsafe(32)[:64]
+        existing.verify_sent_at = datetime.utcnow()
         existing.password_hash = _hash_pw(payload.password)
         existing.agreed_at = datetime.utcnow()
         existing.agreed_ip = _client_ip(request)
@@ -179,6 +180,7 @@ async def register(payload: RegisterPayload, request: Request, db: OrmSession = 
         email=email,
         password_hash=_hash_pw(payload.password),
         verify_token=secrets.token_urlsafe(32)[:64],
+        verify_sent_at=datetime.utcnow(),
         agreed_at=datetime.utcnow(),
         agreed_ip=_client_ip(request),
         pending_claim_code=claim_code,
@@ -194,9 +196,10 @@ async def resend_verify(payload: ResendPayload, db: OrmSession = Depends(get_db)
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
     if user and not user.email_verified:
-        if not user.verify_token:
-            user.verify_token = secrets.token_urlsafe(32)[:64]
-            db.commit()
+        # всегда обновляем токен + метку времени — письмо даёт свежую 24ч-ссылку
+        user.verify_token = secrets.token_urlsafe(32)[:64]
+        user.verify_sent_at = datetime.utcnow()
+        db.commit()
         _send_verify(email, user.verify_token)
     return {"ok": True}  # не раскрываем существование email
 
@@ -207,6 +210,10 @@ async def verify_email(token: str, db: OrmSession = Depends(get_db)):
     user = db.query(User).filter(User.verify_token == token, User.verify_token != "").first()
     if not user:
         raise HTTPException(status_code=400, detail="Ссылка недействительна или устарела")
+    # TTL: подтверждающая ссылка живёт VERIFY_TTL (24 ч). Просроченную не активируем —
+    # снижает риск авто-подтверждения почтовым сканером спустя время.
+    if user.verify_sent_at and (datetime.utcnow() - user.verify_sent_at) > VERIFY_TTL:
+        raise HTTPException(status_code=400, detail="Ссылка устарела (действует 24 часа). Запросите новое письмо.")
     user.email_verified = True
     user.verify_token = ""
     db.commit()

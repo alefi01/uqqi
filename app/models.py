@@ -69,6 +69,7 @@ class User(Base):
 
     email_verified  = Column(Boolean, default=False)
     verify_token    = Column(String(64), default="", index=True)   # подтверждение email
+    verify_sent_at  = Column(DateTime, nullable=True)              # когда выдан verify_token (TTL 24ч)
     reset_token     = Column(String(64), default="", index=True)   # сброс пароля
     reset_expires   = Column(DateTime, nullable=True)
 
