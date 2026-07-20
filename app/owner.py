@@ -43,9 +43,6 @@ from sqlalchemy.orm import Session
 
 from datetime import timedelta
 
-import io
-import zipfile
-
 from app.config import settings
 from app.models import Company, Session as DbSession, SessionLocal, get_db
 from app.parser import (
@@ -214,115 +211,6 @@ async def owner_panel(request: Request,
 
 
 # ── API: УПРАВЛЕНИЕ КОМПАНИЯМИ ────────────────────────────────────────────────
-
-
-@router.get("/api/company/{company_id}/export")
-async def export_company(
-    company_id: int,
-    db: Session = Depends(get_db),
-    _: bool = Depends(require_owner),
-):
-    """Генерирует ZIP с готовым сайтом для самостоятельного размещения."""
-    from fastapi.responses import StreamingResponse
-    from jinja2 import Environment, FileSystemLoader
-
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-
-    # Рендерим шаблон сайта
-    env = Environment(loader=FileSystemLoader("templates"))
-    template = env.get_template("site.html")
-
-    hours_raw = " | ".join(
-        f"{e['day']} {e['time']}"
-        for e in company.hours
-        if not e.get("closed") and e.get("time")
-    )
-    # Простой статус
-    import re as _re
-    status = ""
-    for part in hours_raw.split(" | "):
-        if not _re.match(r'^(Mo|Tu|We|Th|Fr|Sa|Su)\s', part):
-            status = part
-            break
-
-    # feat_icon — имя SVG-иконки (общая логика из main.py)
-    from app.main import _feat_icon
-
-    # yandex_map_url — embed для iframe
-    yandex_map_url = ""
-    if company.yandex_url:
-        m = _re.search(r'/org/[^/]+/(\d+)', company.yandex_url)
-        if m:
-            org_id = m.group(1)
-            coords = company.coordinates or ""
-            if coords and ',' in coords:
-                lat, lon = coords.split(',')
-                yandex_map_url = f"https://yandex.ru/map-widget/v1/org/{org_id}/?ll={lon.strip()}%2C{lat.strip()}&z=16"
-            else:
-                yandex_map_url = f"https://yandex.ru/map-widget/v1/org/{org_id}/?z=16"
-
-    html_content = template.render(
-        company=company,
-        status=status,
-        feat_icon=_feat_icon,
-        yandex_map_url=yandex_map_url,
-    )
-
-    # README для клиента
-    readme = f"""# Сайт «{company.title}» — инструкция по размещению
-
-## Что внутри архива
-
-- index.html  — готовый сайт
-- README.md   — эта инструкция
-
-## Как разместить на Beget
-
-### Шаг 1 — Зарегистрируйтесь на Beget
-Перейдите на beget.com и создайте аккаунт если его ещё нет.
-
-### Шаг 2 — Привяжите домен
-В панели управления Beget перейдите в «Домены» → «Добавить домен» и добавьте ваш домен.
-
-### Шаг 3 — Загрузите файл сайта
-1. Перейдите в «Файловый менеджер» → папка вашего домена (обычно public_html или папка с именем домена)
-2. Загрузите файл index.html в эту папку
-3. Если на домене уже есть файл index.html — замените его
-
-### Шаг 4 — Проверьте сайт
-Откройте ваш домен в браузере — сайт должен загрузиться.
-
-### Шаг 5 — Настройте SSL (HTTPS)
-В панели Beget перейдите в «SSL» и активируйте бесплатный сертификат Let's Encrypt для вашего домена.
-
-## Важно
-
-- Сайт полностью автономный, не требует сервера с PHP или Python
-- Все данные зашиты в HTML-файл
-- Для обновления данных (фото, часы, контакты) — отредактируйте файл index.html
-  или напишите нам на support@uqqi.ru и мы поможем
-
-## Поддержка
-
-По всем вопросам: support@uqqi.ru
-"""
-
-    # Создаём ZIP в памяти
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("index.html", html_content)
-        zf.writestr("README.md", readme)
-
-    buf.seek(0)
-    filename = f"site_{company.slug}.zip"
-
-    return StreamingResponse(
-        buf,
-        media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
 
 
 @router.get("/api/company/{company_id}/screenshot")

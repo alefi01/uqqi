@@ -281,10 +281,6 @@
                       title="{{ 'Карточка недоступна на Яндексе' if c.yandex_unavailable else 'Обновить данные из Яндекс Карт (раз в сутки)' }}">
                 {{ 'Недоступно' if c.yandex_unavailable else 'Обновить данные' }}
               </button>
-              <a class="action-btn" href="/{{ panel_path }}/api/company/{{ c.id }}/export"
-                 target="_blank" title="Скачать ZIP для размещения на своём хостинге">
-                Выгрузить
-              </a>
               <button class="action-btn" onclick="showBuildLog({{ c.id }})" title="Лог сборки сайта">
                 Лог
               </button>
