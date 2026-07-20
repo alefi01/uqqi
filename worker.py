@@ -7,18 +7,16 @@ subprocess под конкретный job, процесс отрабатыва�
 (поднялся → выполнил → записал результат → вышел). Так зависший/утёкший Chromium
 не тянет за собой процесс FastAPI.
 
-Запуск:
+Запуск (обычно спавнит диспетчер app/dispatcher.py, но можно и вручную):
     venv/bin/python worker.py --job <JOB_ID>
 
-На этом шаге (Step 2) диспетчер ещё НЕ подключён: app продолжает собирать сайты
-через build_queue (in-memory asyncio). worker.py существует как самостоятельный
-исполнитель, который уже умеет выполнять build_site по job'у — это проверяемый
-кирпич для следующего шага (диспетчер + spawn_worker).
+Неудача/таймаут отдаются в jobq.retry_or_fail (авто-ретрай пока attempts <
+max_attempts, иначе failed) — та же семантика, что была у старого build_queue.
 
 Типы задач:
     • build_site      — payload {"company_id": N} → app.job_tasks.build_site
     • (остальные типы — collect_candidates/create_site/refresh_company/screenshot —
-       будут добавлены на Step 4, сейчас помечают job failed с внятной ошибкой)
+       перенос на jobs отдельной задачей; сейчас дают NotImplementedError)
 """
 
 from __future__ import annotations
@@ -77,6 +75,7 @@ def main(argv=None) -> int:
 
     # Импорт моделей внутри main, чтобы --help не тянул за собой БД/движок.
     from app.models import SessionLocal
+    from app import jobq
 
     db = SessionLocal()
     try:
@@ -98,18 +97,23 @@ def main(argv=None) -> int:
         print(f"[WORKER] job #{job.id} type={job.type} pid={os.getpid()} — старт", flush=True)
 
         timeout = int(job.timeout_sec or 180)
+        job_id = job.id
         try:
             result = asyncio.run(asyncio.wait_for(_dispatch(job), timeout=timeout))
             _finish(db, job, "done", result=str(result), progress="готово")
-            print(f"[WORKER] job #{job.id} — done", flush=True)
+            print(f"[WORKER] job #{job_id} — done", flush=True)
             return 0
         except asyncio.TimeoutError:
-            _finish(db, job, "failed", error=f"таймаут {timeout}с")
-            print(f"[WORKER] job #{job.id} — таймаут {timeout}с", flush=True)
+            db.close()  # отдаём ретрай/фейл через отдельную сессию jobq
+            jobq.retry_or_fail(job_id, error=f"таймаут воркера {timeout}с")
+            print(f"[WORKER] job #{job_id} — таймаут {timeout}с", flush=True)
             return 1
-        except Exception as e:
-            _finish(db, job, "failed", error=f"{type(e).__name__}: {e}\n{traceback.format_exc()}")
-            print(f"[WORKER] job #{job.id} — ошибка: {type(e).__name__}: {e}", flush=True)
+        except BaseException as e:
+            # BaseException, а не Exception: парсер при отсутствии Playwright и т.п.
+            # делает raise SystemExit(2) — его тоже надо пометить, а не оставить 'running'.
+            db.close()
+            jobq.retry_or_fail(job_id, error=f"{type(e).__name__}: {e}\n{traceback.format_exc()}")
+            print(f"[WORKER] job #{job_id} — ошибка: {type(e).__name__}: {e}", flush=True)
             return 1
     finally:
         db.close()

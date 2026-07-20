@@ -208,38 +208,33 @@ async def _loop_refresh():
         await asyncio.sleep(3600)
 
 
-async def _watchdog_stuck_builds():
+async def _watchdog_stuck_jobs():
     """
-    Сторож зависших сборок: сайты в 'building' дольше N минут считаем зависшими.
-    Передаём в обработчик неудачи (авто-ретрай или error). Раз в минуту.
+    Бэкстоп к диспетчеру (app/dispatcher): задачи, застрявшие в 'running' заметно
+    дольше своего таймаута (диспетчер их потерял/упал), возвращаем через
+    jobq.retry_or_fail. Обычно диспетчер убивает зависшие сам; это страховка.
+    Раз в минуту.
     """
     from datetime import datetime, timedelta
-    STUCK_MINUTES = 5
+    from app import jobq
     await asyncio.sleep(120)  # первый прогон через 2 мин после старта
     while True:
         try:
-            from app.models import SessionLocal, Company
-            from app.build_queue import _handle_failure, _log
+            from app.models import SessionLocal, Job
             db = SessionLocal()
             try:
-                cutoff = datetime.utcnow() - timedelta(minutes=STUCK_MINUTES)
-                stuck = db.query(Company).filter(
-                    Company.build_status == "building",
-                    Company.last_parsed_at.is_(None) | (Company.last_parsed_at < cutoff),
-                ).all()
-                # Доп. фильтр по дате создания, если last_parsed_at пуст
-                ids = []
-                for c in stuck:
-                    ref = c.last_parsed_at or c.created_at
-                    if ref and ref < cutoff:
-                        ids.append(c.id)
-                    elif not ref:
-                        ids.append(c.id)
+                now = datetime.utcnow()
+                stuck = []
+                for j in db.query(Job).filter(Job.status == "running").all():
+                    ref = j.started_at
+                    limit = (j.timeout_sec or 180) + 180  # таймаут + большой запас
+                    if not ref or (now - ref) > timedelta(seconds=limit):
+                        stuck.append(j.id)
             finally:
                 db.close()
-            for cid in ids:
-                _log(cid, f"🔧 Watchdog: сборка зависла (>{STUCK_MINUTES} мин), перезапускаю")
-                _handle_failure(cid)
+            for jid in stuck:
+                print(f"[WATCHDOG] job #{jid} завис в running — retry_or_fail", flush=True)
+                jobq.retry_or_fail(jid, error="watchdog: завис в running")
         except Exception as e:
             print(f"[WATCHDOG] Ошибка: {e}", flush=True)
         await asyncio.sleep(60)
@@ -247,31 +242,16 @@ async def _watchdog_stuck_builds():
 
 def _recover_orphaned_builds():
     """
-    При старте приложения: сайты, застрявшие в building/queued после рестарта сервиса,
-    возвращаем в очередь (сервис мог упасть посреди сборки).
+    Устарело: восстановление осиротевших задач/сборок теперь делает диспетчер
+    (app/dispatcher.run_dispatcher) ОДИН раз до старта цикла. Оставлено no-op,
+    чтобы не трогать вызов в main.py и не словить гонку двойного восстановления
+    (двойной recover мог бы сбросить уже перезапущенную задачу и задвоить воркер).
     """
-    try:
-        from app.models import SessionLocal, Company
-        from app.build_queue import enqueue, _log
-        db = SessionLocal()
-        try:
-            orphans = db.query(Company).filter(
-                Company.build_status.in_(["building", "queued"])
-            ).all()
-            ids = [c.id for c in orphans]
-        finally:
-            db.close()
-        for cid in ids:
-            _log(cid, "♻ Восстановление после рестарта — возвращаю в очередь")
-            enqueue(cid)
-        if ids:
-            print(f"[RECOVER] Возвращено в очередь после старта: {ids}", flush=True)
-    except Exception as e:
-        print(f"[RECOVER] Ошибка: {e}", flush=True)
+    return
 
 
 async def _loop_watchdog():
-    await _watchdog_stuck_builds()
+    await _watchdog_stuck_jobs()
 
 
 async def _cleanup_old_visit_logs():
@@ -559,4 +539,7 @@ def start_scheduler():
     loop.create_task(_loop_monitor())
     loop.create_task(_loop_reconcile())
     loop.create_task(_loop_telegram())
-    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг + реконсиляция платежей + telegram-чат)", flush=True)
+    # Диспетчер задач парсинга (Блок 9): спавнит worker.py-процессы на задачи из jobs.
+    from app.dispatcher import run_dispatcher
+    loop.create_task(run_dispatcher())
+    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг + реконсиляция платежей + telegram-чат + диспетчер сборок)", flush=True)
