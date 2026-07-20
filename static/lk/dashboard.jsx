@@ -23,7 +23,7 @@ function StatusBadge({ site }) {
 }
 
 // ---- карточка сайта ----
-function SiteCard({ site, nav, onPay, onMenu }) {
+function SiteCard({ site, nav, onPay, onMenu, onStats }) {
   const isBuilding = site.status === 'building';
   const isError = site.status === 'error';
   return (
@@ -66,9 +66,10 @@ function SiteCard({ site, nav, onPay, onMenu }) {
       )}
 
       <div className="sitecard__actions">
+        {!isBuilding && !isError && <button className="btn btn--ghost btn--sm" onClick={() => onStats(site)}><i data-lucide="bar-chart-2"></i> Статистика</button>}
         {site.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оплатить, чтобы забрать сайт</button>}
-        {(site.status === 'free' || site.status === 'protrial') && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оформить Pro</button>}
-        {site.status === 'pro' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
+        {site.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оформить Pro</button>}
+        {(site.status === 'protrial' || site.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
         {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
       </div>
@@ -77,7 +78,7 @@ function SiteCard({ site, nav, onPay, onMenu }) {
 }
 
 // ---- экран «Мои сайты» ----
-function ScreenSites({ nav, sites, onPay, onMenu, canAdd }) {
+function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd }) {
   if (sites.length === 0) {
     return (
       <div className="empty">
@@ -92,13 +93,13 @@ function ScreenSites({ nav, sites, onPay, onMenu, canAdd }) {
   }
   return (
     <div className="sites">
-      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onMenu={onMenu} />)}
+      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onMenu={onMenu} onStats={onStats} />)}
       <div style={{ marginTop: '.3rem' }}>
         {canAdd
           ? <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
           : <div className="card" style={{ padding: '1rem 1.1rem', display: 'flex', gap: '.7rem', alignItems: 'center', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb,var(--warning) 30%,var(--line))' }}>
               <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
-              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>На пробном тарифе доступен один сайт. Чтобы добавить ещё — оплатите текущий.</span>
+              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>Дождитесь завершения сборки текущего сайта — потом можно добавить ещё.</span>
             </div>}
       </div>
     </div>

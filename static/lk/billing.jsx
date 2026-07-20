@@ -188,8 +188,8 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <StatusBadge site={s} />
                   {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
-                  {(s.status === 'free' || s.status === 'protrial') && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
-                  {s.status === 'pro' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
+                  {s.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                  {(s.status === 'protrial' || s.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
                 </div>
               </div>
             </div>

@@ -371,7 +371,7 @@ function StatusBadge({ site }) {
 }
 
 // ---- карточка сайта ----
-function SiteCard({ site, nav, onPay, onMenu }) {
+function SiteCard({ site, nav, onPay, onMenu, onStats }) {
   const isBuilding = site.status === 'building';
   const isError = site.status === 'error';
   return (
@@ -414,9 +414,10 @@ function SiteCard({ site, nav, onPay, onMenu }) {
       )}
 
       <div className="sitecard__actions">
+        {!isBuilding && !isError && <button className="btn btn--ghost btn--sm" onClick={() => onStats(site)}><i data-lucide="bar-chart-2"></i> Статистика</button>}
         {site.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оплатить, чтобы забрать сайт</button>}
-        {(site.status === 'free' || site.status === 'protrial') && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оформить Pro</button>}
-        {site.status === 'pro' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
+        {site.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оформить Pro</button>}
+        {(site.status === 'protrial' || site.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
         {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
       </div>
@@ -425,7 +426,7 @@ function SiteCard({ site, nav, onPay, onMenu }) {
 }
 
 // ---- экран «Мои сайты» ----
-function ScreenSites({ nav, sites, onPay, onMenu, canAdd }) {
+function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd }) {
   if (sites.length === 0) {
     return (
       <div className="empty">
@@ -440,13 +441,13 @@ function ScreenSites({ nav, sites, onPay, onMenu, canAdd }) {
   }
   return (
     <div className="sites">
-      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onMenu={onMenu} />)}
+      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onMenu={onMenu} onStats={onStats} />)}
       <div style={{ marginTop: '.3rem' }}>
         {canAdd
           ? <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
           : <div className="card" style={{ padding: '1rem 1.1rem', display: 'flex', gap: '.7rem', alignItems: 'center', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb,var(--warning) 30%,var(--line))' }}>
               <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
-              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>На пробном тарифе доступен один сайт. Чтобы добавить ещё — оплатите текущий.</span>
+              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>Дождитесь завершения сборки текущего сайта — потом можно добавить ещё.</span>
             </div>}
       </div>
     </div>
@@ -782,8 +783,8 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <StatusBadge site={s} />
                   {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
-                  {(s.status === 'free' || s.status === 'protrial') && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
-                  {s.status === 'pro' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
+                  {s.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                  {(s.status === 'protrial' || s.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
                 </div>
               </div>
             </div>
@@ -1234,7 +1235,7 @@ function App() {
   const [title, sub] = TITLES[screen] || ['', null];
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} canAdd={canAdd} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
   else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
   else if (screen === 'payment') body = <ScreenPayment nav={nav} site={payTarget} />;
@@ -1257,7 +1258,7 @@ function App() {
               </a>
             ))}
             <div className="side__foot">
-              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}><div className="em">{email}</div></div></div>
+              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.06em', color: 'var(--terracotta)' }}>PRO</div>}<div className="em">{email}</div></div></div>
               <a className="nav-i" onClick={logout} style={{ marginTop: '.2rem' }}><i data-lucide="log-out"></i>Выйти</a>
             </div>
           </aside>
@@ -1304,7 +1305,7 @@ function App() {
               <h3>{menuSite.name}</h3>
               <p>{menuSite.slug}.uqqi.ru</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
-                <button className="btn btn--ghost btn--block" onClick={() => openMetrics(menuSite)}><i data-lucide="bar-chart-2"></i> Статистика</button>
+                {/* «Статистика» вынесена отдельной кнопкой на карточку сайта. */}
                 {/* Кнопка «Редактировать контент» временно скрыта: нет модерации загружаемого контента. */}
                 {menuSite.canDelete === false
                   ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>

@@ -235,7 +235,7 @@ function App() {
   const [title, sub] = TITLES[screen] || ['', null];
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} canAdd={canAdd} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
   else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
   else if (screen === 'payment') body = <ScreenPayment nav={nav} site={payTarget} />;
@@ -258,7 +258,7 @@ function App() {
               </a>
             ))}
             <div className="side__foot">
-              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}><div className="em">{email}</div></div></div>
+              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.06em', color: 'var(--terracotta)' }}>PRO</div>}<div className="em">{email}</div></div></div>
               <a className="nav-i" onClick={logout} style={{ marginTop: '.2rem' }}><i data-lucide="log-out"></i>Выйти</a>
             </div>
           </aside>
@@ -305,7 +305,7 @@ function App() {
               <h3>{menuSite.name}</h3>
               <p>{menuSite.slug}.uqqi.ru</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
-                <button className="btn btn--ghost btn--block" onClick={() => openMetrics(menuSite)}><i data-lucide="bar-chart-2"></i> Статистика</button>
+                {/* «Статистика» вынесена отдельной кнопкой на карточку сайта. */}
                 {/* Кнопка «Редактировать контент» временно скрыта: нет модерации загружаемого контента. */}
                 {menuSite.canDelete === false
                   ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
