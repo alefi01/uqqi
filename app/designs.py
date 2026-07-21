@@ -32,7 +32,7 @@ DESIGNS: dict[str, dict] = {
              "vibe": "Тёмный кинематографичный, золотой акцент",
              "fit": "детейлинг, барбершоп, тату, авто, бары, залы"},
     "editorial": {"name": "Editorial", "src": "design_p10.html", "template": "designs/editorial.html",
-                  "tier": "pro", "self_mobile": True, "enabled": False,
+                  "tier": "pro", "self_mobile": True, "enabled": True,
                   "vibe": "Светлый журнальный, антиква",
                   "fit": "рестораны, кафе, салоны, флористы"},
     "bloom": {"name": "Bloom", "src": "design_p3.html", "template": "designs/bloom.html",
