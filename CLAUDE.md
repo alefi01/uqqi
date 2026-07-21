@@ -241,10 +241,49 @@ migrate.py         # ручные миграции БД (идемпотентн�
 - **Подключение владельца:** ЛК → Настройки → «Подключить Telegram» → deep-link
   `t.me/<bot>?start=<token>` → `/start` ловится в поллинге → пишем `users.tg_chat_id`.
   Ответ владельца — **Reply** на пересланное сообщение (маршрут по `notify_msg_id`).
-- **Дизайн витрин + Pro:** `template_variant` A/B выбирается при создании сайта
-  (`add_site` param `design`), у claim — «B» (owner.py). `_variant_template`
-  отдаёт премиум-дизайн **B только при `pro_active`**, иначе фолбэк A. Мобильный
-  всегда C. `build_site` `template_variant` НЕ перезаписывает (был хардкод «A»).
+- **Дизайн витрин + Pro:** `template_variant` — ключ дизайна (String(32)),
+  выбирается при создании (`add_site` param `design`), у claim — «B» (owner.py).
+  `_variant_template` отдаёт премиум **только при `pro_active`**, иначе фолбэк на
+  бесплатный A (мобильный: A/B → C, у премиума свой адаптив — C не форсим).
+  `build_site` `template_variant` НЕ перезаписывает (был хардкод «A»).
+
+### Премиум-дизайны витрин (Pro, 2026-07)
+
+Реестр — `app/designs.py` (единый источник истины): key → {name, template, tier
+(free/pro), self_mobile, enabled, vibe, fit}. Бесплатные — A/B (`site_a/b.html`).
+Премиум — 8 курируемых из 23 загруженных, живут в `templates/designs/<key>.html`:
+`noir` (тёмный кино), `editorial` (журнальный антиква), `bloom` (мягкий розовый),
+`clarity` (чистый модульный), `garage` (техно-моно), `atelier` (тёмный арт),
+`hearth` (тёплый плакат), `forge` (жёсткий тёмный). Исходники — `design_p*.html`
+в корне (для адаптации, не для рантайма).
+
+- **Поэтапный выкат:** `template_for(key)` вернёт шаблон только если `enabled=True`
+  И файл существует — иначе None (рендер падает на бесплатный A). Так недоделанный
+  премиум не сломает витрину. `public_list()` отдаёт только `enabled` в пикер/API.
+- **Адаптация под нашу модель:** каждый дизайн — Jinja2 на том же контексте, что
+  `site_a` (`_build_site_context`: `company.menu_items/reviews/hours/features/
+  gallery_photos/social_links/transit_stop/logo_url/avg_bill/book_url`, `status`,
+  `route_url`, `yandex_map_url`). Каталог/галерея/отзывы — **статические Jinja-циклы**
+  (SEO-выигрыш против JS-рендера в `site_a`). Убраны неуниверсальные блоки (хардкод
+  цифр/тарифов/ниш) — заменены нашими данными или условно скрыты.
+- **Стандарты всех премиумов:** каталог — клиентская пагинация `data-paginate="6"`
+  (все позиции в DOM ради SEO, JS показывает по 6/страница); отзывы — `reviews[:6]`
+  + кнопка «Все отзывы на Яндекс.Картах» (`company.yandex_url`); слоты `_seo_meta` /
+  `_claim_disclaimer` / `_chat_widget`; краевые случаи (нет фото/меню/отзывов/часов)
+  красиво схлопываются; анимации только transform/opacity + `prefers-reduced-motion`.
+  ⚠️ Шрифты пока с Google Fonts CDN (в бэклоге — self-host).
+- **Живой предпросмотр:** `slug.uqqi.ru/?variant=<key>` рендерит любой включённый
+  дизайн напрямую, **в обход Pro-гейта и без учёта визита** (`main.site_index`,
+  `Cache-Control: no-store`, чат off). Кнопка «Посмотреть на сайте» в ЛК.
+- **Выбор дизайна (ЛК):** `GET /lk/api/designs` (`public_list`), `POST /lk/api/
+  sites/{id}/design` (валидирует `enabled`, пишет `template_variant`). Site-DTO
+  отдаёт текущий `design`. Фронт — `DesignCard`/`DesignGallery`/`ScreenDesign` +
+  галерея-пикер в `ScreenAddSite`; **синхронно** в `app.bundle.jsx` (прод),
+  `dashboard.jsx`, `app.jsx`, `api.js`. Премиум хранится сразу, но на витрине
+  покажется только при активном Pro (рендер-гейт).
+- **Превью-ассеты:** MP4-лупы + jpg-постеры в `static/designs/<key>.{mp4,jpg}`
+  (владелец записывает — см. `static/designs/README.md`). Пока файла нет —
+  карточка показывает плейсхолдер с названием (`video.onError`), ничего не ломает.
 
 ### Безопасность
 
