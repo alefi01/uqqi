@@ -446,15 +446,27 @@ def _build_site_context(request: Request, company) -> dict:
 
 def _variant_template(request: Request, company) -> str:
     """
-    Выбирает файл витрины: мобильный → C, иначе выбранный A/B.
-    Премиум-дизайн (B) отдаётся только при активном Pro; без Pro — бесплатный A.
+    Файл витрины по ключу дизайна (реестр app/designs.py).
+    - Премиум (tier=pro) отдаётся ТОЛЬКО при активном Pro и готовом шаблоне;
+      иначе фолбэк на бесплатный. У премиума свой адаптив — мобильный НЕ форсим C.
+    - Бесплатные A/B: мобильный всегда → site_c.html.
     """
+    from app import designs
+    key = (company.template_variant or "A").strip()
+    d = designs.get(key)
+
+    if d and d.get("tier") == "pro":
+        if pro_active(company):
+            tpl = designs.template_for(key)
+            if tpl:
+                return tpl   # премиум responsive — он же и на мобильном
+        # Pro не активен или шаблон ещё не готов → бесплатный
+        return "site_c.html" if _is_mobile(request) else "site_a.html"
+
+    # Бесплатные A/B
     if _is_mobile(request):
         return "site_c.html"
-    variant = (company.template_variant or "A").upper()
-    if variant == "B" and not pro_active(company):
-        return "site_a.html"   # премиум-дизайн погас (Pro не активен) → бесплатный
-    return "site_b.html" if variant == "B" else "site_a.html"
+    return "site_b.html" if key == "B" else "site_a.html"
 
 
 def _track_visit(request: Request, target: str, db: Session) -> None:
@@ -697,13 +709,27 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
     # Freemium: сайт бесплатен и всегда виден (кроме ручной деактивации и сборки выше).
     # Серые непроплаченные claim-сайты показываются, но noindex + дисклеймер (см. контекст).
 
-    # Превью конкретного варианта из админки (?variant=A|B|C) — не считаем как визит
-    preview = request.query_params.get("variant", "").upper()
-    if preview in ("A", "B", "C"):
-        tpl = {"A": "site_a.html", "B": "site_b.html", "C": "site_c.html"}[preview]
-    else:
-        tpl = _variant_template(request, company)
-        _track_visit(request, company.slug, db)
+    # Превью конкретного дизайна (?variant=A|B|C|<premium-key>) из пикера/ЛК —
+    # рендерим напрямую, в ОБХОД Pro-гейта и БЕЗ учёта визита (клиент смотрит,
+    # как выглядел бы его сайт в этом дизайне).
+    preview = request.query_params.get("variant", "").strip()
+    if preview:
+        from app import designs
+        up = preview.upper()
+        if up in ("A", "B", "C"):
+            ptpl = {"A": "site_a.html", "B": "site_b.html", "C": "site_c.html"}[up]
+        else:
+            ptpl = designs.template_for(preview)   # премиум, если включён и готов
+        if ptpl:
+            pctx = _build_site_context(request, company)
+            pctx["unpaid_overlay"] = False
+            pctx["chat_enabled"] = False
+            presp = templates.TemplateResponse(ptpl, pctx)
+            presp.headers["Cache-Control"] = "no-store"
+            return presp
+
+    tpl = _variant_template(request, company)
+    _track_visit(request, company.slug, db)
 
     ctx = _build_site_context(request, company)
     ctx["unpaid_overlay"] = False  # overlay-напоминание в freemium не используется

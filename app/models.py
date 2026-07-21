@@ -162,8 +162,10 @@ class Company(Base):
     # Ближайшая остановка (JSON: {"name": "...", "distance": "168 м"})
     _transit_stop   = Column("transit_stop", Text, default="{}")
 
-    # Выбор шаблона витрины: A или B (мобильным всегда отдаётся C). По умолчанию B.
-    template_variant = Column(String(1), default="A")  # A — единый дефолт (миграция/сборка/рендер); claim-сайты ставят B явно
+    # Ключ дизайна витрины: бесплатные "A"/"B" (мобильным → C) либо премиум-ключ
+    # (napr. "noir", "editorial") — реестр в app/designs.py. Премиум рендерится
+    # только при активном Pro; у премиумов свой мобильный адаптив.
+    template_variant = Column(String(32), default="A")
 
     # Claim-система (продажа готовых сайтов): для обезличенных сайтов из owner-панели
     claim_code      = Column(String(40), nullable=True, default=None, index=True)  # код привязки; NULL у клиентских

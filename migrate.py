@@ -30,7 +30,7 @@ COMPANY_COLUMNS = {
     "build_log":          "TEXT DEFAULT ''",
     "build_attempts":     "INTEGER DEFAULT 0",
     "transit_stop":       "TEXT DEFAULT '{}'",
-    "template_variant":   "VARCHAR(1) DEFAULT 'A'",
+    "template_variant":   "VARCHAR(32) DEFAULT 'A'",  # ключ дизайна (A/B/премиум); SQLite длину не форсит
     "claim_code":         "VARCHAR(40)",
     # Freemium/Pro (редизайн подписки)
     "pro_until":          "DATETIME",

@@ -486,7 +486,8 @@ async def add_site(payload: AddSitePayload,
     if not can_add:
         raise HTTPException(status_code=409, detail=reason)
 
-    design = payload.design if payload.design in ("A", "B") else "A"
+    from app import designs as _designs
+    design = payload.design if (_designs.get(payload.design) or {}).get("enabled") else "A"
 
     import secrets as _s
     tmp_slug = f"building-{_s.token_hex(4)}"
@@ -668,6 +669,36 @@ async def telegram_disconnect(user: User = Depends(require_user), db: OrmSession
     user.tg_link_token = ""
     db.commit()
     return {"ok": True}
+
+
+# ── ДИЗАЙНЫ ВИТРИНЫ ───────────────────────────────────────────────────────────
+
+@router.get("/designs")
+async def list_designs(user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Список включённых дизайнов (бесплатные + премиум) для пикера/галереи ЛК."""
+    from app import designs
+    return {"designs": designs.public_list(include_free=True)}
+
+
+class DesignPayload(BaseModel):
+    design: str
+
+
+@router.post("/sites/{site_id}/design")
+async def set_design(site_id: int, payload: DesignPayload,
+                     user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Сменить дизайн сайта. Премиум применится на витрине только при активном Pro."""
+    from app import designs
+    c = db.query(Company).filter(Company.id == site_id, Company.user_id == user.id).first()
+    if not c:
+        raise HTTPException(status_code=404)
+    key = (payload.design or "").strip()
+    d = designs.get(key)
+    if not d or not d.get("enabled"):
+        raise HTTPException(status_code=422, detail="Неизвестный дизайн")
+    c.template_variant = key
+    db.commit()
+    return {"ok": True, "design": key, "isPro": d.get("tier") == "pro"}
 
 
 # ── ПОДДЕРЖКА ─────────────────────────────────────────────────────────────────
