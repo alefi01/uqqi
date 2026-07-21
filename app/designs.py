@@ -44,7 +44,7 @@ DESIGNS: dict[str, dict] = {
                 "vibe": "Светлый чистый, холодный",
                 "fit": "стоматология, оптика, клиники, услуги"},
     "garage": {"name": "Garage", "src": "design_p8.html", "template": "designs/garage.html",
-               "tier": "pro", "self_mobile": True, "enabled": False,
+               "tier": "pro", "self_mobile": True, "enabled": True,
                "vibe": "Технический моно",
                "fit": "авто, ремонт, промышленное, IT"},
     "atelier": {"name": "Atelier", "src": "design_p21.html", "template": "designs/atelier.html",
