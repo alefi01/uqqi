@@ -76,6 +76,11 @@ section{padding:clamp(60px,8vw,110px) 0}
 .srv-price{margin-top:16px;font-family:var(--disp);font-size:20px;color:var(--glow);font-variant-numeric:tabular-nums}
 .srv.nophoto{background:linear-gradient(180deg,#161a24,var(--card))}
 .srv.nophoto::before{content:"";position:absolute;left:24px;right:24px;top:0;height:2px;background:linear-gradient(90deg,var(--glow-dim),transparent);border-radius:2px}
+.pg-nav{display:flex;gap:8px;justify-content:center;margin-top:36px;flex-wrap:wrap}
+.pg-btn{min-width:42px;height:42px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--tx-soft);border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+.pg-btn:hover:not(:disabled){border-color:var(--glow-dim);color:var(--glow)}
+.pg-btn.is-active{background:var(--glow);color:#141005;border-color:var(--glow)}
+.pg-btn:disabled{opacity:.35;cursor:default}
 .reel{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));grid-auto-rows:210px;gap:14px}
 .reel figure{overflow:hidden;border-radius:10px;position:relative;grid-row:span 1}
 .reel figure.wide{grid-column:span 2}
@@ -168,9 +173,9 @@ footer{border-top:1px solid var(--line);padding:34px 0 110px;color:var(--tx-soft
 <section id="services">
   <div class="wrap">
     <div class="sec-head rv"><p class="sec-kick">Услуги и цены</p><h2>{{ company.catalog_title or 'Товары и услуги' }}</h2></div>
-    <div class="srv-grid">
+    <div class="srv-grid" data-paginate="6">
       {% for item in company.menu_items %}
-      <article class="srv rv{% if not item.image_url %} nophoto{% endif %}">
+      <article class="srv{% if not item.image_url %} nophoto{% endif %}">
         {% if item.image_url %}<div class="srv-ph"><img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy"></div>{% endif %}
         <div class="srv-body">
           <h3>{{ item.name }}</h3>
@@ -202,7 +207,7 @@ footer{border-top:1px solid var(--line);padding:34px 0 110px;color:var(--tx-soft
   <div class="wrap">
     <div class="sec-head rv"><p class="sec-kick">Отзывы с Яндекс.Карт</p><h2>Что говорят гости</h2></div>
     <div class="rev-grid">
-      {% for r in company.reviews %}
+      {% for r in company.reviews[:6] %}
       <blockquote class="rev rv"><div class="rev-stars">{% for _ in range(r.rating|int) %}★{% endfor %}{% for _ in range(5 - (r.rating|int if r.rating else 5)) %}☆{% endfor %}</div><p>{{ r.text }}</p><div class="rev-who">{% if r.author %}<b>{{ r.author }}</b>{% endif %}{{ r.date }}</div></blockquote>
       {% endfor %}
     </div>
@@ -270,6 +275,24 @@ if(!rm){var bg=document.querySelector("#heroBg img"),tick=false;
   if(bg)addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){bg.style.transform="translateY("+(scrollY*0.18).toFixed(1)+"px)";tick=false})},{passive:true});}
 var mq=document.getElementById("mqTrack");if(mq&&mq.children.length)mq.innerHTML+=mq.innerHTML;
 var td=new Date().getDay();document.querySelectorAll(".hr[data-d]").forEach(function(r){if(r.dataset.d!==""&&+r.dataset.d===td)r.classList.add("today")});
+/* пагинация каталога: по data-paginate позиций на страницу; все позиции остаются в DOM (SEO) */
+document.querySelectorAll("[data-paginate]").forEach(function(grid){
+  var size=parseInt(grid.getAttribute("data-paginate"),10)||6;
+  var items=Array.prototype.slice.call(grid.children);
+  if(items.length<=size)return;
+  var pages=Math.ceil(items.length/size),cur=1;
+  var nav=document.createElement("div");nav.className="pg-nav";grid.parentNode.insertBefore(nav,grid.nextSibling);
+  function mkbtn(label,enabled,active,fn){var b=document.createElement("button");b.className="pg-btn"+(active?" is-active":"");b.textContent=label;if(!enabled){b.disabled=true}else{b.addEventListener("click",fn)}return b}
+  function to(p){cur=p;draw();var s=grid.closest("section")||grid;s.scrollIntoView({behavior:rm?"auto":"smooth",block:"start"})}
+  function draw(){
+    items.forEach(function(el,i){el.style.display=(i>=(cur-1)*size&&i<cur*size)?"":"none"});
+    nav.innerHTML="";
+    nav.appendChild(mkbtn("‹",cur>1,false,function(){to(cur-1)}));
+    for(var p=1;p<=pages;p++){(function(p){nav.appendChild(mkbtn(String(p),true,p===cur,function(){to(p)}))})(p)}
+    nav.appendChild(mkbtn("›",cur<pages,false,function(){to(cur+1)}));
+  }
+  draw();
+});
 })();
 </script>
 </body>
