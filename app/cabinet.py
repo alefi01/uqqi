@@ -444,6 +444,7 @@ def _site_dict(c: Company) -> dict:
         "icon":      "store",
         "build_status": c.build_status,
         "canDelete": can_delete,
+        "design":    c.template_variant or "A",
     }
 
 

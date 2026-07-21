@@ -36,6 +36,8 @@ const API = {
   claimInfo(code)                   { return this._req('GET', '/claim/' + encodeURIComponent(code) + '/info'); },
   siteStatus(id)                    { return this._req('GET', '/sites/' + id + '/status'); },
   siteMetrics(id)                   { return this._req('GET', '/sites/' + id + '/metrics'); },
+  designs()                         { return this._req('GET', '/designs'); },
+  setDesign(id, design)             { return this._req('POST', '/sites/' + id + '/design', { design }); },
   deleteSite(id, body)              { return this._req('DELETE', '/sites/' + id, body || {}); },
   cancelSubscription(id)            { return this._req('POST', '/sites/' + id + '/cancel'); },
 

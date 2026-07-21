@@ -468,11 +468,93 @@ function validYandex(text) {
   return false;
 }
 
+// ---- галерея дизайнов (пикер при создании + смена оформления в ЛК) ----
+// MP4-лупы владелец кладёт в static/designs/<key>.mp4 (+ <key>.jpg постер).
+// Пока файла нет — карточка показывает плейсхолдер с названием (video.onError).
+function DesignCard({ d, selected, onSelect }) {
+  const [vidBad, setVidBad] = useStateD(false);
+  const isPro = d.tier === 'pro';
+  const showVideo = isPro && d.preview && !vidBad;
+  return (
+    <div onClick={() => onSelect(d.key)}
+      style={{ cursor: 'pointer', borderRadius: 'var(--r-lg)', overflow: 'hidden',
+        border: '2px solid ' + (selected ? 'var(--terracotta)' : 'var(--line)'),
+        background: selected ? 'var(--terracotta-wash)' : 'var(--paper)' }}>
+      <div style={{ position: 'relative', aspectRatio: '16 / 10', overflow: 'hidden',
+        background: 'linear-gradient(135deg, var(--paper-2), color-mix(in srgb, var(--terracotta) 14%, var(--paper-2)))',
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {showVideo
+          ? <video muted loop autoPlay playsInline preload="none" poster={d.poster || undefined}
+              onError={() => setVidBad(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}>
+              <source src={d.preview} type="video/mp4" />
+            </video>
+          : <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.02rem', color: 'var(--ink-2)' }}>{d.name}</span>}
+        {isPro && <span style={{ position: 'absolute', top: '.5rem', left: '.5rem', background: 'var(--gold-dim)', color: '#fff', fontSize: '.64rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '.18rem .5rem', borderRadius: '999px' }}>Pro</span>}
+        {selected && <span style={{ position: 'absolute', top: '.5rem', right: '.5rem', width: 22, height: 22, borderRadius: '50%', background: 'var(--terracotta)', color: '#fff', display: 'grid', placeItems: 'center' }}><i data-lucide="check" style={{ width: 14, height: 14 }}></i></span>}
+      </div>
+      <div style={{ padding: '.55rem .7rem .65rem' }}>
+        <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.9rem' }}>{d.name}</div>
+        {d.vibe && <div className="muted" style={{ fontSize: '.74rem', marginTop: '.15rem', lineHeight: 1.4 }}>{d.vibe}</div>}
+        {d.fit && <div className="muted" style={{ fontSize: '.7rem', marginTop: '.2rem', opacity: .75 }}>Подходит: {d.fit}</div>}
+      </div>
+    </div>
+  );
+}
+
+function DesignGallery({ designs, value, onSelect }) {
+  if (!designs || !designs.length) return <div className="spin" style={{ margin: '1rem auto' }}></div>;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(178px, 1fr))', gap: '.7rem', marginTop: '.5rem' }}>
+      {designs.map(d => <DesignCard key={d.key} d={d} selected={value === d.key} onSelect={onSelect} />)}
+    </div>
+  );
+}
+
+// ---- экран «Дизайн сайта» (смена оформления + живой предпросмотр ?variant=) ----
+function ScreenDesign({ nav, site, designs, onApply, onPay }) {
+  const [design, setDesign] = useStateD((site && site.design) || 'A');
+  const [busy, setBusy] = useStateD(false);
+  if (!site) return null;
+  const chosen = (designs || []).find(d => d.key === design);
+  const isPro = !!(chosen && chosen.tier === 'pro');
+  const proActive = !!site.proActive;
+  const changed = design !== (site.design || 'A');
+  const liveUrl = 'https://' + site.slug + '.uqqi.ru/?variant=' + encodeURIComponent(design);
+  async function apply() {
+    setBusy(true);
+    try { await onApply(site.id, design); } finally { setBusy(false); }
+  }
+  return (
+    <div className="wrap-md">
+      <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
+      <div className="card" style={{ padding: '1.6rem' }}>
+        <span className="eyebrow">Дизайн сайта</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 .4rem' }}>{site.name}</h2>
+        <p className="muted" style={{ fontSize: '.86rem', lineHeight: 1.6 }}>Выберите оформление витрины. Премиум-дизайны показываются на сайте, пока активен Pro (в т.ч. пробный период); без Pro сайт остаётся на базовом.</p>
+        <DesignGallery designs={designs} value={design} onSelect={setDesign} />
+        {isPro && !proActive && (
+          <div className="card" style={{ padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb, var(--warning) 30%, var(--line))' }}>
+            <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
+            <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Это премиум-дизайн. Он сохранится за сайтом, но на витрине покажется базовый, пока не активен Pro.</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '.6rem', marginTop: '1.3rem', flexWrap: 'wrap' }}>
+          <a className="btn btn--outline" href={liveUrl} target="_blank" rel="noopener"><i data-lucide="external-link"></i> Посмотреть на сайте</a>
+          <button className="btn btn--primary" disabled={!changed || busy} onClick={apply}>{busy ? 'Применяем…' : 'Применить'}</button>
+          {isPro && !proActive && onPay && <button className="btn btn--ghost" onClick={() => onPay(site)}>Оформить Pro</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---- экран «Добавить сайт» ----
-function ScreenAddSite({ nav, onStartBuild }) {
+function ScreenAddSite({ nav, onStartBuild, designs }) {
   const [url, setUrl] = useStateD('');
   const [design, setDesign] = useStateD('A');
   const valid = validYandex(url);
+  const isProSel = (designs || []).some(d => d.key === design && d.tier === 'pro');
   return (
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
@@ -492,18 +574,8 @@ function ScreenAddSite({ nav, onStartBuild }) {
         </div>
         <div className="field" style={{ marginTop: '1.3rem' }}>
           <label className="field__label">Дизайн сайта</label>
-          <div style={{ display: 'flex', gap: '.6rem', marginTop: '.4rem' }}>
-            {[{ id: 'A', name: 'Базовый', note: 'Бесплатно' }, { id: 'B', name: 'Премиум', note: 'Pro' }].map(d => (
-              <div key={d.id} onClick={() => setDesign(d.id)}
-                style={{ flex: 1, padding: '.8rem 1rem', cursor: 'pointer',
-                  border: '2px solid ' + (design === d.id ? 'var(--terracotta)' : 'var(--line)'),
-                  borderRadius: 'var(--r-lg)', background: design === d.id ? 'var(--terracotta-wash)' : 'transparent' }}>
-                <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.92rem' }}>{d.name}</div>
-                <div className="muted" style={{ fontSize: '.76rem', marginTop: '.15rem' }}>{d.note}</div>
-              </div>
-            ))}
-          </div>
-          {design === 'B' && <span className="field__hint" style={{ marginTop: '.5rem', display: 'block' }}>Премиум активен, пока действует Pro (в т.ч. пробный период). Без Pro покажется базовый дизайн.</span>}
+          <DesignGallery designs={designs} value={design} onSelect={setDesign} />
+          {isProSel && <span className="field__hint" style={{ marginTop: '.6rem', display: 'block' }}>Премиум-дизайн активен, пока действует Pro (в т.ч. пробный период). Без Pro сайт покажется в базовом дизайне — оформить Pro можно в любой момент из кабинета.</span>}
         </div>
         <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.3rem' }} disabled={valid !== true} onClick={() => onStartBuild(url, design)}>Создать сайт</button>
       </div>
@@ -966,13 +1038,14 @@ const NAV = [
   { id: 'support', label: 'Поддержка', ic: 'life-buoy' },
   { id: 'settings', label: 'Настройки', ic: 'settings' },
 ];
-const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
+const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
   sites: ['Мои сайты', 'Сайты вашего бизнеса на uqqi.ru'],
   'add-site': ['Новый сайт', null],
   building: ['Создаём сайт', null],
   payment: ['Оплата', null],
   admin: ['Редактор сайта', null],
+  design: ['Дизайн сайта', null],
   subscriptions: ['Подписки и платежи', 'Статусы, продление и история'],
   support: ['Поддержка', 'Мы на связи и поможем'],
   settings: ['Настройки', 'Аккаунт и безопасность'],
@@ -1021,7 +1094,7 @@ function ScreenMetrics({ nav, metrics }) {
   );
 }
 
-const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings', 'metrics']);
+const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'design', 'subscriptions', 'support', 'settings', 'metrics']);
 
 function plusDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
@@ -1046,6 +1119,8 @@ function App() {
   const [sites, setSites] = useState([]);
   const [payments, setPayments] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [designs, setDesigns] = useState([]);
+  const [designSite, setDesignSite] = useState(null);
 
   const ctx = { email, setEmail, pendingClaim, setPendingClaim };
   const nav = (s) => {
@@ -1057,6 +1132,8 @@ function App() {
       window.API.payments().then(d => setPayments(d.payments || [])).catch(() => {});
     } else if (s === 'sites') {
       loadSites();
+    } else if (s === 'add-site') {
+      ensureDesigns();
     }
   };
   const ping = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
@@ -1168,6 +1245,26 @@ function App() {
       nav('sites');
     }
   }
+  async function ensureDesigns() {
+    if (designs.length) return;
+    try { const d = await window.API.designs(); setDesigns(d.designs || []); } catch (e) {}
+  }
+  function openDesign(site) {
+    setMenuSite(null);
+    setDesignSite(site);
+    ensureDesigns();
+    nav('design');
+  }
+  async function applyDesign(id, key) {
+    try {
+      await window.API.setDesign(id, key);
+      setSites(prev => prev.map(s => s.id === id ? { ...s, design: key } : s));
+      setDesignSite(prev => (prev && prev.id === id) ? { ...prev, design: key } : prev);
+      ping('Дизайн применён');
+    } catch (ex) {
+      ping(ex.message || 'Не удалось сменить дизайн');
+    }
+  }
   function askDeleteSite(site) {
     if (site.canDelete === false) {
       ping('Дождитесь окончания trial-периода');
@@ -1236,7 +1333,8 @@ function App() {
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
   if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
-  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} />;
+  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} />;
+  else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
   else if (screen === 'payment') body = <ScreenPayment nav={nav} site={payTarget} />;
   else if (screen === 'admin') body = <AdminStub nav={nav} site={payTarget} />;
@@ -1307,6 +1405,7 @@ function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
                 {/* «Статистика» вынесена отдельной кнопкой на карточку сайта. */}
                 {/* Кнопка «Редактировать контент» временно скрыта: нет модерации загружаемого контента. */}
+                <button className="btn btn--ghost btn--block" onClick={() => openDesign(menuSite)}><i data-lucide="palette"></i> Дизайн</button>
                 {menuSite.canDelete === false
                   ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
                       <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>

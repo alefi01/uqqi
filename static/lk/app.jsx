@@ -9,19 +9,20 @@ const NAV = [
   { id: 'support', label: 'Поддержка', ic: 'life-buoy' },
   { id: 'settings', label: 'Настройки', ic: 'settings' },
 ];
-const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
+const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
   sites: ['Мои сайты', 'Сайты вашего бизнеса на uqqi.ru'],
   'add-site': ['Новый сайт', null],
   building: ['Создаём сайт', null],
   payment: ['Оплата', null],
   admin: ['Редактор сайта', null],
+  design: ['Дизайн сайта', null],
   subscriptions: ['Подписки и платежи', 'Статусы, продление и история'],
   support: ['Поддержка', 'Мы на связи и поможем'],
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
 
-const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings', 'metrics']);
+const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'design', 'subscriptions', 'support', 'settings', 'metrics']);
 
 function plusDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
@@ -46,6 +47,8 @@ function App() {
   const [sites, setSites] = useState([]);
   const [payments, setPayments] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [designs, setDesigns] = useState([]);
+  const [designSite, setDesignSite] = useState(null);
 
   const ctx = { email, setEmail, pendingClaim, setPendingClaim };
   const nav = (s) => {
@@ -57,6 +60,8 @@ function App() {
       window.API.payments().then(d => setPayments(d.payments || [])).catch(() => {});
     } else if (s === 'sites') {
       loadSites();
+    } else if (s === 'add-site') {
+      ensureDesigns();
     }
   };
   const ping = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
@@ -168,6 +173,26 @@ function App() {
       nav('sites');
     }
   }
+  async function ensureDesigns() {
+    if (designs.length) return;
+    try { const d = await window.API.designs(); setDesigns(d.designs || []); } catch (e) {}
+  }
+  function openDesign(site) {
+    setMenuSite(null);
+    setDesignSite(site);
+    ensureDesigns();
+    nav('design');
+  }
+  async function applyDesign(id, key) {
+    try {
+      await window.API.setDesign(id, key);
+      setSites(prev => prev.map(s => s.id === id ? { ...s, design: key } : s));
+      setDesignSite(prev => (prev && prev.id === id) ? { ...prev, design: key } : prev);
+      ping('Дизайн применён');
+    } catch (ex) {
+      ping(ex.message || 'Не удалось сменить дизайн');
+    }
+  }
   function askDeleteSite(site) {
     if (site.canDelete === false) {
       ping('Дождитесь окончания trial-периода');
@@ -236,7 +261,8 @@ function App() {
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
   if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
-  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} />;
+  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} />;
+  else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
   else if (screen === 'payment') body = <ScreenPayment nav={nav} site={payTarget} />;
   else if (screen === 'admin') body = <AdminStub nav={nav} site={payTarget} />;
@@ -307,6 +333,7 @@ function App() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
                 {/* «Статистика» вынесена отдельной кнопкой на карточку сайта. */}
                 {/* Кнопка «Редактировать контент» временно скрыта: нет модерации загружаемого контента. */}
+                <button className="btn btn--ghost btn--block" onClick={() => openDesign(menuSite)}><i data-lucide="palette"></i> Дизайн</button>
                 {menuSite.canDelete === false
                   ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
                       <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>
