@@ -28,7 +28,7 @@ DESIGNS: dict[str, dict] = {
 
     # ── Премиум (Pro) — курируемые. enabled ставится при адаптации в Jinja. ──
     "noir": {"name": "Noir", "src": "design_p2.html", "template": "designs/noir.html",
-             "tier": "pro", "self_mobile": True, "enabled": False,
+             "tier": "pro", "self_mobile": True, "enabled": True,
              "vibe": "Тёмный кинематографичный, золотой акцент",
              "fit": "детейлинг, барбершоп, тату, авто, бары, залы"},
     "editorial": {"name": "Editorial", "src": "design_p10.html", "template": "designs/editorial.html",
