@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% include "_seo_meta.html" %}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0c0d; --panel:#141416; --card:#1a1a1d; --line:rgba(255,255,255,.1);
+  --tx:#f4f4f2; --tx-soft:#8b8b8f;
+  --volt:oklch(0.86 0.2 125);
+  --disp:"Oswald",system-ui,sans-serif; --sans:"Manrope",system-ui,-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--volt);text-decoration:none}
+a:hover{color:oklch(0.92 0.2 125)}
+img{display:block;max-width:100%}
+h1,h2,h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;line-height:.94;letter-spacing:.01em;text-wrap:balance}
+.wrap{max-width:1280px;margin:0 auto;padding:0 clamp(18px,4vw,56px)}
+.rv{opacity:0;transform:translateY(30px);transition:opacity .7s cubic-bezier(.2,.8,.3,1),transform .7s cubic-bezier(.2,.8,.3,1)}
+.rv.in{opacity:1;transform:none}
+.rv-d1{transition-delay:.1s}.rv-d2{transition-delay:.2s}
+@media (prefers-reduced-motion: reduce){.rv{opacity:1;transform:none;transition:none}*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+.ticker{background:var(--volt);color:#0c0c0d;overflow:hidden;padding:9px 0;font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.mq-track{display:flex;width:max-content;animation:mq 24s linear infinite}
+.ticker:hover .mq-track{animation-play-state:paused}
+.mq-item{padding:0 20px;white-space:nowrap;display:flex;align-items:center;gap:20px}
+.mq-item::after{content:"⚡";font-size:11px}
+@keyframes mq{to{transform:translateX(-50%)}}
+.hd{display:flex;align-items:center;gap:18px;padding:16px 0;font-size:14px}
+.hd-brand{display:flex;align-items:center;gap:12px;font-family:var(--disp);font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.02em;min-width:0}
+.hd-brand>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hd-mono{flex:0 0 auto;width:40px;height:40px;background:var(--volt);color:#0c0c0d;display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:20px;transform:skewX(-8deg);overflow:hidden}
+.hd-mono img{width:100%;height:100%;object-fit:cover;transform:skewX(8deg) scale(1.2)}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:20px}
+.hd-status{display:flex;align-items:center;gap:8px;color:var(--tx-soft);font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--volt);box-shadow:0 0 10px var(--volt)}
+.hd-phone{font-weight:800;color:var(--tx);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(max-width:720px){.hd-status{display:none}}
+.hero{position:relative;overflow:hidden;isolation:isolate;border-bottom:1px solid var(--line)}
+.hero-bg{position:absolute;inset:0;z-index:-2}
+.hero-bg img{width:100%;height:110%;object-fit:cover;filter:brightness(.4) grayscale(.3) contrast(1.1);will-change:transform}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,rgba(12,12,13,.95) 30%,rgba(12,12,13,.5) 70%,transparent)}
+.hero-in{padding:clamp(50px,8vw,120px) 0 clamp(40px,6vw,80px)}
+.kicker{display:inline-block;background:var(--volt);color:#0c0c0d;font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;transform:skewX(-8deg)}
+.kicker span{display:inline-block;transform:skewX(8deg)}
+.hero h1{font-size:clamp(56px,12vw,180px);margin:22px 0 0;letter-spacing:-.01em}
+.hero-sub{font-size:clamp(17px,1.8vw,21px);color:var(--tx-soft);max-width:46ch;margin-top:24px;font-weight:600}
+.hero-row{display:flex;flex-wrap:wrap;gap:16px 40px;align-items:center;margin-top:36px}
+.rating{display:flex;align-items:baseline;gap:12px}
+.rating b{font-family:var(--disp);font-weight:700;font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
+.stars{color:var(--volt);letter-spacing:2px;font-size:15px}
+.rating small{color:var(--tx-soft);font-size:13px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:18px 34px;font-family:var(--disp);font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;transition:transform .2s,box-shadow .2s;will-change:transform;transform:skewX(-8deg)}
+.btn span{display:inline-block;transform:skewX(8deg)}
+.btn-volt{background:var(--volt);color:#0c0c0d!important;box-shadow:0 0 0 rgba(0,0,0,0)}
+.btn-volt:hover{transform:skewX(-8deg) translateY(-3px);box-shadow:0 12px 34px oklch(0.86 0.2 125/.4)}
+.btn-out{border:2px solid var(--tx);color:var(--tx)!important}
+.btn-out:hover{background:var(--tx);color:#0c0c0d!important;transform:skewX(-8deg) translateY(-3px)}
+section{padding:clamp(54px,7vw,100px) 0}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:clamp(28px,4vw,48px);flex-wrap:wrap}
+.sec-head h2{font-size:clamp(38px,6vw,88px)}
+.sec-head h2 em{font-style:normal;color:var(--volt)}
+.sec-head p{color:var(--tx-soft);font-weight:600;max-width:30ch}
+.dir{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dcard{position:relative;overflow:hidden;aspect-ratio:4/3;background:var(--card);display:flex;align-items:flex-end;transition:transform .35s cubic-bezier(.2,.8,.3,1);will-change:transform}
+.dcard:hover{transform:translateY(-5px)}
+.dcard img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.55) grayscale(.2);transition:transform .55s cubic-bezier(.2,.8,.3,1),filter .55s}
+.dcard:hover img{transform:scale(1.06);filter:brightness(.7) grayscale(0)}
+.dcard::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(12,12,13,.92))}
+.dcard-body{position:relative;z-index:1;padding:24px 26px}
+.dcard h3{font-size:clamp(26px,2.6vw,38px)}
+.dcard-price{font-family:var(--disp);font-weight:700;font-size:22px;color:var(--volt);margin-top:6px;font-variant-numeric:tabular-nums}
+.dcard p{color:var(--tx-soft);font-size:14px;font-weight:600;margin-top:6px}
+.dcard.nophoto{aspect-ratio:auto;min-height:190px;border:1px solid var(--line);align-items:stretch}
+.dcard.nophoto::after{display:none}
+.dcard.nophoto .dcard-body{display:flex;flex-direction:column;justify-content:space-between;width:100%;gap:14px}
+.dcard.nophoto .idx{font-family:var(--disp);font-size:15px;color:var(--volt)}
+.pg-nav{display:flex;gap:0;margin-top:30px;border:1px solid var(--line);width:max-content;flex-wrap:wrap}
+.pg-btn{min-width:48px;height:46px;padding:0 14px;border:0;border-right:1px solid var(--line);background:transparent;color:var(--tx);font-family:var(--disp);font-size:15px;font-weight:700;cursor:pointer;transition:background .2s,color .2s}
+.pg-btn:last-child{border-right:0}
+.pg-btn:hover:not(:disabled){background:var(--volt);color:#0c0c0d}
+.pg-btn.is-active{background:var(--volt);color:#0c0c0d}
+.pg-btn:disabled{opacity:.35;cursor:default}
+.strip-wrap{overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.strip-wrap::-webkit-scrollbar{display:none}
+.strip{display:flex;gap:14px;padding:0 clamp(18px,4vw,56px);width:max-content}
+.strip figure{scroll-snap-align:center;width:clamp(280px,34vw,480px);aspect-ratio:3/2;overflow:hidden;flex:none;position:relative}
+.strip img{width:100%;height:100%;object-fit:cover;filter:grayscale(.2);transition:transform .5s cubic-bezier(.2,.8,.3,1),filter .5s}
+.strip figure:hover img{transform:scale(1.05);filter:grayscale(0)}
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.rev{border:1px solid var(--line);background:var(--card);padding:26px;transition:transform .3s,border-color .3s}
+.rev:hover{transform:translateY(-4px);border-color:var(--volt)}
+.rev-stars{color:var(--volt);letter-spacing:2px;font-size:14px;margin-bottom:14px}
+.rev p{font-size:15.5px;line-height:1.6;font-weight:500}
+.rev-who{margin-top:16px;font-family:var(--disp);font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--tx-soft)}
+.rev-who b{color:var(--tx)}
+.rev-all{margin-top:28px}
+.con-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:0;border:1px solid var(--line)}
+@media(max-width:860px){.con-grid{grid-template-columns:1fr}}
+.con-info{padding:clamp(24px,3.5vw,44px);border-right:1px solid var(--line)}
+@media(max-width:860px){.con-info{border-right:0;border-bottom:1px solid var(--line)}}
+.con-line{margin:10px 0;font-size:15px;color:var(--tx-soft);font-weight:600}
+.con-line b{display:block;color:var(--tx);font-family:var(--disp);font-size:22px;text-transform:uppercase}
+.hours{margin-top:18px}
+.hr{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--tx-soft);font-weight:600}
+.hr.today{color:var(--volt)}
+.map{position:relative;min-height:360px}
+.map iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:invert(.9) hue-rotate(180deg) saturate(.4) brightness(.85)}
+.socials{display:flex;gap:0;margin-top:18px;border:1px solid var(--line);width:max-content;flex-wrap:wrap}
+.soc{height:46px;padding:0 16px;display:inline-flex;align-items:center;font-family:var(--disp);font-size:13px;color:var(--tx)!important;border-right:1px solid var(--line);transition:background .2s,color .2s}
+.soc:last-child{border-right:0}
+.soc:hover{background:var(--volt);color:#0c0c0d!important}
+footer{border-top:1px solid var(--line);padding:28px 0 110px;color:var(--tx-soft);font-size:13px}
+.legal-slot{margin-top:12px;min-height:1em}
+.call-fab{display:none}
+@media(max-width:720px){
+  .call-fab{position:fixed;left:18px;bottom:18px;z-index:50;display:flex;align-items:center;gap:10px;background:var(--volt);color:#0c0c0d!important;padding:15px 22px;border-radius:999px;font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 10px 30px oklch(0.86 0.2 125/.4);max-width:calc(100vw - 122px)}
+  footer{padding-bottom:130px}
+}
+</style>
+</head>
+<body>
+
+{% if status or company.features %}
+<div class="ticker" aria-hidden="true"><div class="mq-track" id="mqTrack">
+  {% if status %}<span class="mq-item">{{ status }}</span>{% endif %}
+  {% for feat in company.features %}<span class="mq-item">{{ feat }}</span>{% endfor %}
+</div></div>
+{% endif %}
+
+<header>
+  <div class="wrap hd">
+    <div class="hd-brand"><span class="hd-mono">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="{{ company.title }}">{% else %}{{ company.title[0]|upper }}{% endif %}</span><span>{{ company.title }}</span></div>
+    <div class="hd-right">
+      {% if status %}<span class="hd-status"><span class="dot"></span>{{ status }}</span>{% endif %}
+      {% if company.phone %}<a class="hd-phone" href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}">{{ company.phone }}</a>{% endif %}
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  {% if company.gallery_photos %}<div class="hero-bg" aria-hidden="true"><img id="pxHero" src="{{ company.gallery_photos[0] }}" alt=""></div>{% endif %}
+  <div class="wrap hero-in">
+    <span class="kicker"><span>{{ company.category }}{% if company.address %} · {{ company.address }}{% endif %}</span></span>
+    <h1>{{ company.title }}</h1>
+    {% if company.about_text %}<p class="hero-sub">{{ company.about_text|truncate(150) }}</p>{% endif %}
+    {% if company.rating %}
+    <div class="hero-row">
+      <span class="rating"><b id="ratingNum" data-rating="{{ company.rating|replace(',', '.') }}">0,0</b><span><span class="stars">★★★★★</span>{% if company.reviews_count %}<br><small>{{ company.reviews_count }} · Яндекс.Карты</small>{% endif %}</span></span>
+    </div>
+    {% endif %}
+    {% if company.book_url or company.phone %}
+    <div class="hero-row" style="margin-top:24px">
+      {% if company.book_url %}<a class="btn btn-volt" href="{{ company.book_url }}" target="_blank" rel="nofollow noopener"><span>Записаться</span></a>{% endif %}
+      {% if company.phone %}<a class="btn {% if company.book_url %}btn-out{% else %}btn-volt{% endif %}" href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}"><span>Позвонить</span></a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if company.menu_items %}
+<section id="dir">
+  <div class="wrap">
+    <div class="sec-head rv"><h2>{{ company.catalog_title or 'Направления' }}</h2><p>цены — из Яндекс.Карт{% if company.avg_bill %} · средний чек {{ company.avg_bill }}{% endif %}</p></div>
+    <div class="dir" data-paginate="6">
+      {% for item in company.menu_items %}
+      {% if item.image_url %}
+      <article class="dcard rv"><img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy"><div class="dcard-body"><h3>{{ item.name }}</h3>{% if item.price %}<div class="dcard-price">{{ item.price }}</div>{% endif %}{% if item.description %}<p>{{ item.description }}</p>{% endif %}</div></article>
+      {% else %}
+      <article class="dcard nophoto rv"><div class="dcard-body"><span class="idx">{{ '%02d'|format(loop.index) }}</span><div><h3>{{ item.name }}</h3>{% if item.price %}<div class="dcard-price">{{ item.price }}</div>{% endif %}{% if item.description %}<p>{{ item.description }}</p>{% endif %}</div></div></article>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.gallery_photos|length > 1 %}
+<section id="gallery" style="padding-top:0">
+  <div class="wrap"><div class="sec-head rv"><h2>В <em>деле</em></h2><p style="align-self:center">листайте →</p></div></div>
+  <div class="strip-wrap rv rv-d1">
+    <div class="strip">
+      {% for photo in company.gallery_photos[1:] %}
+      <figure><img src="{{ photo }}" alt="Фото" loading="lazy"></figure>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.reviews %}
+<section id="reviews" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><h2>От<em>зывы</em></h2><p style="align-self:center">с Яндекс.Карт</p></div>
+    <div class="rev-grid">
+      {% for r in company.reviews[:6] %}
+      <blockquote class="rev rv">{% if r.rating %}<div class="rev-stars">{% for _ in range(r.rating|int) %}★{% endfor %}</div>{% endif %}<p>{{ r.text }}</p><div class="rev-who">{% if r.author %}<b>{{ r.author }}</b>{% endif %}{% if r.date %} · {{ r.date }}{% endif %}</div></blockquote>
+      {% endfor %}
+    </div>
+    {% if company.yandex_url %}<p class="rev-all rv"><a class="btn btn-out" href="{{ company.yandex_url }}" target="_blank" rel="noopener" style="padding:14px 26px;font-size:14px"><span>Все отзывы на Яндекс.Картах →</span></a></p>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+<section id="contacts" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><h2>Где <em>найти</em></h2>{% if company.transit_stop and company.transit_stop.name %}<p style="align-self:center">ост. «{{ company.transit_stop.name }}» — {{ company.transit_stop.distance }}</p>{% endif %}</div>
+    <div class="con-grid rv rv-d1">
+      <div class="con-info">
+        {% if company.address %}<p class="con-line"><b>{{ company.address }}</b></p>{% endif %}
+        {% if company.phone %}<p class="con-line"><a href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}" style="font-family:var(--disp);font-size:24px;color:var(--tx)">{{ company.phone }}</a></p>{% endif %}
+        {% if company.hours %}
+        {% set fulldays = {'Mo':'Понедельник','Tu':'Вторник','We':'Среда','Th':'Четверг','Fr':'Пятница','Sa':'Суббота','Su':'Воскресенье'} %}
+        {% set daymap = {'Mo':'1','Tu':'2','We':'3','Th':'4','Fr':'5','Sa':'6','Su':'0'} %}
+        <div class="hours">
+          {% for e in company.hours %}<div class="hr" data-d="{{ daymap.get(e.day, '') }}"><span>{{ fulldays.get(e.day, e.day_ru) }}</span><span>{{ 'Выходной' if e.closed else e.time }}</span></div>{% endfor %}
+        </div>
+        {% endif %}
+        {% if company.social_links %}
+        {% from "_social_icons.html" import social_name %}
+        <div class="socials">{% for s in company.social_links %}<a class="soc" href="{{ s.url }}" target="_blank" rel="noopener">{{ social_name(s.platform) }}</a>{% endfor %}</div>
+        {% endif %}
+        {% if route_url %}<p style="margin-top:22px"><a class="btn btn-volt" href="{{ route_url }}" target="_blank" rel="nofollow noopener" style="padding:14px 26px;font-size:14px"><span>Маршрут →</span></a></p>{% endif %}
+      </div>
+      {% if yandex_map_url %}<div class="map"><iframe src="{{ yandex_map_url }}" loading="lazy" title="Карта"></iframe></div>{% endif %}
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>{{ company.title }} · данные — Яндекс.Карты · сайт создан на <a href="https://uqqi.ru">uqqi.ru</a></p>
+    <div class="legal-slot">{% include "_claim_disclaimer.html" %}</div>
+  </div>
+</footer>
+
+{% if company.phone %}<a class="call-fab" href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}">☏ Позвонить</a>{% endif %}
+
+{% include "_chat_widget.html" %}
+
+<script>
+(function(){
+"use strict";
+var rm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+if("IntersectionObserver" in window && !rm){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{threshold:.1,rootMargin:"0px 0px -6% 0px"});
+  document.querySelectorAll(".rv").forEach(function(el){io.observe(el)});
+}else{document.querySelectorAll(".rv").forEach(function(el){el.classList.add("in")})}
+var rn=document.getElementById("ratingNum");
+if(rn){var target=parseFloat(rn.dataset.rating)||0;
+  if(rm||!target){rn.textContent=target.toFixed(1).replace(".",",")}
+  else{var t0=null;requestAnimationFrame(function step(t){if(!t0)t0=t;var p=Math.min((t-t0)/1100,1);p=1-Math.pow(1-p,3);rn.textContent=(target*p).toFixed(1).replace(".",",");if(p<1)requestAnimationFrame(step)})}}
+if(!rm){
+  var ph=document.getElementById("pxHero"),tick=false;
+  if(ph)addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){ph.style.transform="translateY("+(Math.min(scrollY,900)*0.1).toFixed(1)+"px)";tick=false})},{passive:true});
+}
+var td=new Date().getDay();document.querySelectorAll(".hr[data-d]").forEach(function(r){if(r.dataset.d!==""&&+r.dataset.d===td)r.classList.add("today")});
+var mq=document.getElementById("mqTrack");if(mq&&!rm)mq.innerHTML+=mq.innerHTML;
+document.querySelectorAll("[data-paginate]").forEach(function(grid){
+  var size=parseInt(grid.getAttribute("data-paginate"),10)||6;
+  var items=Array.prototype.slice.call(grid.children);
+  if(items.length<=size)return;
+  var pages=Math.ceil(items.length/size),pcur=1;
+  var nav=document.createElement("div");nav.className="pg-nav";grid.parentNode.insertBefore(nav,grid.nextSibling);
+  function mkbtn(label,enabled,active,fn){var b=document.createElement("button");b.className="pg-btn"+(active?" is-active":"");b.textContent=label;if(!enabled){b.disabled=true}else{b.addEventListener("click",fn)}return b}
+  function to(p){pcur=p;draw();var s=grid.closest("section")||grid;s.scrollIntoView({behavior:rm?"auto":"smooth",block:"start"})}
+  function draw(){
+    items.forEach(function(el,i){el.style.display=(i>=(pcur-1)*size&&i<pcur*size)?"":"none"});
+    nav.innerHTML="";
+    nav.appendChild(mkbtn("‹",pcur>1,false,function(){to(pcur-1)}));
+    for(var p=1;p<=pages;p++){(function(p){nav.appendChild(mkbtn(String(p),true,p===pcur,function(){to(p)}))})(p)}
+    nav.appendChild(mkbtn("›",pcur<pages,false,function(){to(pcur+1)}));
+  }
+  draw();
+});
+})();
+</script>
+</body>
+</html>

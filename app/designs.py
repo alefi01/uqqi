@@ -56,7 +56,7 @@ DESIGNS: dict[str, dict] = {
                "vibe": "Тёплый уютный",
                "fit": "пекарни, еда, кафе, магазины"},
     "forge": {"name": "Forge", "src": "design_p14.html", "template": "designs/forge.html",
-              "tier": "pro", "self_mobile": True, "enabled": False,
+              "tier": "pro", "self_mobile": True, "enabled": True,
               "vibe": "Тёмный жёсткий",
               "fit": "залы, кроссфит, спорт"},
 }
