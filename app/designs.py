@@ -40,7 +40,7 @@ DESIGNS: dict[str, dict] = {
               "vibe": "Светлый мягкий, тёплый",
               "fit": "красота, велнес, студии, детское"},
     "clarity": {"name": "Clarity", "src": "design_p11.html", "template": "designs/clarity.html",
-                "tier": "pro", "self_mobile": True, "enabled": False,
+                "tier": "pro", "self_mobile": True, "enabled": True,
                 "vibe": "Светлый чистый, холодный",
                 "fit": "стоматология, оптика, клиники, услуги"},
     "garage": {"name": "Garage", "src": "design_p8.html", "template": "designs/garage.html",
