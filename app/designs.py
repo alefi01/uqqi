@@ -36,7 +36,7 @@ DESIGNS: dict[str, dict] = {
                   "vibe": "Светлый журнальный, антиква",
                   "fit": "рестораны, кафе, салоны, флористы"},
     "bloom": {"name": "Bloom", "src": "design_p3.html", "template": "designs/bloom.html",
-              "tier": "pro", "self_mobile": True, "enabled": False,
+              "tier": "pro", "self_mobile": True, "enabled": True,
               "vibe": "Светлый мягкий, тёплый",
               "fit": "красота, велнес, студии, детское"},
     "clarity": {"name": "Clarity", "src": "design_p11.html", "template": "designs/clarity.html",
