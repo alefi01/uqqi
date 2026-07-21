@@ -48,7 +48,7 @@ DESIGNS: dict[str, dict] = {
                "vibe": "Технический моно",
                "fit": "авто, ремонт, промышленное, IT"},
     "atelier": {"name": "Atelier", "src": "design_p21.html", "template": "designs/atelier.html",
-                "tier": "pro", "self_mobile": True, "enabled": False,
+                "tier": "pro", "self_mobile": True, "enabled": True,
                 "vibe": "Тёмный артовый",
                 "fit": "фото, дизайн, креатив, ивенты"},
     "hearth": {"name": "Hearth", "src": "design_p4.html", "template": "designs/hearth.html",
