@@ -52,7 +52,7 @@ DESIGNS: dict[str, dict] = {
                 "vibe": "Тёмный артовый",
                 "fit": "фото, дизайн, креатив, ивенты"},
     "hearth": {"name": "Hearth", "src": "design_p4.html", "template": "designs/hearth.html",
-               "tier": "pro", "self_mobile": True, "enabled": False,
+               "tier": "pro", "self_mobile": True, "enabled": True,
                "vibe": "Тёплый уютный",
                "fit": "пекарни, еда, кафе, магазины"},
     "forge": {"name": "Forge", "src": "design_p14.html", "template": "designs/forge.html",
