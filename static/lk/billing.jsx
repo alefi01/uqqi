@@ -220,6 +220,81 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
   );
 }
 
+// ---- Возможности PRO (обзор + переход к оформлению) ----
+function ScreenPro({ sites, onPay, nav }) {
+  const list = sites || [];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
+      <div className="card" style={{ padding: '1.6rem' }}>
+        <span className="eyebrow" style={{ color: 'var(--terracotta)' }}>PRO · 7 дней бесплатно</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 .5rem' }}>Больше возможностей для вашего сайта</h2>
+        <p className="muted" style={{ fontSize: '.9rem', lineHeight: 1.6 }}>PRO подключается отдельно для каждого сайта. Первые 7 дней — бесплатно, без карты. После окончания PRO базовый сайт продолжает работать.</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '.8rem', marginTop: '1.3rem' }}>
+          <div style={{ padding: '1.1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+            <i data-lucide="palette" style={{ width: 22, height: 22, color: 'var(--terracotta)' }}></i>
+            <div style={{ fontWeight: 700, color: 'var(--ink)', margin: '.5rem 0 .3rem' }}>Премиум-дизайны</div>
+            <div className="muted" style={{ fontSize: '.84rem', lineHeight: 1.55 }}>Курируемые оформления витрины с характером — под кофейню, салон, клинику или магазин.</div>
+          </div>
+          <div style={{ padding: '1.1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+            <i data-lucide="message-circle" style={{ width: 22, height: 22, color: 'var(--terracotta)' }}></i>
+            <div style={{ fontWeight: 700, color: 'var(--ink)', margin: '.5rem 0 .3rem' }}>Чат с посетителями</div>
+            <div className="muted" style={{ fontSize: '.84rem', lineHeight: 1.55 }}>Сообщения с сайта приходят вам в Telegram. Отвечаете прямо из Telegram — ответ появляется у посетителя.</div>
+          </div>
+        </div>
+
+        <hr className="divider" style={{ margin: '1.3rem 0' }} />
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Что входит</p>
+        <ul className="feat-list">
+          {INCLUDED.map((f, i) => <li key={i}><i data-lucide="check"></i>{f}</li>)}
+        </ul>
+      </div>
+
+      <div>
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Тарифы PRO</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '.8rem' }}>
+          {PLANS_LK.map(p => (
+            <div key={p.id} className="card" style={{ padding: '1.1rem', textAlign: 'center', borderColor: p.id === 'quarter' ? 'var(--terracotta)' : 'var(--line)' }}>
+              <div className="muted" style={{ fontSize: '.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{p.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', margin: '.4rem 0 .1rem' }}>{fmtRub(p.amount)} ₽</div>
+              <div className="muted" style={{ fontSize: '.76rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
+              {p.save && <div style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginTop: '.3rem' }}>{p.save}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Подключить PRO для сайта</p>
+        {list.length === 0
+          ? <div className="card" style={{ padding: '1.4rem', textAlign: 'center' }}>
+              <p className="muted" style={{ fontSize: '.88rem', marginBottom: '1rem' }}>Сначала создайте сайт — потом сможете подключить к нему PRO.</p>
+              <button className="btn btn--primary" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Создать сайт</button>
+            </div>
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
+              {list.map(s => (
+                <div key={s.id} className="card" style={{ padding: '1rem 1.2rem' }}>
+                  <div className="between">
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '.95rem' }}>{s.name}</div>
+                      <div className="muted" style={{ fontSize: '.8rem', marginTop: '.2rem' }}>{s.slug}.uqqi.ru</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <StatusBadge site={s} />
+                      {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
+                      {s.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                      {(s.status === 'protrial' || s.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
+      </div>
+    </div>
+  );
+}
+
 // ---- Поддержка ----
 function ScreenSupport({ email, tickets, onSubmit }) {
   const [subj, setSubj] = useStateB('');

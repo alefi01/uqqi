@@ -5,11 +5,12 @@ const { useState, useEffect, useRef } = React;
 
 const NAV = [
   { id: 'sites', label: 'Мои сайты', ic: 'layout-grid' },
+  { id: 'pro', label: 'PRO', ic: 'sparkles' },
   { id: 'subscriptions', label: 'Подписки и платежи', ic: 'credit-card' },
   { id: 'support', label: 'Поддержка', ic: 'life-buoy' },
   { id: 'settings', label: 'Настройки', ic: 'settings' },
 ];
-const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
+const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', pro: 'pro', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
   sites: ['Мои сайты', 'Сайты вашего бизнеса на uqqi.ru'],
   'add-site': ['Новый сайт', null],
@@ -17,12 +18,13 @@ const TITLES = {
   payment: ['Оплата', null],
   admin: ['Редактор сайта', null],
   design: ['Дизайн сайта', null],
+  pro: ['Возможности PRO', 'Премиум-дизайны и чат с посетителями'],
   subscriptions: ['Подписки и платежи', 'Статусы, продление и история'],
   support: ['Поддержка', 'Мы на связи и поможем'],
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
 
-const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'design', 'subscriptions', 'support', 'settings', 'metrics']);
+const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'design', 'pro', 'subscriptions', 'support', 'settings', 'metrics']);
 
 function plusDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
@@ -260,12 +262,13 @@ function App() {
   const [title, sub] = TITLES[screen] || ['', null];
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onStats={openMetrics} onDesign={openDesign} onDelete={askDeleteSite} canAdd={canAdd} />;
   else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} />;
   else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
   else if (screen === 'payment') body = <ScreenPayment nav={nav} site={payTarget} />;
   else if (screen === 'admin') body = <AdminStub nav={nav} site={payTarget} />;
+  else if (screen === 'pro') body = <ScreenPro sites={sites} onPay={openPay} nav={nav} />;
   else if (screen === 'subscriptions') body = <ScreenSubscriptions nav={nav} sites={sites} payments={payments} onPay={openPay} />;
   else if (screen === 'support') body = <ScreenSupport email={email} tickets={tickets} onSubmit={submitTicket} />;
   else if (screen === 'settings') body = <ScreenSettings email={email} onDelete={() => setConfirmDel(true)} />;
@@ -324,26 +327,7 @@ function App() {
           </section>
         </div>
 
-        {/* site menu modal */}
-        {menuSite && (
-          <div className="scrim" onClick={() => setMenuSite(null)}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-              <h3>{menuSite.name}</h3>
-              <p>{menuSite.slug}.uqqi.ru</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
-                {/* «Статистика» вынесена отдельной кнопкой на карточку сайта. */}
-                {/* Кнопка «Редактировать контент» временно скрыта: нет модерации загружаемого контента. */}
-                <button className="btn btn--ghost btn--block" onClick={() => openDesign(menuSite)}><i data-lucide="palette"></i> Дизайн</button>
-                {menuSite.canDelete === false
-                  ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
-                      <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                    </span>
-                  : <button className="btn btn--danger btn--block" onClick={() => askDeleteSite(menuSite)}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                }
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Действия сайта («Статистика / Дизайн / Удалить») вынесены на карточку сайта. */}
 
         {/* delete site modal */}
         {delSite && (
