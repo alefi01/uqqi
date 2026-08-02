@@ -166,6 +166,7 @@ async def register(payload: RegisterPayload, request: Request, db: OrmSession = 
             raise HTTPException(status_code=409, detail="Этот email уже зарегистрирован")
         # неподтверждённый — пересоздаём токен и шлём заново
         existing.verify_token = secrets.token_urlsafe(32)[:64]
+        existing.verify_sent_at = datetime.utcnow()
         existing.password_hash = _hash_pw(payload.password)
         existing.agreed_at = datetime.utcnow()
         existing.agreed_ip = _client_ip(request)
@@ -179,6 +180,7 @@ async def register(payload: RegisterPayload, request: Request, db: OrmSession = 
         email=email,
         password_hash=_hash_pw(payload.password),
         verify_token=secrets.token_urlsafe(32)[:64],
+        verify_sent_at=datetime.utcnow(),
         agreed_at=datetime.utcnow(),
         agreed_ip=_client_ip(request),
         pending_claim_code=claim_code,
@@ -194,9 +196,10 @@ async def resend_verify(payload: ResendPayload, db: OrmSession = Depends(get_db)
     email = payload.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
     if user and not user.email_verified:
-        if not user.verify_token:
-            user.verify_token = secrets.token_urlsafe(32)[:64]
-            db.commit()
+        # всегда обновляем токен + метку времени — письмо даёт свежую 24ч-ссылку
+        user.verify_token = secrets.token_urlsafe(32)[:64]
+        user.verify_sent_at = datetime.utcnow()
+        db.commit()
         _send_verify(email, user.verify_token)
     return {"ok": True}  # не раскрываем существование email
 
@@ -207,6 +210,10 @@ async def verify_email(token: str, db: OrmSession = Depends(get_db)):
     user = db.query(User).filter(User.verify_token == token, User.verify_token != "").first()
     if not user:
         raise HTTPException(status_code=400, detail="Ссылка недействительна или устарела")
+    # TTL: подтверждающая ссылка живёт VERIFY_TTL (24 ч). Просроченную не активируем —
+    # снижает риск авто-подтверждения почтовым сканером спустя время.
+    if user.verify_sent_at and (datetime.utcnow() - user.verify_sent_at) > VERIFY_TTL:
+        raise HTTPException(status_code=400, detail="Ссылка устарела (действует 24 часа). Запросите новое письмо.")
     user.email_verified = True
     user.verify_token = ""
     db.commit()
@@ -310,9 +317,11 @@ async def change_password(payload: PasswordPayload,
 
 def _bind_claim_to_user(code: str, user: User, db: OrmSession):
     """
-    Привязывает claim-сайт к пользователю, даёт триал 7 дней, гасит claim_code.
-    Триал даётся всегда (даже если аккаунтный триал использован) — это подарок-крючок.
-    Возвращает dict с инфо о сайте или None, если код невалиден/уже использован.
+    Привязывает claim-сайт к аккаунту: он появляется в ЛК клиента. НО сайт
+    остаётся ОБЕЗЛИЧЕННЫМ (is_claim=True, paid_once=False) — noindex + дисклеймер,
+    пока не оплачен. «Своим» его делает только оплата (paid_once). При привязке
+    выдаём Pro-триал 7 дней (крючок: клиент видит премиум-дизайн + чат как превью).
+    Гасим лишь секретный claim_code. Возвращает dict с инфо о сайте или None.
     """
     from datetime import datetime as _dt, timedelta as _td
     code = (code or "").strip()
@@ -324,12 +333,13 @@ def _bind_claim_to_user(code: str, user: User, db: OrmSession):
     ).first()
     if not company:
         return None
-    company.user_id       = user.id
-    company.claim_code    = None
-    company.demo_until    = None
-    company.sub_status    = "trial"
-    company.trial_ends_at = _dt.utcnow() + _td(days=7)
-    company.is_active     = True
+    company.user_id    = user.id
+    company.claim_code = None            # секретный токен привязки гасим
+    company.is_claim   = True            # но сайт остаётся серым/обезличенным до оплаты
+    company.paid_once  = False
+    company.demo_until = None
+    company.is_active  = True
+    company.pro_until  = _dt.utcnow() + _td(days=7)   # Pro-триал: превью премиум-дизайна + чата
     db.commit()
     return {
         "slug":  company.slug,
@@ -365,9 +375,17 @@ async def claim_site(code: str,
     return {"ok": True, **result}
 
 
+class AccountDeletePayload(BaseModel):
+    password: str = ""
+
+
 @router.delete("/account")
-async def delete_account(user: User = Depends(require_user),
+async def delete_account(payload: AccountDeletePayload,
+                          user: User = Depends(require_user),
                           db: OrmSession = Depends(get_db)):
+    # Подтверждение паролем (защита от случайного/чужого удаления)
+    if not _check_pw(payload.password, user.password_hash):
+        raise HTTPException(status_code=403, detail="Неверный пароль")
     # Отвязываем/удаляем сайты юзера, чистим сессии, удаляем юзера
     db.query(Company).filter(Company.user_id == user.id).delete()
     db.query(DbSession).filter(DbSession.identity == f"user:{user.id}").delete()
@@ -389,36 +407,27 @@ def _site_dict(c: Company) -> dict:
     """Сериализует компанию для фронта кабинета."""
     from datetime import datetime as _dt
 
-    # Определяем статус для бейджа
-    status = "active"
-    trial_days = None
-    until = None
+    now = _dt.utcnow()
+    pro_active = bool(c.pro_until and c.pro_until > now)
+    is_legit   = (not c.is_claim) or bool(c.paid_once)   # «сайт свой»
+    pro_until  = c.pro_until.strftime("%d.%m.%Y") if c.pro_until else None
+    pro_days   = max(0, (c.pro_until - now).days + 1) if pro_active else None
 
+    # Статус для бейджа/меню в ЛК
     if c.build_status in ("queued", "building"):
         status = "building"
     elif c.build_status == "error":
         status = "error"
-    elif c.sub_status == "trial":
-        status = "trial"
-        if c.trial_ends_at:
-            delta = (c.trial_ends_at - _dt.utcnow()).days
-            trial_days = max(0, delta + 1)
-            if c.trial_ends_at < _dt.utcnow():
-                status = "unpaid"  # триал истёк
-    elif c.sub_status == "active":
-        status = "active"
-        if c.paid_until:
-            until = c.paid_until.strftime("%d.%m.%Y")
-            if c.paid_until < _dt.utcnow():
-                status = "unpaid"
-    elif c.sub_status == "unpaid":
-        status = "unpaid"
+    elif not is_legit:
+        status = "claim"       # серый claim-сайт: обезличен, «оплатить, чтобы стало вашим»
+    elif pro_active and c.paid_once:
+        status = "pro"         # оплаченный Pro
+    elif pro_active:
+        status = "protrial"    # Pro-триал (self-service, ещё не платил)
+    else:
+        status = "free"        # бесплатный сайт
 
-    # Можно ли удалять: нельзя только активный готовый триал
-    can_delete = not (
-        c.sub_status == "trial" and c.trial_ends_at and c.trial_ends_at > _dt.utcnow()
-        and c.build_status == "ready"
-    )
+    can_delete = c.build_status not in ("queued", "building")
 
     return {
         "id":        c.id,
@@ -426,43 +435,31 @@ def _site_dict(c: Company) -> dict:
         "slug":      c.slug,
         "city":      (c.address or "").split(",")[-1].strip() if c.address else "",
         "status":    status,
-        "trialDays": trial_days,
-        "until":     until,
+        "proActive": pro_active,
+        "isLegit":   is_legit,
+        "isClaim":   bool(c.is_claim),
+        "proUntil":  pro_until,
+        "proDays":   pro_days,
         "created":   c.created_at.strftime("%d.%m.%Y") if c.created_at else "",
         "icon":      "store",
         "build_status": c.build_status,
         "canDelete": can_delete,
+        "design":    c.template_variant or "A",
     }
 
 
 class AddSitePayload(BaseModel):
     url: str
-
-
-def _is_unpaid_paid_site(c) -> bool:
-    """True если это платный сайт (не триал), который не оплачен."""
-    from datetime import datetime as _dt
-    if c.build_status in ("queued", "building", "error"):
-        return False
-    # Платный неоплаченный: sub_status unpaid, или active с истёкшим paid_until
-    if c.sub_status == "unpaid":
-        return True
-    if c.sub_status == "active" and c.paid_until and c.paid_until < _dt.utcnow():
-        return True
-    return False
+    design: str = "A"   # "A" бесплатный / "B" премиум (показывается только при Pro)
 
 
 def _can_add_site(user, sites) -> tuple[bool, str]:
     """
-    Можно ли создать новый сайт.
-    Нельзя, пока есть строящийся или неоплаченный платный сайт.
+    Можно ли создать новый сайт. Freemium: сайты бесплатны, лимита по оплате нет —
+    нельзя лишь пока предыдущий ещё строится (парсинг = 1 одновременно).
     """
-    # Пока что-то строится — нельзя
     if any(c.build_status in ("queued", "building") for c in sites):
         return False, "Дождитесь завершения создания текущего сайта."
-    # Есть неоплаченный платный — нельзя
-    if any(_is_unpaid_paid_site(c) for c in sites):
-        return False, "Сначала оплатите предыдущий сайт."
     return True, ""
 
 
@@ -490,33 +487,36 @@ async def add_site(payload: AddSitePayload,
     if not can_add:
         raise HTTPException(status_code=409, detail=reason)
 
-    # Триал положен только если ещё не использован. Иначе — сразу платный.
-    is_trial = not user.trial_used
+    from app import designs as _designs
+    design = payload.design if (_designs.get(payload.design) or {}).get("enabled") else "A"
 
     import secrets as _s
     tmp_slug = f"building-{_s.token_hex(4)}"
+    # Freemium: сайт бесплатен и живёт сразу после сборки. Pro-триал (если ещё не
+    # использован на аккаунте) начисляет build_site ПО ГОТОВНОСТИ — так триал не
+    # сгорает на неудачной сборке (старый баг: trial_used ставился при создании).
+    # Выбранный дизайн храним сразу; премиум (B) отрендерится только при Pro.
     company = Company(
         slug=tmp_slug,
         title="Создаётся…",
         user_id=user.id,
         is_demo=False,
+        is_claim=False,        # self-service — легитимный сайт с рождения
         yandex_url=url,
         build_status="queued",
-        sub_status="trial" if is_trial else "unpaid",
+        sub_status="free",
+        template_variant=design,
         is_active=False,
         admin_password_hash="",
     )
     db.add(company)
-    # Помечаем триал использованным сразу при создании триал-сайта
-    if is_trial:
-        user.trial_used = True
     db.commit()
     db.refresh(company)
 
     from app.build_queue import enqueue
     enqueue(company.id)
 
-    return {"ok": True, "id": company.id, "trial": is_trial}
+    return {"ok": True, "id": company.id}
 
 
 @router.get("/sites/{site_id}/status")
@@ -529,19 +529,102 @@ async def site_status(site_id: int,
     return _site_dict(c)
 
 
-@router.delete("/sites/{site_id}")
-async def delete_site(site_id: int,
-                       user: User = Depends(require_user),
-                       db: OrmSession = Depends(get_db)):
-    from datetime import datetime as _dt
+@router.get("/sites/{site_id}/metrics")
+async def site_metrics(site_id: int,
+                        user: User = Depends(require_user),
+                        db: OrmSession = Depends(get_db)):
+    """
+    Метрика конкретного сайта клиента для дашборда ЛК.
+    Только агрегаты по ЕГО сайту: уники, просмотры (без ботов), динамика по дням,
+    статус подписки. Никаких IP/городов/User-Agent/ботов — это только owner-панель.
+    """
+    from sqlalchemy import text as _sql
+    from datetime import datetime as _dt, timedelta as _td
+
     c = db.query(Company).filter(Company.id == site_id, Company.user_id == user.id).first()
     if not c:
         raise HTTPException(status_code=404)
-    # Нельзя удалять активный триал (защита от абуза: удалить+создать заново)
-    if c.sub_status == "trial" and c.trial_ends_at and c.trial_ends_at > _dt.utcnow() \
-            and c.build_status == "ready":
+
+    slug = c.slug
+    now = _dt.utcnow()
+
+    def uniq(days: int) -> int:
+        cut = (now.date() - _td(days=days)).strftime("%Y-%m-%d")
+        return int(db.execute(_sql(
+            "SELECT COUNT(DISTINCT visitor_hash) FROM visits WHERE target = :t AND day >= :d"
+        ), {"t": slug, "d": cut}).scalar() or 0)
+
+    def views(days: int) -> int:
+        cut = now - _td(days=days)
+        return int(db.execute(_sql(
+            "SELECT COUNT(*) FROM visit_logs WHERE target = :t AND is_bot = 0 AND created_at >= :c"
+        ), {"t": slug, "c": cut}).scalar() or 0)
+
+    # Динамика уников по дням за последние 30 дней (для графика)
+    since = (now.date() - _td(days=29)).strftime("%Y-%m-%d")
+    rows = db.execute(_sql(
+        "SELECT day, COUNT(DISTINCT visitor_hash) FROM visits "
+        "WHERE target = :t AND day >= :d GROUP BY day"
+    ), {"t": slug, "d": since}).fetchall()
+    by_day = {r[0]: int(r[1]) for r in rows}
+    daily = []
+    for i in range(29, -1, -1):
+        d = (now.date() - _td(days=i)).strftime("%Y-%m-%d")
+        daily.append({"day": d, "unique": by_day.get(d, 0)})
+
+    # Статус Pro-подписки (без внутренней кухни)
+    pro_active = bool(c.pro_until and c.pro_until > now)
+    is_legit   = (not c.is_claim) or bool(c.paid_once)
+    if not is_legit:
+        pstatus = "claim"
+    elif pro_active and c.paid_once:
+        pstatus = "pro"
+    elif pro_active:
+        pstatus = "protrial"
+    else:
+        pstatus = "free"
+    sub = {
+        "status":    pstatus,
+        "proActive": pro_active,
+        "until":     c.pro_until.strftime("%d.%m.%Y") if c.pro_until else None,
+        "proDays":   max(0, (c.pro_until - now).days + 1) if pro_active else None,
+    }
+
+    return {
+        "slug":    slug,
+        "title":   c.title,
+        "unique":  {"d7": uniq(7), "d30": uniq(30), "d90": uniq(90)},
+        "views":   {"d7": views(7), "d30": views(30), "d90": views(90)},
+        "daily":   daily,
+        "subscription": sub,
+    }
+
+
+class SiteDeletePayload(BaseModel):
+    password: str = ""
+    confirm:  str = ""   # название или адрес (slug) сайта
+
+
+@router.delete("/sites/{site_id}")
+async def delete_site(site_id: int,
+                       payload: SiteDeletePayload,
+                       user: User = Depends(require_user),
+                       db: OrmSession = Depends(get_db)):
+    c = db.query(Company).filter(Company.id == site_id, Company.user_id == user.id).first()
+    if not c:
+        raise HTTPException(status_code=404)
+    # Freemium: удаление доступно всегда (лимита по триалу/оплате нет).
+    # Подтверждение: верный пароль ИЛИ точное название/адрес сайта
+    ok = False
+    if payload.password and _check_pw(payload.password, user.password_hash):
+        ok = True
+    else:
+        conf = (payload.confirm or "").strip().lower()
+        if conf and conf in (c.slug.lower(), (c.title or "").strip().lower()):
+            ok = True
+    if not ok:
         raise HTTPException(status_code=403,
-            detail="Дождитесь окончания trial-периода.")
+            detail="Подтвердите удаление паролем или названием сайта.")
     db.delete(c)
     db.commit()
     return {"ok": True}
@@ -561,6 +644,62 @@ async def cancel_subscription(site_id: int,
     c.notified_3d = True
     db.commit()
     return {"ok": True, "active_until": c.paid_until.strftime("%d.%m.%Y") if c.paid_until else None}
+
+
+# ── TELEGRAM (чат с сайтов, Pro) ──────────────────────────────────────────────
+
+@router.get("/telegram")
+async def telegram_status(user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Статус подключения Telegram владельца + deep-link для привязки."""
+    connected = bool(user.tg_chat_id)
+    link = ""
+    bot = (settings.TELEGRAM_BOT_USERNAME or "").strip()
+    if not connected:
+        if not user.tg_link_token:
+            user.tg_link_token = secrets.token_urlsafe(12)
+            db.commit()
+        if bot:
+            link = f"https://t.me/{bot}?start={user.tg_link_token}"
+    return {"connected": connected, "link": link, "botConfigured": bool(bot)}
+
+
+@router.post("/telegram/disconnect")
+async def telegram_disconnect(user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Отвязать Telegram — сообщения с сайта перестанут приходить."""
+    user.tg_chat_id = ""
+    user.tg_link_token = ""
+    db.commit()
+    return {"ok": True}
+
+
+# ── ДИЗАЙНЫ ВИТРИНЫ ───────────────────────────────────────────────────────────
+
+@router.get("/designs")
+async def list_designs(user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Список включённых дизайнов (бесплатные + премиум) для пикера/галереи ЛК."""
+    from app import designs
+    return {"designs": designs.public_list(include_free=True)}
+
+
+class DesignPayload(BaseModel):
+    design: str
+
+
+@router.post("/sites/{site_id}/design")
+async def set_design(site_id: int, payload: DesignPayload,
+                     user: User = Depends(require_user), db: OrmSession = Depends(get_db)):
+    """Сменить дизайн сайта. Премиум применится на витрине только при активном Pro."""
+    from app import designs
+    c = db.query(Company).filter(Company.id == site_id, Company.user_id == user.id).first()
+    if not c:
+        raise HTTPException(status_code=404)
+    key = (payload.design or "").strip()
+    d = designs.get(key)
+    if not d or not d.get("enabled"):
+        raise HTTPException(status_code=422, detail="Неизвестный дизайн")
+    c.template_variant = key
+    db.commit()
+    return {"ok": True, "design": key, "isPro": d.get("tier") == "pro"}
 
 
 # ── ПОДДЕРЖКА ─────────────────────────────────────────────────────────────────
@@ -611,8 +750,20 @@ async def create_ticket(payload: TicketPayload,
 
 # ── ПЛАТЕЖИ (ЮKassa) ──────────────────────────────────────────────────────────
 
+# Тарифы подписки. amount — строка (сравнивается с ЮKassa через Decimal),
+# days — на сколько продлевать paid_until. months — для подачи «X ₽/мес».
+# ВАЖНО: дублируется на фронте (billing.jsx/app.bundle.jsx) — менять синхронно.
+PLANS = {
+    "month":   {"amount": "990.00",  "days": 30,  "months": 1,  "label": "Месяц"},
+    "quarter": {"amount": "2490.00", "days": 90,  "months": 3,  "label": "3 месяца"},
+    "year":    {"amount": "8900.00", "days": 365, "months": 12, "label": "Год"},
+}
+DEFAULT_PLAN = "quarter"
+
+
 class PaymentCreatePayload(BaseModel):
     site_id: int
+    plan: str = DEFAULT_PLAN
 
 
 @router.post("/payment/create")
@@ -631,16 +782,21 @@ async def payment_create(payload: PaymentCreatePayload,
     if company.build_status not in ("ready",):
         raise HTTPException(status_code=400, detail="Сайт ещё не готов")
 
-    amount = settings.SUBSCRIPTION_PRICE
+    plan = PLANS.get(payload.plan)
+    if not plan:
+        raise HTTPException(status_code=422, detail="Неизвестный тариф")
+    amount = plan["amount"]
+    days = plan["days"]
     return_url = f"https://lk.{settings.BASE_DOMAIN}/?paid={company.id}"
-    description = f"Подписка uqqi.ru — {company.slug}.{settings.BASE_DOMAIN}"
+    description = f"Pro uqqi.ru ({plan['label']}) — {company.slug}.{settings.BASE_DOMAIN}"
 
     try:
         result = create_payment(
             amount=amount,
             description=description,
             return_url=return_url,
-            metadata={"company_id": company.id, "user_id": user.id, "slug": company.slug},
+            metadata={"company_id": company.id, "user_id": user.id,
+                      "slug": company.slug, "plan": payload.plan},
         )
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e))
@@ -655,6 +811,7 @@ async def payment_create(payload: PaymentCreatePayload,
         company_id=company.id,
         company_slug=company.slug,
         amount=amount,
+        days=days,
         status="pending",
     )
     db.add(pay)
@@ -719,19 +876,79 @@ def _apply_successful_payment(payment_id: str, db: OrmSession) -> bool:
         db.commit()
         return False
 
-    # Продлеваем: от max(сейчас, текущий paid_until) + 30 дней
+    # Продлеваем Pro от max(сейчас, текущий pro_until) + срок тарифа
     now = _dt.utcnow()
-    base = company.paid_until if (company.paid_until and company.paid_until > now) else now
-    company.paid_until    = base + _td(days=settings.SUBSCRIPTION_DAYS)
-    company.sub_status    = "active"
-    company.is_active     = True
-    company.trial_ends_at = None  # триал больше не релевантен
+    base = company.pro_until if (company.pro_until and company.pro_until > now) else now
+    company.pro_until  = base + _td(days=(pay.days or settings.SUBSCRIPTION_DAYS))
+    company.paid_once  = True          # легитимизирует серый claim-сайт НАВСЕГДА
+    company.paid_until = company.pro_until   # держим legacy-поле согласованным
+    company.sub_status = "active"
+    company.is_active  = True
+    # Сбрасываем флаги напоминаний о продлении — для нового оплаченного периода
+    company.notified_7d = False
+    company.notified_3d = False
 
     pay.status    = "succeeded"
     pay.processed = True
     pay.paid_at   = now
     db.commit()
     return True
+
+
+def _verify_and_apply_payment(payment_id: str, db: OrmSession) -> tuple[bool, str]:
+    """
+    Проверяет платёж напрямую у ЮKassa и применяет ТОЛЬКО при:
+      • payment_id есть в нашей БД,
+      • ЮKassa вернула status == succeeded,
+      • оплаченная сумма совпадает с ожидаемой (Payment.amount).
+    Fail-CLOSED: при любой невозможности проверить (API недоступен, нет ключей,
+    сумма не сошлась) — НЕ применяет, оставляет pending (подхватит реконсиляция).
+    Возвращает (применён_ли_сейчас, заметка_для_лога).
+    """
+    from app.models import Payment
+    from decimal import Decimal, InvalidOperation
+
+    pay = db.query(Payment).filter(Payment.payment_id == payment_id).first()
+    if not pay:
+        return False, "payment_id нет в нашей БД — игнор"
+    if pay.processed:
+        return False, "уже обработан (идемпотентность)"
+
+    if not settings.YUKASSA_SHOP_ID or not settings.YUKASSA_SECRET_KEY:
+        return False, "ЮKassa не настроена — проверка невозможна, оставляю pending"
+
+    # Спрашиваем истину у ЮKassa (телу webhook не доверяем)
+    from app.yukassa import get_payment
+    try:
+        remote = get_payment(payment_id)
+    except Exception as e:
+        return False, f"проверка статуса не удалась ({e}) — оставляю pending"
+
+    status = remote.get("status", "")
+    if status == "canceled":
+        pay.status = "canceled"
+        pay.processed = True
+        db.commit()
+        return False, "ЮKassa: canceled"
+    if status != "succeeded":
+        return False, f"ЮKassa статус={status!r} — не применяю"
+
+    # Сверка суммы: реально оплачено vs ожидали
+    remote_amount = (remote.get("amount") or {}).get("value", "")
+    try:
+        if Decimal(str(remote_amount)) != Decimal(str(pay.amount)):
+            from app.notifier import send_telegram
+            send_telegram(
+                f"🔴 uqqi: платёж {payment_id} succeeded, но сумма НЕ совпала — "
+                f"оплачено {remote_amount}, ожидали {pay.amount}. Не применяю.",
+                key=f"amount_{payment_id}", throttle_sec=6 * 3600,
+            )
+            return False, f"сумма не совпала (оплачено {remote_amount}, ждали {pay.amount})"
+    except (InvalidOperation, TypeError):
+        return False, f"некорректная сумма от ЮKassa: {remote_amount!r}"
+
+    applied = _apply_successful_payment(payment_id, db)
+    return applied, "применён" if applied else "не применён (компания не найдена?)"
 
 
 # ── НАСТРОЙКИ ─────────────────────────────────────────────────────────────────

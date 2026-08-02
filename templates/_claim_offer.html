@@ -1,12 +1,13 @@
-{# Плавающее окошко «Приобрести этот сайт». Показывается только в claim-режиме (/demo).
-   Ожидает claim_offer = {title, city, url}. Подключается в site_a/b/c.html. #}
+{# Плавающее окошко «Приобрести этот сайт». Показывается на обычном адресе
+   обезличенного claim-сайта (claim_code && !user_id). Ожидает
+   claim_offer = {title, city, url}. Подключается в site_a/b/c.html. #}
 {% if claim_offer %}
 <div class="claim-offer" id="claimOffer">
   <button class="claim-offer__close" onclick="document.getElementById('claimOffer').classList.add('claim-offer--hidden')" aria-label="Закрыть">×</button>
-  <div class="claim-offer__badge">Готовый сайт для вашего бизнеса</div>
-  <div class="claim-offer__title">Нравится этот сайт?</div>
-  <div class="claim-offer__text">Мы уже собрали его для «{{ claim_offer.title }}». Заберите себе — и он заработает на вашем адресе за пару минут.</div>
-  <a class="claim-offer__btn" href="{{ claim_offer.url }}">Приобрести этот сайт →</a>
+  <div class="claim-offer__badge">Демонстрация для вашего бизнеса</div>
+  <div class="claim-offer__title">Так мог бы выглядеть ваш сайт</div>
+  <div class="claim-offer__text">Это демо-версия для «{{ claim_offer.title }}», собранная автоматически из открытых данных. Нравится? Заберите себе — и он заработает на вашем адресе за пару минут.</div>
+  <a class="claim-offer__btn" href="{{ claim_offer.url }}">Забрать этот сайт →</a>
 </div>
 <style>
   .claim-offer{position:fixed;right:20px;bottom:20px;z-index:9999;width:330px;max-width:calc(100vw - 40px);

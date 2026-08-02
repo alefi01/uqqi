@@ -268,13 +268,11 @@
           </td>
           <td>
             <div class="td-actions">
-              <div class="variant-switch" title="Дизайн витрины (мобильным всегда отдаётся C)">
+              <div class="variant-switch" title="Дизайн витрины (мобильным всегда отдаётся C автоматически)">
                 <button class="vbtn {{ 'on' if (c.template_variant or 'A') == 'A' else '' }}"
                         onclick="setVariant({{ c.id }}, 'A', this)">A</button>
                 <button class="vbtn {{ 'on' if c.template_variant == 'B' else '' }}"
                         onclick="setVariant({{ c.id }}, 'B', this)">B</button>
-                <a class="action-btn" href="https://{{ c.slug }}.uqqi.ru/?variant=C" target="_blank"
-                   style="margin-left:.3rem" title="Мобильная версия">C 📱</a>
               </div>
               <button class="action-btn {{ 'action-btn--danger' if c.yandex_unavailable else '' }}"
                       id="refresh-{{ c.id }}"
@@ -283,34 +281,16 @@
                       title="{{ 'Карточка недоступна на Яндексе' if c.yandex_unavailable else 'Обновить данные из Яндекс Карт (раз в сутки)' }}">
                 {{ 'Недоступно' if c.yandex_unavailable else 'Обновить данные' }}
               </button>
-              <button class="action-btn" onclick="openBilling({{ c.id }}, '{{ c.title }}', '{{ c.next_payment_date.strftime('%Y-%m-%d') if c.next_payment_date else '' }}', '{{ c.client_email }}')"
-                      title="Дата оплаты и email клиента">
-                💳 Биллинг{% if c.next_payment_date %} · {{ c.next_payment_date.strftime('%d.%m') }}{% endif %}
-              </button>
-              <button class="action-btn {{ '' if c.is_active else 'action-btn--danger' }}"
-                      onclick="toggleSite({{ c.id }}, {{ 'false' if c.is_active else 'true' }})">
-                {{ 'Выключить' if c.is_active else 'Включить' }}
-              </button>
-              <a class="action-btn" href="/{{ panel_path }}/api/company/{{ c.id }}/export"
-                 target="_blank" title="Скачать ZIP для размещения на своём хостинге">
-                Выгрузить
-              </a>
               <button class="action-btn" onclick="showBuildLog({{ c.id }})" title="Лог сборки сайта">
                 Лог
+              </button>
+              <button class="action-btn" onclick="grantProTrial({{ c.id }}, this)" title="Выдать сайту Pro-триал 7 дней (премиум-дизайн + чат; claim остаётся обезличенным до оплаты)">
+                🎁 Pro-триал
               </button>
               {% if c.claim_code %}
               <button class="action-btn action-btn--claim" onclick="showMaterials({{ c.id }})" title="Материалы для клиента: текст, ссылка, скриншот">
                 📦 Клиенту
               </button>
-              {% if c.demo_until %}
-              <button class="action-btn" onclick="toggleDemo({{ c.id }}, false)" title="Вернуть заглушку">
-                🔓 Демо активно
-              </button>
-              {% else %}
-              <button class="action-btn" onclick="toggleDemo({{ c.id }}, true)" title="Показать сайт вживую на 7 дней">
-                Снять заглушку (7д)
-              </button>
-              {% endif %}
               {% endif %}
               <button class="action-btn action-btn--danger"
                       onclick="confirmDelete({{ c.id }}, '{{ c.title }}')">
@@ -419,28 +399,6 @@
     <div id="materialsBody"></div>
     <div class="modal__actions" style="margin-top:1rem">
       <button class="btn-cancel" onclick="closeModal('modalMaterials')">Закрыть</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL: биллинг ═════════════════════════════════════════ -->
-<div class="modal-overlay" id="billingModal">
-  <div class="modal">
-    <div class="modal__title">Биллинг — <span id="billingTitle"></span></div>
-    <input type="hidden" id="billingId">
-    <div style="font-size:.85rem;color:var(--muted);margin-bottom:1rem">
-      Укажите дату следующей оплаты и email клиента. За 7 и 3 дня до даты
-      на этот email уйдёт напоминание с clients@uqqi.ru.
-    </div>
-    <label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:.3rem">Дата следующей оплаты</label>
-    <input type="date" id="billingDate"
-           style="width:100%;padding:.6rem;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;margin-bottom:1rem">
-    <label style="display:block;font-size:.78rem;color:var(--muted);margin-bottom:.3rem">Email клиента</label>
-    <input type="email" id="billingEmail" placeholder="client@mail.ru"
-           style="width:100%;padding:.6rem;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:inherit;margin-bottom:.5rem">
-    <div class="modal__actions">
-      <button class="btn-cancel" onclick="closeBilling()">Отмена</button>
-      <button class="btn-confirm" onclick="saveBilling()">Сохранить</button>
     </div>
   </div>
 </div>
@@ -591,17 +549,6 @@ async function makeScreenshot(id) {
   }
 }
 
-async function toggleDemo(id, on) {
-  const url = on ? `${PANEL}/api/company/${id}/demo` : `${PANEL}/api/company/${id}/demo-off`;
-  try {
-    const res = await fetch(url, {method:'POST'});
-    if (res.ok) {
-      toast(on ? 'Заглушка снята на 7 дней' : 'Заглушка возвращена');
-      setTimeout(() => location.reload(), 700);
-    } else { toast('Ошибка', 'err'); }
-  } catch (e) { toast('Ошибка', 'err'); }
-}
-
 // ── УДАЛЕНИЕ ──────────────────────────────────────────────────
 let deleteId = null;
 
@@ -624,20 +571,6 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', async () =
     toast('Ошибка удаления', 'err');
   }
 });
-
-// ── ВКЛЮЧИТЬ/ВЫКЛЮЧИТЬ ────────────────────────────────────────
-async function toggleSite(id, activate) {
-  const res = await fetch(`${PANEL}/api/company/${id}/toggle`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({active: activate}),
-  });
-  if (res.ok) {
-    location.reload();
-  } else {
-    toast('Ошибка', 'err');
-  }
-}
 
 // ── ВИТРИНА A/B ───────────────────────────────────────────────
 async function setVariant(id, variant, btn) {
@@ -684,34 +617,26 @@ async function refreshData(id, btn) {
   }
 }
 
-// ── БИЛЛИНГ ───────────────────────────────────────────────────
-function openBilling(id, title, date, email) {
-  const modal = document.getElementById('billingModal');
-  document.getElementById('billingTitle').textContent = title;
-  document.getElementById('billingId').value = id;
-  document.getElementById('billingDate').value = date || '';
-  document.getElementById('billingEmail').value = email || '';
-  modal.classList.add('open');
-}
-function closeBilling() {
-  document.getElementById('billingModal').classList.remove('open');
-}
-async function saveBilling() {
-  const id = document.getElementById('billingId').value;
-  const next_payment_date = document.getElementById('billingDate').value;
-  const client_email = document.getElementById('billingEmail').value.trim();
-  const res = await fetch(`${PANEL}/api/company/${id}/billing`, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({next_payment_date, client_email}),
-  });
-  const data = await res.json();
-  if (res.ok && data.ok) {
-    toast('Биллинг сохранён', 'ok');
-    closeBilling();
-    setTimeout(() => location.reload(), 800);
-  } else {
-    toast(data.detail || 'Ошибка', 'err');
+async function grantProTrial(id, btn) {
+  if (btn.disabled) return;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Выдаю…';
+  try {
+    const res = await fetch(`${PANEL}/api/company/${id}/pro-trial`, {method:'POST'});
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      toast(`Pro-триал до ${data.until}`, 'ok');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      toast(data.detail || data.error || 'Ошибка', 'err');
+      btn.disabled = false;
+      btn.textContent = orig;
+    }
+  } catch (e) {
+    toast('Сетевая ошибка', 'err');
+    btn.disabled = false;
+    btn.textContent = orig;
   }
 }
 

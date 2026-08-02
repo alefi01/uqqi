@@ -347,15 +347,8 @@
     </section>
 
     <!-- ── РЕКВИЗИТЫ ── -->
-    <section class="section {{ 'section--locked' if company.auto_requisites else '' }}" id="section-requisites" data-flag="auto_requisites">
+    <section class="section" id="section-requisites">
       <h2 class="section__title">Реквизиты организации</h2>
-      <div class="auto-flag">
-        <label>
-          <input type="checkbox" {{ 'checked' if company.auto_requisites else '' }} onchange="toggleAutoFlag('section-requisites','auto_requisites',this)">
-          Обновлять автоматически с Яндекс Карт
-        </label>
-        <span class="auto-flag__hint">{{ 'Заблокировано — данные из Яндекса' if company.auto_requisites else 'Можно редактировать вручную' }}</span>
-      </div>
       <p style="font-size:.8rem;color:var(--muted);margin-bottom:1.25rem">
         Отображаются в подвале сайта. Заполните если требуется указать юридические данные.
       </p>

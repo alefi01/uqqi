@@ -30,8 +30,12 @@ COMPANY_COLUMNS = {
     "build_log":          "TEXT DEFAULT ''",
     "build_attempts":     "INTEGER DEFAULT 0",
     "transit_stop":       "TEXT DEFAULT '{}'",
-    "template_variant":   "VARCHAR(1) DEFAULT 'A'",
+    "template_variant":   "VARCHAR(32) DEFAULT 'A'",  # ключ дизайна (A/B/премиум); SQLite длину не форсит
     "claim_code":         "VARCHAR(40)",
+    # Freemium/Pro (редизайн подписки)
+    "pro_until":          "DATETIME",
+    "is_claim":           "BOOLEAN DEFAULT 0",
+    "paid_once":          "BOOLEAN DEFAULT 0",
     "screenshot":         "VARCHAR(200) DEFAULT ''",
     "demo_until":         "DATETIME",
     "gallery_manual":     "BOOLEAN DEFAULT 0",
@@ -45,6 +49,10 @@ COMPANY_COLUMNS = {
     "client_email":       "VARCHAR(255) DEFAULT ''",
     "notified_7d":        "BOOLEAN DEFAULT 0",
     "notified_3d":        "BOOLEAN DEFAULT 0",
+    "notified_trial_d3":  "BOOLEAN DEFAULT 0",
+    "notified_trial_d6":  "BOOLEAN DEFAULT 0",
+    "welcome_sent":       "BOOLEAN DEFAULT 0",
+    "last_report_at":     "DATETIME",
     # на случай свежей БД без ранних полей
     "logo_url":           "VARCHAR(500) DEFAULT ''",
     "menu_items":         "TEXT DEFAULT '[]'",
@@ -182,6 +190,18 @@ def main():
             cur.execute("ALTER TABLE users ADD COLUMN pending_claim_code VARCHAR(40) DEFAULT ''")
             print("[migrate] + users.pending_claim_code")
             added += 1
+        if "tg_chat_id" not in ucols:
+            cur.execute("ALTER TABLE users ADD COLUMN tg_chat_id VARCHAR(40) DEFAULT ''")
+            print("[migrate] + users.tg_chat_id")
+            added += 1
+        if "tg_link_token" not in ucols:
+            cur.execute("ALTER TABLE users ADD COLUMN tg_link_token VARCHAR(64) DEFAULT ''")
+            print("[migrate] + users.tg_link_token")
+            added += 1
+        if "verify_sent_at" not in ucols:
+            cur.execute("ALTER TABLE users ADD COLUMN verify_sent_at DATETIME")
+            print("[migrate] + users.verify_sent_at")
+            added += 1
 
     # parse_candidates (двухфазный парсинг: кандидаты без сайта)
     if not table_exists(cur, "parse_candidates"):
@@ -212,7 +232,8 @@ def main():
                 user_id      INTEGER,
                 company_id   INTEGER,
                 company_slug VARCHAR(120) DEFAULT '',
-                amount       VARCHAR(20) DEFAULT '990.00',
+                amount       VARCHAR(20) DEFAULT '1990.00',
+                days         INTEGER DEFAULT 30,
                 status       VARCHAR(20) DEFAULT 'pending',
                 processed    BOOLEAN DEFAULT 0,
                 created_at   DATETIME,
@@ -223,6 +244,81 @@ def main():
         cur.execute("CREATE INDEX IF NOT EXISTS ix_payments_user ON payments (user_id)")
         print("[migrate] + таблица payments")
         added += 1
+    else:
+        # Добавляем недостающие колонки в существующую payments (тарифы)
+        pay_cols = existing_columns(cur, "payments")
+        if "days" not in pay_cols:
+            cur.execute("ALTER TABLE payments ADD COLUMN days INTEGER DEFAULT 30")
+            print("[migrate] + payments.days")
+            added += 1
+
+    # jobs (очередь фоновых Playwright-задач; Блок 9)
+    if not table_exists(cur, "jobs"):
+        cur.execute("""
+            CREATE TABLE jobs (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                type         VARCHAR(30),
+                payload      TEXT DEFAULT '{}',
+                status       VARCHAR(20) DEFAULT 'pending',
+                attempts     INTEGER DEFAULT 0,
+                max_attempts INTEGER DEFAULT 3,
+                timeout_sec  INTEGER DEFAULT 180,
+                progress     VARCHAR(255) DEFAULT '',
+                result       TEXT DEFAULT '',
+                error        TEXT DEFAULT '',
+                worker_pid   INTEGER,
+                created_at   DATETIME,
+                started_at   DATETIME,
+                finished_at  DATETIME
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_jobs_status ON jobs (status)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_jobs_type ON jobs (type)")
+        print("[migrate] + таблица jobs")
+        added += 1
+
+    # chat_messages (чат на сайте ↔ Telegram владельца; Pro-фича)
+    if not table_exists(cur, "chat_messages"):
+        cur.execute("""
+            CREATE TABLE chat_messages (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id    INTEGER,
+                visitor_id    VARCHAR(40),
+                direction     VARCHAR(3),
+                text          TEXT DEFAULT '',
+                notify_msg_id INTEGER,
+                tg_update_id  INTEGER,
+                created_at    DATETIME
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_company ON chat_messages (company_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_visitor ON chat_messages (visitor_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_update ON chat_messages (tg_update_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_created ON chat_messages (created_at)")
+        print("[migrate] + таблица chat_messages")
+        added += 1
+
+    # WAL: несколько процессов (app + воркеры) пишут в одну SQLite
+    try:
+        mode = cur.execute("PRAGMA journal_mode=WAL").fetchone()
+        print(f"[migrate] journal_mode = {mode[0] if mode else '?'}")
+    except Exception as e:
+        print(f"[migrate] WAL не включён: {e}")
+
+    # Бэкфилл is_claim для существующих серых claim-сайтов — разово, только когда
+    # колонка is_claim была ТОЛЬКО ЧТО добавлена (иначе не трогаем — вдруг правили руками).
+    # Метим лишь ещё не забранные claim-сайты (claim_code задан); уже забранные
+    # (claim_code погашен) НЕ обезличиваем задним числом — они остаются как есть.
+    if "is_claim" not in cols:
+        try:
+            n = cur.execute(
+                "UPDATE companies SET is_claim = 1 "
+                "WHERE claim_code IS NOT NULL AND claim_code != ''"
+            ).rowcount
+            if n:
+                print(f"[migrate] помечено claim-сайтов (is_claim=1): {n}")
+        except Exception as e:
+            print(f"[migrate] бэкфилл is_claim пропущен: {e}")
 
     # Пометить существующие сайты как демо (без владельца) — разово при первой миграции.
     # Только если колонка user_id только что добавлена (все user_id пустые).

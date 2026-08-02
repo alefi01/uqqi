@@ -39,3 +39,9 @@ ms-playwright/
 # Отладка
 debug_page.html
 debug_*.py
+
+# Загрузки клиентов (фото из ЛК)
+static/uploads/
+
+# Бэкапы БД (создаются backup_db.sh, вывозятся в Telegram)
+backups/

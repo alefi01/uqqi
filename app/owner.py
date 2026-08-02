@@ -12,7 +12,6 @@ app/owner.py — роутер владельца (скрытая панель у
     POST /{PANEL_PATH}/api/parser/stop/{id}      — остановить
     POST /{PANEL_PATH}/api/parser/import/{id}    — импортировать результаты в БД
 
-    POST /{PANEL_PATH}/api/company/{id}/toggle
     DELETE /{PANEL_PATH}/api/company/{id}
 """
 
@@ -43,9 +42,6 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from datetime import timedelta
-
-import io
-import zipfile
 
 from app.config import settings
 from app.models import Company, Session as DbSession, SessionLocal, get_db
@@ -217,115 +213,6 @@ async def owner_panel(request: Request,
 # ── API: УПРАВЛЕНИЕ КОМПАНИЯМИ ────────────────────────────────────────────────
 
 
-@router.get("/api/company/{company_id}/export")
-async def export_company(
-    company_id: int,
-    db: Session = Depends(get_db),
-    _: bool = Depends(require_owner),
-):
-    """Генерирует ZIP с готовым сайтом для самостоятельного размещения."""
-    from fastapi.responses import StreamingResponse
-    from jinja2 import Environment, FileSystemLoader
-
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-
-    # Рендерим шаблон сайта
-    env = Environment(loader=FileSystemLoader("templates"))
-    template = env.get_template("site.html")
-
-    hours_raw = " | ".join(
-        f"{e['day']} {e['time']}"
-        for e in company.hours
-        if not e.get("closed") and e.get("time")
-    )
-    # Простой статус
-    import re as _re
-    status = ""
-    for part in hours_raw.split(" | "):
-        if not _re.match(r'^(Mo|Tu|We|Th|Fr|Sa|Su)\s', part):
-            status = part
-            break
-
-    # feat_icon — имя SVG-иконки (общая логика из main.py)
-    from app.main import _feat_icon
-
-    # yandex_map_url — embed для iframe
-    yandex_map_url = ""
-    if company.yandex_url:
-        m = _re.search(r'/org/[^/]+/(\d+)', company.yandex_url)
-        if m:
-            org_id = m.group(1)
-            coords = company.coordinates or ""
-            if coords and ',' in coords:
-                lat, lon = coords.split(',')
-                yandex_map_url = f"https://yandex.ru/map-widget/v1/org/{org_id}/?ll={lon.strip()}%2C{lat.strip()}&z=16"
-            else:
-                yandex_map_url = f"https://yandex.ru/map-widget/v1/org/{org_id}/?z=16"
-
-    html_content = template.render(
-        company=company,
-        status=status,
-        feat_icon=_feat_icon,
-        yandex_map_url=yandex_map_url,
-    )
-
-    # README для клиента
-    readme = f"""# Сайт «{company.title}» — инструкция по размещению
-
-## Что внутри архива
-
-- index.html  — готовый сайт
-- README.md   — эта инструкция
-
-## Как разместить на Beget
-
-### Шаг 1 — Зарегистрируйтесь на Beget
-Перейдите на beget.com и создайте аккаунт если его ещё нет.
-
-### Шаг 2 — Привяжите домен
-В панели управления Beget перейдите в «Домены» → «Добавить домен» и добавьте ваш домен.
-
-### Шаг 3 — Загрузите файл сайта
-1. Перейдите в «Файловый менеджер» → папка вашего домена (обычно public_html или папка с именем домена)
-2. Загрузите файл index.html в эту папку
-3. Если на домене уже есть файл index.html — замените его
-
-### Шаг 4 — Проверьте сайт
-Откройте ваш домен в браузере — сайт должен загрузиться.
-
-### Шаг 5 — Настройте SSL (HTTPS)
-В панели Beget перейдите в «SSL» и активируйте бесплатный сертификат Let's Encrypt для вашего домена.
-
-## Важно
-
-- Сайт полностью автономный, не требует сервера с PHP или Python
-- Все данные зашиты в HTML-файл
-- Для обновления данных (фото, часы, контакты) — отредактируйте файл index.html
-  или напишите нам на support@uqqi.ru и мы поможем
-
-## Поддержка
-
-По всем вопросам: support@uqqi.ru
-"""
-
-    # Создаём ZIP в памяти
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("index.html", html_content)
-        zf.writestr("README.md", readme)
-
-    buf.seek(0)
-    filename = f"site_{company.slug}.zip"
-
-    return StreamingResponse(
-        buf,
-        media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
-
-
 @router.get("/api/company/{company_id}/screenshot")
 async def company_screenshot(company_id: int,
                               db: Session = Depends(get_db),
@@ -344,33 +231,6 @@ async def company_screenshot(company_id: int,
 
 
 # ── CLAIM / ДЕМО / МАТЕРИАЛЫ ДЛЯ ПРОДАЖИ ──────────────────────────────────────
-
-@router.post("/api/company/{company_id}/demo")
-async def toggle_demo(company_id: int,
-                       db: Session = Depends(get_db),
-                       _: bool = Depends(require_owner)):
-    """Снять заглушку на 7 дней (показать сайт вживую по обычному адресу). Повтор — продлевает."""
-    from datetime import datetime as _dt, timedelta as _td
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-    company.demo_until = _dt.utcnow() + _td(days=7)
-    db.commit()
-    return {"ok": True, "demo_until": company.demo_until.isoformat()}
-
-
-@router.post("/api/company/{company_id}/demo-off")
-async def toggle_demo_off(company_id: int,
-                           db: Session = Depends(get_db),
-                           _: bool = Depends(require_owner)):
-    """Вернуть заглушку досрочно."""
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-    company.demo_until = None
-    db.commit()
-    return {"ok": True}
-
 
 @router.post("/api/company/{company_id}/make-screenshot")
 async def make_screenshot(company_id: int,
@@ -403,7 +263,8 @@ async def company_materials(company_id: int,
 
     base = settings.BASE_DOMAIN
     site_url  = f"https://{company.slug}.{base}/"
-    claim_url = f"{site_url}demo" if company.claim_code else ""
+    # Клиенту отправляем обычную ссылку на сайт — окно «Приобрести» на ней уже есть
+    claim_url = site_url if company.claim_code else ""
     city = _city_from_address_owner(company.address)
 
     # Дружелюбный текст предложения (реальная молодая команда, не мошенники)
@@ -411,9 +272,10 @@ async def company_materials(company_id: int,
     offer_text = (
         f"Здравствуйте! 👋\n\n"
         f"Мы — небольшая команда разработчиков из России, делаем простые и красивые сайты "
-        f"для локального бизнеса. Увидели «{company.title}»{city_part} и сделали для вас готовый сайт — "
-        f"бесплатно, просто чтобы показать, как это может выглядеть.\n\n"
-        f"Вот он, посмотрите: {claim_url or site_url}\n\n"
+        f"для локального бизнеса. Увидели «{company.title}»{city_part} и сделали демонстрацию — "
+        f"показать, как мог бы выглядеть ваш сайт. Собрали её автоматически из открытых данных "
+        f"Яндекс.Карт, бесплатно и ни к чему вас не обязывая.\n\n"
+        f"Вот она, посмотрите: {claim_url or site_url}\n\n"
         f"Если понравится — заберёте себе за пару минут, первые 7 дней бесплатно, без предоплаты. "
         f"Не понравится — ничего страшного, просто закройте вкладку 🙂\n\n"
         f"С уважением,\nкоманда uqqi.ru"
@@ -427,22 +289,6 @@ async def company_materials(company_id: int,
         "screenshot": company.screenshot or "",
         "has_claim":  bool(company.claim_code),
     }
-
-
-class TogglePayload(BaseModel):
-    active: bool
-
-
-@router.post("/api/company/{company_id}/toggle")
-async def toggle_company(company_id: int, payload: TogglePayload,
-                          db: Session = Depends(get_db),
-                          _: bool = Depends(require_owner)):
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-    company.is_active = payload.active
-    db.commit()
-    return {"ok": True}
 
 
 @router.delete("/api/company/{company_id}")
@@ -712,38 +558,6 @@ async def set_variant(company_id: int, payload: VariantPayload,
     return {"ok": True, "variant": v}
 
 
-# ── API: БИЛЛИНГ ──────────────────────────────────────────────────────────────
-
-class BillingPayload(BaseModel):
-    next_payment_date: str = ""   # YYYY-MM-DD
-    client_email:      str = ""
-
-
-@router.post("/api/company/{company_id}/billing")
-async def set_billing(company_id: int, payload: BillingPayload,
-                       db: Session = Depends(get_db),
-                       _: bool = Depends(require_owner)):
-    company = db.query(Company).filter(Company.id == company_id).first()
-    if not company:
-        raise HTTPException(status_code=404)
-
-    from datetime import datetime as _dt
-    if payload.next_payment_date:
-        try:
-            company.next_payment_date = _dt.strptime(payload.next_payment_date, "%Y-%m-%d")
-            # сброс флагов уведомлений при смене даты
-            company.notified_7d = False
-            company.notified_3d = False
-        except ValueError:
-            raise HTTPException(status_code=422, detail="Дата в формате ГГГГ-ММ-ДД")
-    else:
-        company.next_payment_date = None
-
-    company.client_email = payload.client_email.strip()[:255]
-    db.commit()
-    return {"ok": True}
-
-
 # ── API: ПАРСЕР ───────────────────────────────────────────────────────────────
 
 class ParserStartPayload(BaseModel):
@@ -812,7 +626,7 @@ async def _create_site_from_url(yandex_url: str, fallback_title: str, db):
         slug=slug, title=place.title, address=place.address, phone=place.phone,
         rating=place.rating, category=place.categories or "Организация",
         coordinates=place.coordinates, yandex_url=place.url or yandex_url,
-        claim_code=claim_code, template_variant="B", admin_password_hash="",
+        claim_code=claim_code, template_variant="B", is_claim=True, admin_password_hash="",
     )
     company.last_parsed_at = _dt.utcnow()
     company.hours          = parse_hours(place.hours)
@@ -951,6 +765,22 @@ async def refresh_company(company_id: int,
     return result
 
 
+@router.post("/api/company/{company_id}/pro-trial")
+async def grant_pro_trial(company_id: int,
+                          db: Session = Depends(get_db),
+                          _: bool = Depends(require_owner)):
+    """Выдать сайту Pro-триал 7 дней (pro_until = now+7д). paid_once НЕ трогаем —
+    claim-сайт остаётся обезличенным до реальной оплаты. Триал даёт премиум-дизайн
+    (если template_variant='B') и чат как превью."""
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404)
+    from datetime import datetime as _dt, timedelta as _td
+    company.pro_until = _dt.utcnow() + _td(days=7)
+    db.commit()
+    return {"ok": True, "until": company.pro_until.strftime("%d.%m.%Y")}
+
+
 async def _refresh_single_company(company, db) -> dict:
     """Перепарсивает одну компанию ПО ПРЯМОМУ URL (не поиском по названию!).
     Проверяет org_id: если спарсенная карточка — другая организация, данные НЕ трогаются."""
@@ -1055,11 +885,8 @@ async def _refresh_single_company(company, db) -> dict:
         if new_socials:
             company.social_links = new_socials
 
-    # Реквизиты — Яндекс отдаёт не всегда, пустым не затираем
-    if company.auto_requisites:
-        _upd("org_name", getattr(match, 'org_name', ''))
-        _upd("org_type", getattr(match, 'org_type', ''))
-        _upd("org_inn",  getattr(match, 'org_inn', ''))
+    # Реквизиты — только вручную (клиент вводит юр-данные сам), автообновление
+    # их НЕ трогает: Яндекс ИНН толком не отдаёт, а перезапись затёрла бы ручной ввод.
 
     # Поля, которые всегда обновляются автоматически (не редактируются вручную):
     # рейтинг, число оценок, логотип, кнопка записи, средний чек, особенности, каталог, отзыслан
@@ -1157,6 +984,7 @@ async def parser_import(task_id: str,
             yandex_url          = place.url,
             claim_code          = claim_code,
             template_variant    = "B",
+            is_claim            = True,  # серый origin: обезличен (noindex+дисклеймер) до оплаты
             admin_password_hash = "",   # legacy-колонка NOT NULL в БД — кладём пустую строку
         )
         from datetime import datetime as _dt
@@ -1192,7 +1020,7 @@ async def parser_import(task_id: str,
             "title":      place.title,
             "slug":       slug,
             "claim_code": claim_code,
-            "claim_url":  f"https://{slug}.{settings.BASE_DOMAIN}/demo",
+            "claim_url":  f"https://{slug}.{settings.BASE_DOMAIN}/",
         })
 
     skipped = sum(1 for p in task.places if slugify(p.title) and

@@ -356,11 +356,12 @@ function StatusBadge({ site }) {
   const map = {
     building: { cls: 'badge--building', ic: 'loader', txt: 'Создаётся…' },
     error:    { cls: 'badge--error', ic: 'alert-triangle', txt: 'Ошибка сборки' },
-    trial:    { cls: 'badge--trial', ic: null, txt: `Пробный период — осталось ${site.trialDays} дн.` },
-    active:   { cls: 'badge--active', ic: null, txt: `Активна до ${site.until}` },
-    unpaid:   { cls: 'badge--unpaid', ic: null, txt: 'Не оплачено' },
+    free:     { cls: 'badge--active', ic: null, txt: 'Бесплатный' },
+    protrial: { cls: 'badge--trial', ic: null, txt: `Pro-триал — осталось ${site.proDays} дн.` },
+    pro:      { cls: 'badge--active', ic: null, txt: `Pro до ${site.proUntil}` },
+    claim:    { cls: 'badge--unpaid', ic: null, txt: 'Демо — оплатите, чтобы забрать' },
   };
-  const m = map[site.status] || map.active;
+  const m = map[site.status] || map.free;
   return (
     <span className={'badge ' + m.cls}>
       {m.ic ? <i data-lucide={m.ic} style={{ width: 13, height: 13 }} className={site.status === 'building' ? 'spin-ic' : ''}></i> : <span className="dot"></span>}
@@ -370,10 +371,9 @@ function StatusBadge({ site }) {
 }
 
 // ---- карточка сайта ----
-function SiteCard({ site, nav, onPay, onMenu }) {
+function SiteCard({ site, nav, onPay, onStats, onDesign, onDelete }) {
   const isBuilding = site.status === 'building';
   const isError = site.status === 'error';
-  const needsPay = site.status === 'trial' || site.status === 'unpaid';
   return (
     <div className="card sitecard">
       <div className="sitecard__top">
@@ -408,22 +408,28 @@ function SiteCard({ site, nav, onPay, onMenu }) {
       {!isBuilding && !isError && (
         <div className="sitecard__meta">
           <span><b>{site.city}</b></span>
-          <span>Тариф: <b>990 ₽ / мес</b></span>
+          <span>Pro: <b>от 990 ₽ / мес</b></span>
           <span>Создан: <b>{site.created}</b></span>
         </div>
       )}
 
       <div className="sitecard__actions">
-        {needsPay && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>{site.status === 'unpaid' ? 'Оплатить, чтобы возобновить' : 'Оплатить 990 ₽'}</button>}
+        {!isBuilding && !isError && <button className="btn btn--ghost btn--sm" onClick={() => onStats(site)}><i data-lucide="bar-chart-2"></i> Статистика</button>}
+        {!isBuilding && !isError && <button className="btn btn--ghost btn--sm" onClick={() => onDesign(site)}><i data-lucide="palette"></i> Дизайн</button>}
+        {!isBuilding && !isError && (site.canDelete === false
+          ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода"><button className="btn btn--ghost btn--sm" disabled style={{ opacity: .45, cursor: 'not-allowed' }}><i data-lucide="trash-2"></i> Удалить</button></span>
+          : <button className="btn btn--ghost btn--sm" style={{ color: 'var(--danger)' }} onClick={() => onDelete(site)}><i data-lucide="trash-2"></i> Удалить</button>)}
+        {site.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оплатить, чтобы забрать сайт</button>}
+        {site.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оформить Pro</button>}
+        {(site.status === 'protrial' || site.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
-        {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
       </div>
     </div>
   );
 }
 
 // ---- экран «Мои сайты» ----
-function ScreenSites({ nav, sites, onPay, onMenu, canAdd }) {
+function ScreenSites({ nav, sites, onPay, onStats, onDesign, onDelete, canAdd }) {
   if (sites.length === 0) {
     return (
       <div className="empty">
@@ -438,13 +444,13 @@ function ScreenSites({ nav, sites, onPay, onMenu, canAdd }) {
   }
   return (
     <div className="sites">
-      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onMenu={onMenu} />)}
+      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onStats={onStats} onDesign={onDesign} onDelete={onDelete} />)}
       <div style={{ marginTop: '.3rem' }}>
         {canAdd
           ? <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
           : <div className="card" style={{ padding: '1rem 1.1rem', display: 'flex', gap: '.7rem', alignItems: 'center', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb,var(--warning) 30%,var(--line))' }}>
               <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
-              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>На пробном тарифе доступен один сайт. Чтобы добавить ещё — оплатите текущий.</span>
+              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>Дождитесь завершения сборки текущего сайта — потом можно добавить ещё.</span>
             </div>}
       </div>
     </div>
@@ -465,10 +471,93 @@ function validYandex(text) {
   return false;
 }
 
+// ---- галерея дизайнов (пикер при создании + смена оформления в ЛК) ----
+// MP4-лупы владелец кладёт в static/designs/<key>.mp4 (+ <key>.jpg постер).
+// Пока файла нет — карточка показывает плейсхолдер с названием (video.onError).
+function DesignCard({ d, selected, onSelect }) {
+  const [vidBad, setVidBad] = useStateD(false);
+  const isPro = d.tier === 'pro';
+  const showVideo = isPro && d.preview && !vidBad;
+  return (
+    <div onClick={() => onSelect(d.key)}
+      style={{ cursor: 'pointer', borderRadius: 'var(--r-lg)', overflow: 'hidden',
+        border: '2px solid ' + (selected ? 'var(--terracotta)' : 'var(--line)'),
+        background: selected ? 'var(--terracotta-wash)' : 'var(--paper)' }}>
+      <div style={{ position: 'relative', aspectRatio: '16 / 10', overflow: 'hidden',
+        background: 'linear-gradient(135deg, var(--paper-2), color-mix(in srgb, var(--terracotta) 14%, var(--paper-2)))',
+        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {showVideo
+          ? <video muted loop autoPlay playsInline preload="none" poster={d.poster || undefined}
+              onError={() => setVidBad(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}>
+              <source src={d.preview} type="video/mp4" />
+            </video>
+          : <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.02rem', color: 'var(--ink-2)' }}>{d.name}</span>}
+        {isPro && <span style={{ position: 'absolute', top: '.5rem', left: '.5rem', background: 'var(--gold-dim)', color: '#fff', fontSize: '.64rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '.18rem .5rem', borderRadius: '999px' }}>Pro</span>}
+        {selected && <span style={{ position: 'absolute', top: '.5rem', right: '.5rem', width: 22, height: 22, borderRadius: '50%', background: 'var(--terracotta)', color: '#fff', display: 'grid', placeItems: 'center' }}><i data-lucide="check" style={{ width: 14, height: 14 }}></i></span>}
+      </div>
+      <div style={{ padding: '.55rem .7rem .65rem' }}>
+        <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.9rem' }}>{d.name}</div>
+        {d.vibe && <div className="muted" style={{ fontSize: '.74rem', marginTop: '.15rem', lineHeight: 1.4 }}>{d.vibe}</div>}
+        {d.fit && <div className="muted" style={{ fontSize: '.7rem', marginTop: '.2rem', opacity: .75 }}>Подходит: {d.fit}</div>}
+      </div>
+    </div>
+  );
+}
+
+function DesignGallery({ designs, value, onSelect }) {
+  if (!designs || !designs.length) return <div className="spin" style={{ margin: '1rem auto' }}></div>;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(178px, 1fr))', gap: '.7rem', marginTop: '.5rem' }}>
+      {designs.map(d => <DesignCard key={d.key} d={d} selected={value === d.key} onSelect={onSelect} />)}
+    </div>
+  );
+}
+
+// ---- экран «Дизайн сайта» (смена оформления + живой предпросмотр ?variant=) ----
+function ScreenDesign({ nav, site, designs, onApply, onPay }) {
+  const [design, setDesign] = useStateD((site && site.design) || 'A');
+  const [busy, setBusy] = useStateD(false);
+  if (!site) return null;
+  const chosen = (designs || []).find(d => d.key === design);
+  const isPro = !!(chosen && chosen.tier === 'pro');
+  const proActive = !!site.proActive;
+  const changed = design !== (site.design || 'A');
+  const liveUrl = 'https://' + site.slug + '.uqqi.ru/?variant=' + encodeURIComponent(design);
+  async function apply() {
+    setBusy(true);
+    try { await onApply(site.id, design); } finally { setBusy(false); }
+  }
+  return (
+    <div className="wrap-md">
+      <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
+      <div className="card" style={{ padding: '1.6rem' }}>
+        <span className="eyebrow">Дизайн сайта</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 .4rem' }}>{site.name}</h2>
+        <p className="muted" style={{ fontSize: '.86rem', lineHeight: 1.6 }}>Выберите оформление витрины. Премиум-дизайны показываются на сайте, пока активен Pro (в т.ч. пробный период); без Pro сайт остаётся на базовом.</p>
+        <DesignGallery designs={designs} value={design} onSelect={setDesign} />
+        {isPro && !proActive && (
+          <div className="card" style={{ padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb, var(--warning) 30%, var(--line))' }}>
+            <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
+            <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Это премиум-дизайн. Он сохранится за сайтом, но на витрине покажется базовый, пока не активен Pro.</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: '.6rem', marginTop: '1.3rem', flexWrap: 'wrap' }}>
+          <a className="btn btn--outline" href={liveUrl} target="_blank" rel="noopener"><i data-lucide="external-link"></i> Посмотреть на сайте</a>
+          <button className="btn btn--primary" disabled={!changed || busy} onClick={apply}>{busy ? 'Применяем…' : 'Применить'}</button>
+          {isPro && !proActive && onPay && <button className="btn btn--ghost" onClick={() => onPay(site)}>Оформить Pro</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---- экран «Добавить сайт» ----
-function ScreenAddSite({ nav, onStartBuild }) {
+function ScreenAddSite({ nav, onStartBuild, designs }) {
   const [url, setUrl] = useStateD('');
+  const [design, setDesign] = useStateD('A');
   const valid = validYandex(url);
+  const isProSel = (designs || []).some(d => d.key === design && d.tier === 'pro');
   return (
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
@@ -486,7 +575,12 @@ function ScreenAddSite({ nav, onStartBuild }) {
           <i data-lucide="lightbulb" style={{ width: 18, height: 18, color: 'var(--gold-dim)', flex: 'none' }}></i>
           <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Где взять ссылку: откройте карточку компании в Яндекс Картах, нажмите кнопку <b>«Поделиться»</b> и скопируйте ссылку. Можно вставить скопированное целиком — вместе с названием и адресом.</span>
         </div>
-        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.3rem' }} disabled={valid !== true} onClick={() => onStartBuild(url)}>Создать сайт</button>
+        <div className="field" style={{ marginTop: '1.3rem' }}>
+          <label className="field__label">Дизайн сайта</label>
+          <DesignGallery designs={designs} value={design} onSelect={setDesign} />
+          {isProSel && <span className="field__hint" style={{ marginTop: '.6rem', display: 'block' }}>Премиум-дизайн активен, пока действует Pro (в т.ч. пробный период). Без Pro сайт покажется в базовом дизайне — оформить Pro можно в любой момент из кабинета.</span>}
+        </div>
+        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.3rem' }} disabled={valid !== true} onClick={() => onStartBuild(url, design)}>Создать сайт</button>
       </div>
     </div>
   );
@@ -580,23 +674,32 @@ function ScreenBuilding({ onDone, buildId }) {
 // ============================================================
 
 const INCLUDED = [
-  'Сайт на адресе название.uqqi.ru',
-  'Данные из Яндекс Карт: фото, отзывы, часы',
-  'Редактирование контента без программиста',
-  'Онлайн-запись и приём заявок',
-  'Поддержка и обновления',
+  'Премиум-дизайны сайта',
+  'Чат на сайте — заявки приходят вам в Telegram',
+  'Снятие пометки «демо» и индексация в поиске (для demo-сайтов)',
+  'Приоритетная поддержка',
 ];
 
 // ---- Сводка оплаты (внутри кабинета) ----
+// Тарифы Pro — синхронно с PLANS в app/cabinet.py
+const PLANS_LK = [
+  { id: 'month',   label: 'Месяц',    amount: 990,  perMonth: 990, period: '30 дней',  save: '' },
+  { id: 'quarter', label: '3 месяца', amount: 2490, perMonth: 830, period: '90 дней',  save: 'выгода 480 ₽' },
+  { id: 'year',    label: 'Год',      amount: 8900, perMonth: 742, period: '365 дней', save: 'выгода 2 980 ₽' },
+];
+const fmtRub = n => n.toLocaleString('ru-RU');
+
 function ScreenPayment({ nav, site, onProceed }) {
   const s = site || {};
   const [busy, setBusy] = useStateB(false);
   const [err, setErr] = useStateB('');
+  const [plan, setPlan] = useStateB('quarter');
+  const sel = PLANS_LK.find(p => p.id === plan) || PLANS_LK[1];
 
   async function pay() {
     setErr(''); setBusy(true);
     try {
-      const res = await window.API.createPayment(s.id);
+      const res = await window.API.createPayment(s.id, plan);
       if (res.confirmation_url) {
         window.location.href = res.confirmation_url;  // редирект на ЮKassa
       } else {
@@ -613,7 +716,7 @@ function ScreenPayment({ nav, site, onProceed }) {
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
-        <span className="eyebrow">Оплата подписки</span>
+        <span className="eyebrow">Оформление Pro</span>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 1.2rem' }}>{s.name || 'Ваш сайт'}</h2>
 
         <div className="row" style={{ padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
@@ -624,10 +727,28 @@ function ScreenPayment({ nav, site, onProceed }) {
           </div>
         </div>
 
-        <div style={{ marginTop: '1.2rem' }}>
-          <div className="sumrow"><span className="k">Тариф</span><span className="v">Стандарт — 990 ₽ / месяц</span></div>
-          <div className="sumrow"><span className="k">Период</span><span className="v">30 дней</span></div>
-          <div className="sum-total"><span className="k" style={{ color: 'var(--ink)', fontWeight: 600 }}>Итого сегодня</span><span className="amt">990 ₽</span></div>
+        <p className="field__label" style={{ margin: '1.3rem 0 .7rem' }}>Выберите тариф</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
+          {PLANS_LK.map(p => (
+            <div key={p.id} onClick={() => setPlan(p.id)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '.8rem 1rem',
+                border: '2px solid ' + (plan === p.id ? 'var(--terracotta)' : 'var(--line)'),
+                borderRadius: 'var(--r-lg)', cursor: 'pointer',
+                background: plan === p.id ? 'var(--terracotta-wash)' : 'transparent' }}>
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.95rem' }}>
+                  {p.label}
+                  {p.save && <span style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginLeft: '.5rem' }}>{p.save}</span>}
+                </div>
+                <div className="muted" style={{ fontSize: '.78rem', marginTop: '.1rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
+              </div>
+              <div style={{ fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{fmtRub(p.amount)} ₽</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '1.1rem' }}>
+          <div className="sum-total"><span className="k" style={{ color: 'var(--ink)', fontWeight: 600 }}>Итого сегодня</span><span className="amt">{fmtRub(sel.amount)} ₽</span></div>
         </div>
 
         <hr className="divider" style={{ margin: '1.3rem 0' }} />
@@ -637,7 +758,7 @@ function ScreenPayment({ nav, site, onProceed }) {
         </ul>
 
         {err && <div className="field__err" style={{ marginTop: '1rem' }}>{err}</div>}
-        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.5rem' }} onClick={pay} disabled={busy}><i data-lucide="lock"></i> {busy ? 'Создаём платёж…' : 'Перейти к оплате'}</button>
+        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.5rem' }} onClick={pay} disabled={busy}><i data-lucide="lock"></i> {busy ? 'Создаём платёж…' : 'Перейти к оплате — ' + fmtRub(sel.amount) + ' ₽'}</button>
         <p className="legal" style={{ textAlign: 'center', marginTop: '.8rem' }}>Оплата проходит через ЮKassa. Мы не храним данные вашей карты.</p>
       </div>
     </div>
@@ -685,8 +806,8 @@ function ScreenPaymentProcessing({ onConfirmed }) {
       tries++;
       try {
         const data = await window.API.sites();
-        const anyActive = (data.sites || []).some(s => s.status === 'active');
-        if (anyActive) { clearInterval(iv); onConfirmed(); return; }
+        const anyPaid = (data.sites || []).some(s => s.status === 'pro');
+        if (anyPaid) { clearInterval(iv); onConfirmed(); return; }
       } catch (e) {}
       if (tries > 15) { clearInterval(iv); onConfirmed(); }
     }, 2000);
@@ -736,8 +857,9 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <StatusBadge site={s} />
-                  {(s.status === 'trial' || s.status === 'unpaid') && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оплатить</button>}
-                  {s.status === 'active' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить</button>}
+                  {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
+                  {s.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                  {(s.status === 'protrial' || s.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
                 </div>
               </div>
             </div>
@@ -763,6 +885,81 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Возможности PRO (обзор + переход к оформлению) ----
+function ScreenPro({ sites, onPay, nav }) {
+  const list = sites || [];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
+      <div className="card" style={{ padding: '1.6rem' }}>
+        <span className="eyebrow" style={{ color: 'var(--terracotta)' }}>PRO · 7 дней бесплатно</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 .5rem' }}>Больше возможностей для вашего сайта</h2>
+        <p className="muted" style={{ fontSize: '.9rem', lineHeight: 1.6 }}>PRO подключается отдельно для каждого сайта. Первые 7 дней — бесплатно, без карты. После окончания PRO базовый сайт продолжает работать.</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '.8rem', marginTop: '1.3rem' }}>
+          <div style={{ padding: '1.1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+            <i data-lucide="palette" style={{ width: 22, height: 22, color: 'var(--terracotta)' }}></i>
+            <div style={{ fontWeight: 700, color: 'var(--ink)', margin: '.5rem 0 .3rem' }}>Премиум-дизайны</div>
+            <div className="muted" style={{ fontSize: '.84rem', lineHeight: 1.55 }}>Курируемые оформления витрины с характером — под кофейню, салон, клинику или магазин.</div>
+          </div>
+          <div style={{ padding: '1.1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+            <i data-lucide="message-circle" style={{ width: 22, height: 22, color: 'var(--terracotta)' }}></i>
+            <div style={{ fontWeight: 700, color: 'var(--ink)', margin: '.5rem 0 .3rem' }}>Чат с посетителями</div>
+            <div className="muted" style={{ fontSize: '.84rem', lineHeight: 1.55 }}>Сообщения с сайта приходят вам в Telegram. Отвечаете прямо из Telegram — ответ появляется у посетителя.</div>
+          </div>
+        </div>
+
+        <hr className="divider" style={{ margin: '1.3rem 0' }} />
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Что входит</p>
+        <ul className="feat-list">
+          {INCLUDED.map((f, i) => <li key={i}><i data-lucide="check"></i>{f}</li>)}
+        </ul>
+      </div>
+
+      <div>
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Тарифы PRO</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '.8rem' }}>
+          {PLANS_LK.map(p => (
+            <div key={p.id} className="card" style={{ padding: '1.1rem', textAlign: 'center', borderColor: p.id === 'quarter' ? 'var(--terracotta)' : 'var(--line)' }}>
+              <div className="muted" style={{ fontSize: '.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{p.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', margin: '.4rem 0 .1rem' }}>{fmtRub(p.amount)} ₽</div>
+              <div className="muted" style={{ fontSize: '.76rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
+              {p.save && <div style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginTop: '.3rem' }}>{p.save}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Подключить PRO для сайта</p>
+        {list.length === 0
+          ? <div className="card" style={{ padding: '1.4rem', textAlign: 'center' }}>
+              <p className="muted" style={{ fontSize: '.88rem', marginBottom: '1rem' }}>Сначала создайте сайт — потом сможете подключить к нему PRO.</p>
+              <button className="btn btn--primary" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Создать сайт</button>
+            </div>
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
+              {list.map(s => (
+                <div key={s.id} className="card" style={{ padding: '1rem 1.2rem' }}>
+                  <div className="between">
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '.95rem' }}>{s.name}</div>
+                      <div className="muted" style={{ fontSize: '.8rem', marginTop: '.2rem' }}>{s.slug}.uqqi.ru</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <StatusBadge site={s} />
+                      {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
+                      {s.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                      {(s.status === 'protrial' || s.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
       </div>
     </div>
   );
@@ -813,6 +1010,44 @@ function ScreenSupport({ email, tickets, onSubmit }) {
   );
 }
 
+// ---- Подключение Telegram (чат с сайтов, Pro) ----
+function TelegramCard() {
+  const [st, setSt] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  async function load() {
+    try { setSt(await window.API.telegramStatus()); }
+    catch (e) { setSt({ connected: false, link: '', botConfigured: false }); }
+  }
+  React.useEffect(() => { load(); }, []);
+  async function disconnect() {
+    setBusy(true);
+    try { await window.API.telegramDisconnect(); await load(); }
+    finally { setBusy(false); }
+  }
+  return (
+    <div className="card" style={{ padding: '1.4rem 1.5rem' }}>
+      <p className="field__label" style={{ marginBottom: '.6rem' }}>Чат на сайте → Telegram <span style={{ fontSize: '.68rem', fontWeight: 700, color: 'var(--terracotta)', border: '1px solid var(--terracotta)', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>PRO</span></p>
+      <p className="muted" style={{ fontSize: '.84rem', lineHeight: 1.6 }}>Сообщения посетителей с ваших Pro-сайтов приходят вам в Telegram. Отвечайте прямо из Telegram (кнопка «Ответить») — ответ появится в чате на сайте.</p>
+      {!st && <p className="muted" style={{ marginTop: '.8rem', fontSize: '.84rem' }}>Загрузка…</p>}
+      {st && st.connected && (
+        <div className="between" style={{ marginTop: '.9rem', gap: '1rem' }}>
+          <span className="field__hint" style={{ color: 'var(--success-soft)' }}>✓ Telegram подключён</span>
+          <button className="btn btn--ghost btn--sm" onClick={disconnect} disabled={busy}>Отключить</button>
+        </div>
+      )}
+      {st && !st.connected && st.botConfigured && (
+        <div style={{ marginTop: '.9rem', display: 'flex', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <a className="btn btn--primary btn--sm" href={st.link} target="_blank" rel="noopener">Подключить Telegram</a>
+          <button className="btn btn--ghost btn--sm" onClick={load}>Я нажал «Старт» — проверить</button>
+        </div>
+      )}
+      {st && !st.connected && !st.botConfigured && (
+        <p className="field__err" style={{ marginTop: '.9rem' }}>Бот пока не настроен. Напишите в поддержку.</p>
+      )}
+    </div>
+  );
+}
+
 // ---- Настройки аккаунта ----
 function ScreenSettings({ email, onDelete }) {
   const [pw, setPw] = useStateB('');
@@ -857,6 +1092,8 @@ function ScreenSettings({ email, onDelete }) {
         </div>
       </div>
 
+      <TelegramCard />
+
       <div className="card" style={{ padding: '1.4rem 1.5rem', borderColor: 'color-mix(in srgb,var(--danger) 25%,var(--line))' }}>
         <p className="field__label" style={{ marginBottom: '.5rem', color: 'var(--danger)' }}>Опасная зона</p>
         <div className="between" style={{ gap: '1rem' }}>
@@ -875,23 +1112,69 @@ function ScreenSettings({ email, onDelete }) {
 
 const NAV = [
   { id: 'sites', label: 'Мои сайты', ic: 'layout-grid' },
+  { id: 'pro', label: 'PRO', ic: 'sparkles' },
   { id: 'subscriptions', label: 'Подписки и платежи', ic: 'credit-card' },
   { id: 'support', label: 'Поддержка', ic: 'life-buoy' },
   { id: 'settings', label: 'Настройки', ic: 'settings' },
 ];
-const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
+const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', pro: 'pro', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
   sites: ['Мои сайты', 'Сайты вашего бизнеса на uqqi.ru'],
   'add-site': ['Новый сайт', null],
   building: ['Создаём сайт', null],
   payment: ['Оплата', null],
   admin: ['Редактор сайта', null],
+  design: ['Дизайн сайта', null],
+  pro: ['Возможности PRO', 'Премиум-дизайны и чат с посетителями'],
   subscriptions: ['Подписки и платежи', 'Статусы, продление и история'],
   support: ['Поддержка', 'Мы на связи и поможем'],
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
 
-const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings']);
+// ---- Статистика сайта (функциональная версия; визуал — по макету Claude Design) ----
+function ScreenMetrics({ nav, metrics }) {
+  const m = metrics;
+  if (!m) {
+    return <div className="wrap-md"><div className="card" style={{ padding: '1.6rem' }}><div className="spin"></div></div></div>;
+  }
+  const maxD = Math.max(1, ...m.daily.map(d => d.unique));
+  const sub = m.subscription || {};
+  return (
+    <div className="wrap-md">
+      <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
+      <div className="card" style={{ padding: '1.6rem' }}>
+        <span className="eyebrow">Статистика</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 1.1rem' }}>{m.title}</h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '.6rem' }}>
+          {[['7 дней', 'd7'], ['30 дней', 'd30'], ['90 дней', 'd90']].map(([lbl, k]) => (
+            <div key={k} style={{ padding: '.9rem', textAlign: 'center', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>{m.unique[k]}</div>
+              <div className="muted" style={{ fontSize: '.72rem' }}>уник. / {lbl}</div>
+            </div>
+          ))}
+        </div>
+        <p className="muted" style={{ fontSize: '.82rem', marginTop: '.8rem' }}>Просмотров за 30 дней: <b style={{ color: 'var(--ink)' }}>{m.views.d30}</b></p>
+
+        <p className="field__label" style={{ margin: '1.3rem 0 .5rem' }}>Посетители по дням (30 дней)</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px' }}>
+          {m.daily.map((d, i) => (
+            <div key={i} title={d.day + ': ' + d.unique} style={{ flex: 1, background: 'var(--terracotta)', opacity: d.unique ? .85 : .15, height: Math.max(3, d.unique / maxD * 80) + 'px', borderRadius: '2px' }}></div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '1.3rem', padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)', fontSize: '.86rem', color: 'var(--ink-2)' }}>
+          {sub.status === 'pro' && <span>Pro активен до <b style={{ color: 'var(--ink)' }}>{sub.until}</b></span>}
+          {sub.status === 'protrial' && <span>Pro-триал — осталось <b style={{ color: 'var(--ink)' }}>{sub.proDays} дн.</b></span>}
+          {sub.status === 'free' && <span>Бесплатный сайт · <b style={{ color: 'var(--ink)' }}>Pro</b> откроет премиум-дизайн и чат</span>}
+          {sub.status === 'claim' && <span style={{ color: 'var(--danger)' }}>Демо-сайт — оплатите, чтобы забрать</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'design', 'pro', 'subscriptions', 'support', 'settings', 'metrics']);
 
 function plusDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
@@ -905,12 +1188,19 @@ function App() {
   const [payTarget, setPayTarget] = useState(null);
   const [menuSite, setMenuSite] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [delPw, setDelPw] = useState('');
+  const [delSite, setDelSite] = useState(null);
+  const [delSiteText, setDelSiteText] = useState('');
+  const [metrics, setMetrics] = useState(null);
+  const buildingRef = React.useRef(false);
   const [booted, setBooted] = useState(false);
   const [pendingClaim, setPendingClaim] = useState(null);
 
   const [sites, setSites] = useState([]);
   const [payments, setPayments] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [designs, setDesigns] = useState([]);
+  const [designSite, setDesignSite] = useState(null);
 
   const ctx = { email, setEmail, pendingClaim, setPendingClaim };
   const nav = (s) => {
@@ -922,6 +1212,8 @@ function App() {
       window.API.payments().then(d => setPayments(d.payments || [])).catch(() => {});
     } else if (s === 'sites') {
       loadSites();
+    } else if (s === 'add-site') {
+      ensureDesigns();
     }
   };
   const ping = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
@@ -999,13 +1291,17 @@ function App() {
   const [canAddReason, setCanAddReason] = useState('');
   const [buildId, setBuildId] = useState(null);
 
-  async function startBuild(url) {
+  async function startBuild(url, design) {
+    if (buildingRef.current) return;   // защита от двойного клика (дубль сайта)
+    buildingRef.current = true;
     try {
-      const res = await window.API.addSite(url);
+      const res = await window.API.addSite(url, design);
       setBuildId(res.id);
       nav('building');
     } catch (ex) {
       ping(ex.message || 'Не удалось создать сайт');
+    } finally {
+      buildingRef.current = false;
     }
   }
   async function finishBuild() {
@@ -1018,15 +1314,52 @@ function App() {
     nav('payment-success');
     loadSites();
   }
-  async function deleteSite(site) {
+  async function openMetrics(site) {
+    setMenuSite(null);
+    setMetrics(null);
+    nav('metrics');
+    try {
+      setMetrics(await window.API.siteMetrics(site.id));
+    } catch (ex) {
+      ping(ex.message || 'Не удалось загрузить статистику');
+      nav('sites');
+    }
+  }
+  async function ensureDesigns() {
+    if (designs.length) return;
+    try { const d = await window.API.designs(); setDesigns(d.designs || []); } catch (e) {}
+  }
+  function openDesign(site) {
+    setMenuSite(null);
+    setDesignSite(site);
+    ensureDesigns();
+    nav('design');
+  }
+  async function applyDesign(id, key) {
+    try {
+      await window.API.setDesign(id, key);
+      setSites(prev => prev.map(s => s.id === id ? { ...s, design: key } : s));
+      setDesignSite(prev => (prev && prev.id === id) ? { ...prev, design: key } : prev);
+      ping('Дизайн применён');
+    } catch (ex) {
+      ping(ex.message || 'Не удалось сменить дизайн');
+    }
+  }
+  function askDeleteSite(site) {
     if (site.canDelete === false) {
       ping('Дождитесь окончания trial-периода');
       return;
     }
+    setMenuSite(null);
+    setDelSiteText('');
+    setDelSite(site);
+  }
+  async function confirmDeleteSite() {
+    if (!delSite) return;
     try {
-      await window.API.deleteSite(site.id);
-      setSites(prev => prev.filter(s => s.id !== site.id));
-      setMenuSite(null);
+      await window.API.deleteSite(delSite.id, { confirm: delSiteText });
+      setSites(prev => prev.filter(s => s.id !== delSite.id));
+      setDelSite(null); setDelSiteText('');
       ping('Сайт удалён');
     } catch (ex) {
       ping(ex.message || 'Не удалось удалить сайт');
@@ -1046,8 +1379,13 @@ function App() {
     setEmail(''); setSites([]); setScreen('login');
   }
   async function deleteAccount() {
-    try { await window.API.deleteAccount(); } catch (e) {}
-    setConfirmDel(false); setEmail(''); setScreen('login'); ping('Аккаунт удалён');
+    try {
+      await window.API.deleteAccount(delPw);
+    } catch (ex) {
+      ping(ex.message || 'Не удалось удалить аккаунт');
+      return;
+    }
+    setConfirmDel(false); setDelPw(''); setEmail(''); setScreen('login'); ping('Аккаунт удалён');
   }
 
   if (!booted) {
@@ -1074,14 +1412,17 @@ function App() {
   const [title, sub] = TITLES[screen] || ['', null];
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} canAdd={canAdd} />;
-  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onStats={openMetrics} onDesign={openDesign} onDelete={askDeleteSite} canAdd={canAdd} />;
+  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} />;
+  else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
   else if (screen === 'payment') body = <ScreenPayment nav={nav} site={payTarget} />;
   else if (screen === 'admin') body = <AdminStub nav={nav} site={payTarget} />;
+  else if (screen === 'pro') body = <ScreenPro sites={sites} onPay={openPay} nav={nav} />;
   else if (screen === 'subscriptions') body = <ScreenSubscriptions nav={nav} sites={sites} payments={payments} onPay={openPay} />;
   else if (screen === 'support') body = <ScreenSupport email={email} tickets={tickets} onSubmit={submitTicket} />;
   else if (screen === 'settings') body = <ScreenSettings email={email} onDelete={() => setConfirmDel(true)} />;
+  else if (screen === 'metrics') body = <ScreenMetrics nav={nav} metrics={metrics} />;
 
   return (
     <div className="app">
@@ -1096,7 +1437,7 @@ function App() {
               </a>
             ))}
             <div className="side__foot">
-              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}><div className="em">{email}</div></div></div>
+              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.06em', color: 'var(--terracotta)' }}>PRO</div>}<div className="em">{email}</div></div></div>
               <a className="nav-i" onClick={logout} style={{ marginTop: '.2rem' }}><i data-lucide="log-out"></i>Выйти</a>
             </div>
           </aside>
@@ -1136,20 +1477,21 @@ function App() {
           </section>
         </div>
 
-        {/* site menu modal */}
-        {menuSite && (
-          <div className="scrim" onClick={() => setMenuSite(null)}>
+        {/* Действия сайта («Статистика / Дизайн / Удалить») вынесены на карточку сайта. */}
+
+        {/* delete site modal */}
+        {delSite && (
+          <div className="scrim" onClick={() => { setDelSite(null); setDelSiteText(''); }}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              <h3>{menuSite.name}</h3>
-              <p>{menuSite.slug}.uqqi.ru</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
-                <a className="btn btn--ghost btn--block" href={'/site/' + menuSite.slug + '/edit'}><i data-lucide="pencil"></i> Редактировать контент</a>
-                {menuSite.canDelete === false
-                  ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
-                      <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                    </span>
-                  : <button className="btn btn--danger btn--block" onClick={() => deleteSite(menuSite)}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                }
+              <h3>Удалить сайт?</h3>
+              <p>Сайт <b>{delSite.name}</b> ({delSite.slug}.uqqi.ru) будет удалён безвозвратно.</p>
+              <p className="muted" style={{ fontSize: '.84rem', marginTop: '.6rem' }}>Введите название сайта для подтверждения:</p>
+              <input className="input" placeholder={delSite.name} value={delSiteText} onChange={e => setDelSiteText(e.target.value)} style={{ margin: '.5rem 0 .2rem' }} />
+              <div className="modal__actions">
+                <button className="btn btn--ghost btn--block" onClick={() => { setDelSite(null); setDelSiteText(''); }}>Отмена</button>
+                <button className="btn btn--danger btn--block"
+                        disabled={delSiteText.trim().toLowerCase() !== (delSite.name || '').trim().toLowerCase() && delSiteText.trim().toLowerCase() !== (delSite.slug || '').toLowerCase()}
+                        onClick={confirmDeleteSite}>Удалить</button>
               </div>
             </div>
           </div>
@@ -1157,13 +1499,14 @@ function App() {
 
         {/* delete account modal */}
         {confirmDel && (
-          <div className="scrim" onClick={() => setConfirmDel(false)}>
+          <div className="scrim" onClick={() => { setConfirmDel(false); setDelPw(''); }}>
             <div className="modal" onClick={e => e.stopPropagation()}>
               <h3>Удалить аккаунт?</h3>
               <p>Это действие необратимо. Все сайты будут отключены, а данные удалены навсегда.</p>
+              <input className="input" type="password" placeholder="Введите пароль для подтверждения" value={delPw} onChange={e => setDelPw(e.target.value)} style={{ margin: '.8rem 0 .2rem' }} />
               <div className="modal__actions">
-                <button className="btn btn--ghost btn--block" onClick={() => setConfirmDel(false)}>Отмена</button>
-                <button className="btn btn--danger btn--block" onClick={deleteAccount}>Удалить</button>
+                <button className="btn btn--ghost btn--block" onClick={() => { setConfirmDel(false); setDelPw(''); }}>Отмена</button>
+                <button className="btn btn--danger btn--block" disabled={!delPw} onClick={deleteAccount}>Удалить</button>
               </div>
             </div>
           </div>

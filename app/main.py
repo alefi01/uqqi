@@ -68,6 +68,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(owner_router)
 from app.cabinet import router as cabinet_router
 app.include_router(cabinet_router)
+from app.chat import router as chat_router
+app.include_router(chat_router)
 
 SESSION_COOKIE = "admin_session"
 SESSION_TTL    = timedelta(days=7)
@@ -97,6 +99,64 @@ def on_startup():
         _asyncio.get_event_loop().create_task(_deferred_recover())
     except Exception as e:
         print(f"[APP] Восстановление сборок не запущено: {e}")
+
+
+# ── Health-check (для UptimeRobot и алертов) ──────────────────────────────────
+
+@app.get("/health")
+async def health():
+    """
+    Проверка живости: БД отвечает, планировщик крутится, очередь не залипла.
+    200 если всё ок, иначе 503 (внешний пинг увидит 'down').
+    Доступен на любом хосте без авторизации.
+    """
+    from sqlalchemy import text as _sql
+    checks: dict[str, str] = {}
+
+    # 1. БД отвечает
+    try:
+        db = SessionLocal()
+        try:
+            db.execute(_sql("SELECT 1"))
+        finally:
+            db.close()
+        checks["db"] = "ok"
+    except Exception as e:
+        checks["db"] = f"fail: {type(e).__name__}"
+
+    # 2. Планировщик жив (heartbeat обновлялся < 3 мин назад)
+    try:
+        from app.scheduler import heartbeat_age
+        age = heartbeat_age()
+        if age is None:
+            checks["scheduler"] = "starting"  # ещё не было первого тика
+        elif age < 180:
+            checks["scheduler"] = "ok"
+        else:
+            checks["scheduler"] = f"stale ({int(age)}s)"
+    except Exception as e:
+        checks["scheduler"] = f"fail: {type(e).__name__}"
+
+    # 3. Очередь не залипла: нет сборок в 'building' дольше 10 мин
+    try:
+        db = SessionLocal()
+        try:
+            cutoff = datetime.utcnow() - timedelta(minutes=10)
+            stuck = db.query(Company).filter(
+                Company.build_status == "building",
+                Company.last_parsed_at.is_(None) | (Company.last_parsed_at < cutoff),
+            ).count()
+        finally:
+            db.close()
+        checks["queue"] = "ok" if stuck == 0 else f"stuck: {stuck}"
+    except Exception as e:
+        checks["queue"] = f"fail: {type(e).__name__}"
+
+    healthy = all(v in ("ok", "starting") for v in checks.values())
+    return JSONResponse(
+        {"status": "ok" if healthy else "degraded", "checks": checks},
+        status_code=200 if healthy else 503,
+    )
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -184,6 +244,36 @@ def user_owns_site(slug: str, user_id: int | None, db: Session) -> bool:
         return False
     c = db.query(Company).filter(Company.slug == slug).first()
     return bool(c and c.user_id == user_id)
+
+
+def _can_edit_site(company) -> bool:
+    """
+    Редактирование контента доступно ТОЛЬКО на оплаченной подписке.
+    Триал и неоплата — только просмотр (сайт живёт, но менять нельзя, пока
+    клиент не оплатил). Гейт на бэкенде — не полагаемся на скрытие кнопок.
+    """
+    from datetime import datetime as _dt
+    return bool(
+        company
+        and company.sub_status == "active"
+        and company.paid_until
+        and company.paid_until > _dt.utcnow()
+    )
+
+
+def _require_editable(slug: str, user_id: int | None, db: Session):
+    """Проверка владельца + существования + оплаты. Возвращает Company или 4xx."""
+    if not user_owns_site(slug, user_id, db):
+        raise HTTPException(status_code=403)
+    company = db.query(Company).filter(Company.slug == slug).first()
+    if not company:
+        raise HTTPException(status_code=404)
+    if not _can_edit_site(company):
+        raise HTTPException(
+            status_code=403,
+            detail="Редактирование доступно после оплаты подписки.",
+        )
+    return company
 
 
 
@@ -334,9 +424,11 @@ def _build_site_context(request: Request, company) -> dict:
         route_url = f"https://yandex.ru/maps/?ll={lon}%2C{lat}&mode=routes&rtext=~{lat}%2C{lon}"
 
     site_url = f"https://{company.slug}.{settings.BASE_DOMAIN}/"
-    # Неоплаченные/неактивные сайты закрываем от индексации
-    # noindex для неоплаченных, а также для демо-показа и claim-сайтов из панели
-    seo_noindex = (not _is_paid_by_subscription(company)) or bool(getattr(company, "claim_code", None))
+    # Индексируем только легитимные (свои) сайты; серые непроплаченные и демо — noindex.
+    seo_noindex = not _indexable(company)
+
+    # Юр-дисклеймер в подвале — пока сайт не легитимизирован (серый и ещё не оплачен).
+    is_claim_site = not is_legit(company)
 
     return {
         "request":        request,
@@ -348,15 +440,33 @@ def _build_site_context(request: Request, company) -> dict:
         "feat_icon":      _feat_icon,
         "site_url":       site_url,
         "seo_noindex":    seo_noindex,
+        "is_claim_site":  is_claim_site,
     }
 
 
 def _variant_template(request: Request, company) -> str:
-    """Выбирает файл витрины: мобильный → C, иначе выбранный A/B."""
+    """
+    Файл витрины по ключу дизайна (реестр app/designs.py).
+    - Премиум (tier=pro) отдаётся ТОЛЬКО при активном Pro и готовом шаблоне;
+      иначе фолбэк на бесплатный. У премиума свой адаптив — мобильный НЕ форсим C.
+    - Бесплатные A/B: мобильный всегда → site_c.html.
+    """
+    from app import designs
+    key = (company.template_variant or "A").strip()
+    d = designs.get(key)
+
+    if d and d.get("tier") == "pro":
+        if pro_active(company):
+            tpl = designs.template_for(key)
+            if tpl:
+                return tpl   # премиум responsive — он же и на мобильном
+        # Pro не активен или шаблон ещё не готов → бесплатный
+        return "site_c.html" if _is_mobile(request) else "site_a.html"
+
+    # Бесплатные A/B
     if _is_mobile(request):
         return "site_c.html"
-    variant = (company.template_variant or "A").upper()
-    return "site_b.html" if variant == "B" else "site_a.html"
+    return "site_b.html" if key == "B" else "site_a.html"
 
 
 def _track_visit(request: Request, target: str, db: Session) -> None:
@@ -416,23 +526,14 @@ async def yukassa_webhook(request: Request, db: Session = Depends(get_db)):
     if not payment_id:
         return {"ok": True}
 
-    # Обрабатываем только успешную оплату
+    # Обрабатываем только успешную оплату.
+    # Fail-CLOSED: применяем ТОЛЬКО если сами подтвердили статус+сумму у ЮKassa.
+    # Телу webhook не доверяем (его можно подделать); при сбое проверки платёж
+    # остаётся pending и его подхватит реконсиляция в scheduler.
     if event == "payment.succeeded":
-        from app.cabinet import _apply_successful_payment
-        # Доп. проверка: подтверждаем статус у ЮKassa, если ключи настроены
-        verified = True
-        try:
-            from app.yukassa import get_payment
-            if settings.YUKASSA_SHOP_ID:
-                remote = get_payment(payment_id)
-                verified = remote.get("status") == "succeeded"
-        except Exception as e:
-            print(f"[YUKASSA] Не удалось проверить платёж {payment_id}: {e}", flush=True)
-            verified = True  # доверяем webhook если проверка недоступна
-
-        if verified:
-            applied = _apply_successful_payment(payment_id, db)
-            print(f"[YUKASSA] Платёж {payment_id} обработан (применён={applied})", flush=True)
+        from app.cabinet import _verify_and_apply_payment
+        applied, note = _verify_and_apply_payment(payment_id, db)
+        print(f"[YUKASSA] webhook {payment_id}: {note}", flush=True)
 
     elif event == "payment.canceled":
         from app.models import Payment
@@ -493,58 +594,27 @@ async def lk_claim_page(request: Request, code: str):
     raise HTTPException(status_code=404)
 
 
-def _is_paid_active(company) -> bool:
-    """True если сайт оплачен/идёт триал/активен демо-показ/это claim-сайт из панели."""
+def pro_active(company) -> bool:
+    """True, если активна Pro-подписка (Pro-триал ИЛИ оплата) — pro_until в будущем."""
     from datetime import datetime as _dt
-    now = _dt.utcnow()
-    if getattr(company, "is_demo", False):
-        return True
-    # Claim-сайт из панели (ждёт покупателя) — показываем без заглушки, он всё равно noindex
-    if getattr(company, "claim_code", None) and not company.user_id:
-        return True
-    # Демо-показ из owner-панели («снять заглушку на 7 дней»)
-    demo_until = getattr(company, "demo_until", None)
-    if demo_until and demo_until > now:
-        return True
-    if company.sub_status == "active":
-        return bool(company.paid_until and company.paid_until > now)
-    if company.sub_status == "trial":
-        return bool(company.trial_ends_at and company.trial_ends_at > now)
-    return False
+    return bool(company and company.pro_until and company.pro_until > _dt.utcnow())
 
 
-def _is_paid_by_subscription(company) -> bool:
-    """True если оплачено подпиской/триалом (БЕЗ учёта demo_until). Для sitemap."""
-    from datetime import datetime as _dt
-    now = _dt.utcnow()
-    if company.sub_status == "active":
-        return bool(company.paid_until and company.paid_until > now)
-    if company.sub_status == "trial":
-        return bool(company.trial_ends_at and company.trial_ends_at > now)
-    return False
-
-
-# Сколько дней показываем неоплаченный платный сайт с overlay, прежде чем заглушка
-UNPAID_OVERLAY_DAYS = 3
-
-
-def _unpaid_show_mode(company) -> str:
+def is_legit(company) -> bool:
     """
-    Режим показа неоплаченного сайта:
-    - 'overlay' — показать сайт с напоминанием (первые 3 дня платного)
-    - 'stub'    — полная заглушка
-    Триал истёк → сразу 'stub'.
+    «Сайт свой» (легитимизирован): self-service — всегда; серый claim-сайт из
+    owner-панели — только после первой оплаты (paid_once). Демо-витрины лендинга
+    легитимны формально, но из индексации отсекаются отдельно (is_demo).
     """
-    from datetime import datetime as _dt, timedelta as _td
-    now = _dt.utcnow()
-    # Истёкший триал → сразу заглушка
-    if company.sub_status == "trial":
-        return "stub"
-    # Платный неоплаченный (unpaid) — считаем от created_at
-    created = company.created_at or now
-    if now - created < _td(days=UNPAID_OVERLAY_DAYS):
-        return "overlay"
-    return "stub"
+    return bool(
+        company
+        and (not getattr(company, "is_claim", False) or getattr(company, "paid_once", False))
+    )
+
+
+def _indexable(company) -> bool:
+    """Участвует в индексации/sitemap/robots: легитимный клиентский сайт, не демо."""
+    return bool(is_legit(company) and not getattr(company, "is_demo", False))
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
@@ -554,8 +624,8 @@ async def robots_txt(request: Request, db: Session = Depends(get_db)):
     # Поддомен клиентского сайта
     if host != settings.BASE_DOMAIN and host != f"www.{settings.BASE_DOMAIN}" and not is_cabinet_host(request):
         company = get_company_by_request(request, db)
-        # Неоплаченный/неактивный сайт — запрещаем индексацию
-        if company and not _is_paid_active(company):
+        # Нелегитимный (серый непроплаченный) или демо — запрещаем индексацию
+        if company and not _indexable(company):
             return "User-agent: *\nDisallow: /\n"
         return (
             "User-agent: *\nAllow: /\n"
@@ -584,13 +654,13 @@ async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
             Company.build_status == "ready",
         ).all()
         for c in companies:
-            # Только реальные клиентские сайты (с владельцем), оплаченные.
-            # Демо-показ и claim-сайты из панели НЕ индексируем.
-            if c.user_id and c.claim_code is None and _is_paid_by_subscription(c):
+            # Только легитимные клиентские сайты (self-service или оплаченный claim).
+            # Серые непроплаченные и демо-витрины НЕ индексируем.
+            if _indexable(c):
                 urls.append(f"https://{c.slug}.{settings.BASE_DOMAIN}/")
     elif not is_cabinet_host(request):
         company = get_company_by_request(request, db)
-        if company and company.user_id and company.claim_code is None and _is_paid_by_subscription(company):
+        if company and _indexable(company):
             urls.append(f"https://{company.slug}.{settings.BASE_DOMAIN}/")
 
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -601,22 +671,14 @@ async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
     return Response(content="\n".join(xml), media_type="application/xml")
 
 
-@app.get("/demo", response_class=HTMLResponse)
-async def demo_view(request: Request, db: Session = Depends(get_db)):
+@app.get("/demo")
+async def demo_view(request: Request):
     """
-    Claim-режим: показывает готовый сайт из панели + окошко «Приобрести».
-    Работает только для обезличенных сайтов с активным claim_code.
+    Устарело: /demo больше не нужен — окно «Приобрести» показывается на обычном
+    адресе (slug.uqqi.ru/) у обезличенного claim-сайта. Оставлен редиректом,
+    чтобы уже разосланные клиентам ссылки на /demo не ломались.
     """
-    if is_cabinet_host(request):
-        return RedirectResponse(url="/", status_code=302)
-    company = get_company_by_request(request, db)
-    # Окошко только у обезличенных сайтов из панели с активным claim
-    if not company or not company.claim_code or company.user_id:
-        # Не claim-сайт → обычная витрина
-        return RedirectResponse(url="/", status_code=302)
-    # Помечаем запрос как claim-просмотр (site_index обойдёт заглушки и покажет окошко)
-    request.state.claim_view = True
-    return await site_index(request, db)
+    return RedirectResponse(url="/", status_code=302)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -631,48 +693,56 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
         _track_visit(request, "__landing__", db)
         return templates.TemplateResponse("landing.html", {"request": request})
 
-    # claim-режим (заход по /demo) — показываем сайт + окошко «Приобрести».
-    # Сами claim-сайты и так без заглушки (см. _is_paid_active), bypass нужен только
-    # чтобы не мешал строящийся/деактивированный статус.
-    is_claim_view = getattr(request.state, "claim_view", False)
-    bypass_stub = is_claim_view
-
     # Деактивированный вручную сайт — дружелюбная заглушка
-    if not company.is_active and not bypass_stub:
+    if not company.is_active:
         return templates.TemplateResponse("site_inactive.html", {
             "request": request,
             "company": company,
         }, status_code=200)
 
     # Сайт ещё строится — заглушка "готовится"
-    if company.build_status in ("queued", "building") and not bypass_stub:
+    if company.build_status in ("queued", "building"):
         return templates.TemplateResponse("site_inactive.html", {
             "request": request, "company": company, "building": True,
         }, status_code=200)
 
-    # Триал/подписка неактивны
-    show_overlay = False
-    if not _is_paid_active(company) and not bypass_stub:
-        mode = _unpaid_show_mode(company)
-        if mode == "stub":
-            return templates.TemplateResponse("site_inactive.html", {
-                "request": request, "company": company, "unpaid": True,
-            }, status_code=200)
-        # mode == 'overlay' — показываем сайт, но с напоминанием поверх
-        show_overlay = True
+    # Freemium: сайт бесплатен и всегда виден (кроме ручной деактивации и сборки выше).
+    # Серые непроплаченные claim-сайты показываются, но noindex + дисклеймер (см. контекст).
 
-    # Превью конкретного варианта из админки (?variant=A|B|C) — не считаем как визит
-    preview = request.query_params.get("variant", "").upper()
-    if preview in ("A", "B", "C"):
-        tpl = {"A": "site_a.html", "B": "site_b.html", "C": "site_c.html"}[preview]
-    else:
-        tpl = _variant_template(request, company)
-        _track_visit(request, company.slug, db)
+    # Превью конкретного дизайна (?variant=A|B|C|<premium-key>) из пикера/ЛК —
+    # рендерим напрямую, в ОБХОД Pro-гейта и БЕЗ учёта визита (клиент смотрит,
+    # как выглядел бы его сайт в этом дизайне).
+    preview = request.query_params.get("variant", "").strip()
+    if preview:
+        from app import designs
+        up = preview.upper()
+        if up in ("A", "B", "C"):
+            ptpl = {"A": "site_a.html", "B": "site_b.html", "C": "site_c.html"}[up]
+        else:
+            ptpl = designs.template_for(preview)   # премиум, если включён и готов
+        if ptpl:
+            pctx = _build_site_context(request, company)
+            pctx["unpaid_overlay"] = False
+            pctx["chat_enabled"] = False
+            presp = templates.TemplateResponse(ptpl, pctx)
+            presp.headers["Cache-Control"] = "no-store"
+            return presp
+
+    tpl = _variant_template(request, company)
+    _track_visit(request, company.slug, db)
 
     ctx = _build_site_context(request, company)
-    ctx["unpaid_overlay"] = show_overlay
-    # Claim-окошко «Приобрести» — только в claim-режиме (заход по /demo)
-    if is_claim_view and company.claim_code and not company.user_id:
+    ctx["unpaid_overlay"] = False  # overlay-напоминание в freemium не используется
+    # Чат-виджет (Pro): показываем, только если Pro активен И владелец подключил Telegram.
+    ctx["chat_enabled"] = False
+    if pro_active(company) and company.user_id:
+        from app.models import User as _User
+        _owner = db.query(_User).filter(_User.id == company.user_id).first()
+        ctx["chat_enabled"] = bool(_owner and _owner.tg_chat_id)
+    # Claim-окошко «Приобрести» — на ОБЫЧНОМ адресе у обезличенного claim-сайта.
+    # Клиенту отправляем реальную ссылку slug.uqqi.ru/ — там сразу и сайт, и
+    # предложение приобрести. Отдельная страница /demo больше не нужна.
+    if company.claim_code and not company.user_id:
         ctx["claim_offer"] = {
             "title": company.title,
             "city":  _city_from_address(company.address),
@@ -766,6 +836,11 @@ async def cabinet_site_editor(
     company = db.query(Company).filter(Company.slug == slug).first()
     if not company or company.user_id != user_id:
         return RedirectResponse(f"https://lk.{settings.BASE_DOMAIN}/", status_code=302)
+    # Редактор доступен только на оплаченной подписке (триал/неоплата — просмотр).
+    # Бэкенд-эндпоинты сохранения защищены отдельно (_require_editable).
+    if not _can_edit_site(company):
+        return RedirectResponse(
+            f"https://lk.{settings.BASE_DOMAIN}/?edit_locked={slug}", status_code=302)
     return templates.TemplateResponse("admin_panel.html", {
         "request": request, "company": company, "from_cabinet": True,
     })
@@ -792,11 +867,7 @@ async def admin_save(
     db: Session = Depends(get_db),
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     # Сохраняем только разблокированные вкладки (флаг auto_* = False).
     # Рейтинг и галерея здесь не трогаются (только авто / отдельные эндпоинты).
@@ -809,10 +880,10 @@ async def admin_save(
         company.hours    = payload.hours
     if not company.auto_socials:
         company.social_links = payload.social_links
-    if not company.auto_requisites:
-        company.org_name = payload.org_name[:500]
-        company.org_type = payload.org_type[:50]
-        company.org_inn  = payload.org_inn[:20]
+    # Реквизиты — всегда вручную (галочка автообновления убрана из панели)
+    company.org_name = payload.org_name[:500]
+    company.org_type = payload.org_type[:50]
+    company.org_inn  = payload.org_inn[:20]
     db.commit()
     return {"ok": True}
 
@@ -832,11 +903,7 @@ async def admin_set_flag(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Переключает флаг автообновления вкладки."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
     if payload.flag not in ("auto_main", "auto_hours", "auto_socials", "auto_requisites"):
         raise HTTPException(status_code=422, detail="Неизвестный флаг")
     setattr(company, payload.flag, bool(payload.value))
@@ -856,11 +923,7 @@ async def admin_set_design(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Клиент выбирает дизайн A или B."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
     v = payload.variant.upper()
     if v not in ("A", "B"):
         raise HTTPException(status_code=422, detail="variant must be A or B")
@@ -883,11 +946,7 @@ async def gallery_toggle_manual(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Включает/выключает ручной режим галереи."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     company.gallery_manual = not company.gallery_manual
     db.commit()
@@ -902,11 +961,7 @@ async def gallery_upload(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Загружает фото в галерею с ресайзом/сжатием. Включает ручной режим."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     photos = company.gallery_photos
     if len(photos) >= MAX_GALLERY:
@@ -957,11 +1012,7 @@ async def gallery_delete(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Удаляет фото из галереи."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     photos = [p for p in company.gallery_photos if p != payload.url]
     company.gallery_photos = photos
@@ -993,11 +1044,7 @@ async def gallery_reorder(
     user_id: int | None = Depends(get_cabinet_user_id),
 ):
     """Сохраняет новый порядок фото (drag&drop)."""
-    if not user_owns_site(slug, user_id, db):
-        raise HTTPException(status_code=403)
-    company = db.query(Company).filter(Company.slug == slug).first()
-    if not company:
-        raise HTTPException(status_code=404)
+    company = _require_editable(slug, user_id, db)
 
     current = set(company.gallery_photos)
     new_order = [u for u in payload.order if u in current]

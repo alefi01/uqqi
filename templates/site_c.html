@@ -246,7 +246,7 @@ img,svg{display:block;max-width:100%;}
 
   <!-- identity -->
   <div class="ident">
-    <div class="ident__logo" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">{% else %}<b>{{ company.title[:1]|lower }}<span>.</span></b>{% endif %}</div>
+    {% if company.logo_url %}<div class="ident__logo" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="cursor:pointer"><img src="{{ company.logo_url }}" alt=""></div>{% endif %}
     <div class="ident__cat">{{ (company.category or 'Организация')|upper|replace(', ', ' • ') }}</div>
     <div class="ident__name">{{ company.title }}</div>
     <div class="ident__addr" onclick="goTo('#location')"><i data-lucide="map-pin"></i>{{ company.address }}{% if company.transit_stop and company.transit_stop.name %} · {{ company.transit_stop.distance }} до ост. {{ company.transit_stop.name }}{% endif %}</div>
@@ -286,7 +286,7 @@ img,svg{display:block;max-width:100%;}
   <!-- tabs -->
   <div class="tabs" id="tabs">
     <a href="#about" class="active">О нас</a>
-    <a href="#catalog">{{ company.catalog_title or 'Услуги' }}</a>
+    {% if company.menu_items %}<a href="#catalog">{{ company.catalog_title or 'Услуги' }}</a>{% endif %}
     <a href="#photos">Фото</a>
     <a href="#reviews">Отзывы</a>
   </div>
@@ -306,12 +306,14 @@ img,svg{display:block;max-width:100%;}
   </section>
 
   <!-- catalog -->
+{% if company.menu_items %}
   <section class="block" id="catalog">
     <div class="block__title">{{ company.catalog_title or "Товары и услуги" }}</div>
     <div class="cat-filters" id="catFilters"></div>
     <div class="catalog" id="catalogGrid" data-layout="cards"></div>
     <div class="pagination" id="pagination"></div>
   </section>
+{% endif %}
 
   <!-- photos -->
   {% if company.gallery_photos %}<section class="block" id="photos">
@@ -379,6 +381,8 @@ img,svg{display:block;max-width:100%;}
   </div>
 </div>
 
+{% include "_claim_disclaimer.html" %}
+{% include "_chat_widget.html" %}
 {% include "_uqqi_data.html" %}
 <script src="/static/js/site.js"></script>
 {% include "_unpaid_overlay.html" %}

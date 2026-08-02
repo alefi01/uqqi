@@ -295,6 +295,20 @@ def normalize_org_url(raw_url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
 
 
+# Суффиксы размеров фото Яндекса. Нужны для дедупа галереи и для сравнения
+# фото с логотипом: одна и та же картинка приходит с разными суффиксами.
+PHOTO_SIZE_SUFFIX_RE = re.compile(
+    r'/(XXXL|XXL|XL|L|M|orig|'
+    r'priority-headline-background|priority-headline-logo-square|'
+    r'[0-9]+x[0-9]+|smart_crop_[^/]+)$'
+)
+
+
+def photo_base(url: str) -> str:
+    """Базовый путь фото без суффикса размера — для сравнения картинок."""
+    return PHOTO_SIZE_SUFFIX_RE.sub('', (url or '').strip().rstrip('/'))
+
+
 def is_search_echo(title: str, query: str) -> bool:
     return clean_text(title).casefold() == clean_text(query).casefold()
 
@@ -762,18 +776,17 @@ def _catalog_title_for(category: str) -> str:
 
 def _normalize_gallery_urls(raw_urls: list, limit: int = 15) -> list[str]:
     """
-    Отсекает заготовки (_height/_width — незагруженные lazy-плейсхолдеры) и видео.
-    Берёт уникальные фото по base-пути с рабочим суффиксом размера.
+    Отсекает заготовки (_height/_width — незагруженные lazy-плейсхолдеры),
+    видео и логотип организации (лого — не фото заведения, ему не место
+    в галерее и hero). Берёт уникальные фото по base-пути.
     """
     import re as _re
-    # Рабочие финальные суффиксы размеров Яндекса
-    GOOD_SUFFIX = _re.compile(
-        r'/(XXXL|XXL|XL|L|M|orig|'
-        r'priority-headline-background|priority-headline-logo-square|'
-        r'[0-9]+x[0-9]+|smart_crop_[^/]+)$'
-    )
     # Заготовки — отбрасываем
     BAD_SUFFIX = _re.compile(r'/(?:[A-Z]+_height|[A-Z]+_width)$')
+    # Мусор карточки Яндекса — не фото заведения:
+    #  - priority-headline-* : рекламные ассеты платного размещения (лого + баннер-шапка)
+    #  - pin_* / _pin_search : картографические метки-булавки с карты
+    JUNK = _re.compile(r'priority-headline|/pin_|_pin_search|pin_x\d', _re.I)
 
     seen_bases = set()
     photos = []
@@ -784,11 +797,14 @@ def _normalize_gallery_urls(raw_urls: list, limit: int = 15) -> list[str]:
         # Видео / плеер — пропускаем
         if 'yaplayer' in url or '/get-vh/' in url and url.endswith('_height'):
             continue
+        # Рекламные ассеты и картографические метки — пропускаем
+        if JUNK.search(url):
+            continue
         # Битая заготовка — пропускаем
         if BAD_SUFFIX.search(url):
             continue
-        # Должен быть рабочий суффикс; если нет суффикса вообще — оставляем как есть
-        base = GOOD_SUFFIX.sub('', url)
+        # Дедуп по базовому пути без суффикса размера
+        base = photo_base(url)
         if base in seen_bases:
             continue
         seen_bases.add(base)
@@ -806,8 +822,8 @@ async def extract_gallery_photos(page, limit: int = 15) -> list[str]:
             const HOSTS = ['get-altay', 'get-tycoon', 'get-vh'];
             const sel = HOSTS.map(h => `[style*="${h}"], [src*="${h}"], [data-src*="${h}"]`).join(', ');
             document.querySelectorAll(sel).forEach(el => {
-                // Пропускаем элементы внутри видео-плеера
-                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"]')) return;
+                // Пропускаем элементы внутри видео-плеера и логотипа
+                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"], [class*="logo"]')) return;
                 const style = el.getAttribute('style') || '';
                 const src   = el.getAttribute('src') || el.getAttribute('data-src') || '';
                 const all   = style + ' ' + src;
@@ -1090,9 +1106,9 @@ async def scrape_gallery(page, limit: int = 20) -> list:
             const HOSTS = ['get-altay', 'get-tycoon', 'get-vh'];
             const hostOk = (s) => HOSTS.some(h => s.includes(h));
 
-            // Из img элементов
+            // Из img элементов (кроме видео и логотипа организации)
             document.querySelectorAll('img').forEach(img => {
-                if (img.closest('.yaplayer, [class*="yaplayer"], [class*="video"]')) return;
+                if (img.closest('.yaplayer, [class*="yaplayer"], [class*="video"], [class*="logo"]')) return;
                 let src = img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
                 if (!src.includes('avatars.mds.yandex.net')) return;
                 if (!hostOk(src)) return;
@@ -1103,7 +1119,7 @@ async def scrape_gallery(page, limit: int = 20) -> list:
             // Из CSS background-image
             const sel = HOSTS.map(h => `[style*="${h}"]`).join(', ');
             document.querySelectorAll(sel).forEach(el => {
-                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"]')) return;
+                if (el.closest('.yaplayer, [class*="yaplayer"], [class*="video"], [class*="logo"]')) return;
                 const style = el.getAttribute('style') || '';
                 const m = style.match(/url\(["']?(https:\/\/avatars\.mds\.yandex\.net[^"')]+)["']?\)/);
                 if (m) urls.push(m[1].replace(':443/', '/'));
@@ -1133,10 +1149,49 @@ async def scrape_catalog(page) -> list:
         except Exception:
             pass
         await page.wait_for_timeout(1000)
-        # Прокручиваем, пока растёт число товаров И загруженных картинок (lazy load)
+        # Прокручиваем, пока растёт число товаров И загруженных картинок (lazy load).
+        # Список виртуализируется: у прокрученных карточек <img> выгружается,
+        # поэтому URL картинок собираем ИНКРЕМЕНТАЛЬНО на каждом шаге в img_map
+        # (имя товара → url), а не одним махом в конце — иначе теряем ~2/3 фото.
+        HARVEST_JS = r"""() => {
+            const out = [];
+            const sel = '.business-full-items-grouped-view__item, .related-item-photo-view, .related-item-list-view';
+            const pick = (img) => {
+                if (!img) return '';
+                let s = img.currentSrc || img.src || img.getAttribute('data-src') || '';
+                if (!s || !s.includes('avatars.mds.yandex.net')) {
+                    // ленивая картинка: URL может быть только в srcset до загрузки
+                    const ss = img.getAttribute('srcset') || '';
+                    const m = ss.match(/https:\/\/avatars\.mds\.yandex\.net\/[^\s]+/);
+                    if (m) s = m[0];
+                }
+                return s.includes('avatars.mds.yandex.net') ? s.replace(':443/', '/') : '';
+            };
+            document.querySelectorAll(sel).forEach(item => {
+                const t = item.querySelector('[class*="__title"]');
+                const name = t ? (t.getAttribute('title') || t.textContent || '').trim() : '';
+                if (!name) return;
+                const src = pick(item.querySelector('img'));
+                if (src) out.push([name, src]);
+            });
+            return out;
+        }"""
+        img_map = {}
+
+        async def _harvest():
+            try:
+                for name, src in (await page.evaluate(HARVEST_JS)) or []:
+                    if name and name not in img_map:
+                        img_map[name] = src
+            except Exception:
+                pass
+
+        # Мелкий шаг (≈один экран) даёт каждому ряду задержаться в зоне
+        # видимости достаточно, чтобы лениво-подгружаемое фото получило src.
+        # Грубый шаг 3000px пролетал ряды — фото не успевали и терялись.
         prev_count = -1
         stable = 0
-        for _ in range(25):
+        for _ in range(60):
             cur = await page.evaluate(r"""() => {
                 const items = document.querySelectorAll(
                     '.business-full-items-grouped-view__item, .related-item-photo-view, .related-item-list-view'
@@ -1144,17 +1199,19 @@ async def scrape_catalog(page) -> list:
                 const imgs = [...document.querySelectorAll('img')].filter(i => i.complete && i.naturalWidth > 0).length;
                 return items * 1000 + imgs;  // комбинированный счётчик
             }""")
+            await _harvest()  # ловим картинки, пока карточки в зоне видимости
             if cur == prev_count:
                 stable += 1
-                if stable >= 3:  # 3 раза подряд без изменений — дошли до конца
+                if stable >= 4:  # 4 раза подряд без изменений — дошли до конца
                     break
             else:
                 stable = 0
             prev_count = cur
-            await page.mouse.wheel(0, 3000)
-            await page.wait_for_timeout(700)
+            await page.mouse.wheel(0, 1100)
+            await page.wait_for_timeout(550)
         # финальная пауза на догрузку последних картинок
         await page.wait_for_timeout(800)
+        await _harvest()
 
         result = await page.evaluate(r"""() => {
             const items = [];
@@ -1302,7 +1359,19 @@ async def scrape_catalog(page) -> list:
             });
             return items;
         }""")
-        return result or []
+        result = result or []
+        # Заполняем пропущенные фото из инкрементально собранной map
+        # (виртуализация выгружает <img> прокрученных карточек → src пуст в финале)
+        filled = 0
+        for it in result:
+            if not it.get('image_url'):
+                url = img_map.get((it.get('name') or '').strip())
+                if url:
+                    it['image_url'] = url
+                    filled += 1
+        if filled:
+            print(f"[INFO] scrape_catalog: дозаполнено фото из map: {filled}", flush=True)
+        return result
     except Exception:
         return []
 
@@ -1512,6 +1581,10 @@ async def parse_detail_page(page, place: Place, context=None) -> Place:
         print(f"[INFO] Загружаем галерею: {_tab_url(_full_url, 'gallery')}", flush=True)
         photos = await _fetch_tab(context, _tab_url(_full_url, 'gallery'), scrape_gallery, limit=20)
         print(f"[INFO] Фото найдено: {len(photos) if photos else 0}", flush=True)
+        # Лого может прийти и с обычным суффиксом размера — сверяем базовые пути
+        if photos and place.logo_url:
+            _logo_base = photo_base(place.logo_url)
+            photos = [p for p in photos if photo_base(p) != _logo_base]
         if photos:
             place.gallery_photos = ' | '.join(photos[:20])
 
@@ -1678,6 +1751,17 @@ async def collect_single_by_url(target_url: str, args: argparse.Namespace):
     Возвращает Place или None.
     """
     ensure_pip_playwright()
+
+    # Mapframe/poi-ссылка (org_id в query как oid=) не редиректит на /org/:
+    # карточка открывается оверлеем на карте города, вкладки каталога не
+    # работают, лого не извлекается. Открываем канонический org-URL напрямую.
+    canonical_org = None
+    if '/org/' not in urlsplit(target_url).path:
+        m_oid = re.search(r'(?:[?&]oid=|oid%3D)(\d+)', target_url, re.I)
+        if m_oid:
+            target_url = f"https://yandex.ru/maps/org/{m_oid.group(1)}/"
+            canonical_org = target_url
+            print(f"[SINGLE] Mapframe-ссылка → канонический org-URL: {target_url}", flush=True)
     try:
         from playwright.async_api import async_playwright
     except ImportError:
@@ -1703,7 +1787,14 @@ async def collect_single_by_url(target_url: str, args: argparse.Namespace):
             await page.wait_for_timeout(1500)
 
             final_url = page.url
-            place.url = normalize_org_url(final_url) or final_url
+            # Приоритет org-URL: из реального редиректа, иначе — канонический из oid.
+            # Сырой mapframe в place.url недопустим: _tab_url построит tab=menu
+            # вместо /prices/, каталог не спарсится (poi-оверлей их не отдаёт).
+            place.url = normalize_org_url(final_url) or canonical_org or final_url
+            if canonical_org and '/org/' not in urlsplit(place.url).path:
+                print(f"[SINGLE] ⚠ Страница не встала на /org/ ({final_url}), "
+                      f"использую канонический {canonical_org}", flush=True)
+                place.url = canonical_org
 
             place = await parse_detail_page(page, place, context)
 

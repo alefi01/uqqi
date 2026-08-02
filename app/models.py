@@ -9,7 +9,8 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, Integer, String, Text, UniqueConstraint, create_engine
+    Boolean, Column, DateTime, Integer, String, Text, UniqueConstraint, create_engine,
+    event,
 )
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -23,6 +24,19 @@ engine = create_engine(
     connect_args={"check_same_thread": False},  # нужно для SQLite
     echo=settings.DEBUG,
 )
+
+
+# WAL + busy_timeout: несколько процессов (app + воркеры) пишут в одну SQLite.
+# WAL разрешает параллельные чтения + одного писателя; busy_timeout ждёт при блокировке.
+@event.listens_for(engine, "connect")
+def _sqlite_pragmas(dbapi_conn, _rec):
+    if settings.DATABASE_URL.startswith("sqlite"):
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA busy_timeout=5000")
+        cur.execute("PRAGMA synchronous=NORMAL")  # безопасно с WAL, быстрее
+        cur.close()
+
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
@@ -55,6 +69,7 @@ class User(Base):
 
     email_verified  = Column(Boolean, default=False)
     verify_token    = Column(String(64), default="", index=True)   # подтверждение email
+    verify_sent_at  = Column(DateTime, nullable=True)              # когда выдан verify_token (TTL 24ч)
     reset_token     = Column(String(64), default="", index=True)   # сброс пароля
     reset_expires   = Column(DateTime, nullable=True)
 
@@ -65,6 +80,10 @@ class User(Base):
     # Триал использован (один на аккаунт за всю жизнь)
     trial_used      = Column(Boolean, default=False)
     pending_claim_code = Column(String(40), default="")  # claim-код, ожидающий подтверждения email
+
+    # Чат с сайта → Telegram владельца (Pro-фича).
+    tg_chat_id      = Column(String(40), default="")   # chat_id владельца (куда шлём сообщения с сайта)
+    tg_link_token   = Column(String(64), default="")   # одноразовый токен deep-link подключения
 
     created_at      = Column(DateTime, default=datetime.utcnow)
 
@@ -85,9 +104,19 @@ class Company(Base):
     is_demo         = Column(Boolean, default=False)  # витрина для лендинга, без подписки
 
     # Подписка/триал этого сайта
-    sub_status      = Column(String(20), default="trial")   # trial / active / unpaid
-    trial_ends_at   = Column(DateTime, nullable=True)        # конец пробного периода
-    paid_until      = Column(DateTime, nullable=True)        # оплачено до (для active)
+    sub_status      = Column(String(20), default="free")    # freemium: free / active (Pro). legacy trial/unpaid не используются
+    trial_ends_at   = Column(DateTime, nullable=True)        # конец пробного периода (legacy, вестигиально)
+    paid_until      = Column(DateTime, nullable=True)        # оплачено до (legacy, вестигиально)
+
+    # Freemium/Pro (редизайн подписки):
+    #   pro_until — до когда активен Pro (пишут и Pro-триал, и оплата); активен, если > now.
+    #   is_claim  — сайт создан из owner-панели (серый origin); персистентный
+    #               (claim_code гасится при привязке, а этот флаг остаётся).
+    #   paid_once — была ли хоть одна успешная оплата → легитимизирует claim-сайт навсегда.
+    pro_until       = Column(DateTime, nullable=True)
+    is_claim        = Column(Boolean, default=False)
+    paid_once       = Column(Boolean, default=False)
+
     build_status    = Column(String(20), default="ready")   # queued / building / ready / error
 
     # Основные данные
@@ -133,8 +162,10 @@ class Company(Base):
     # Ближайшая остановка (JSON: {"name": "...", "distance": "168 м"})
     _transit_stop   = Column("transit_stop", Text, default="{}")
 
-    # Выбор шаблона витрины: A или B (мобильным всегда отдаётся C). По умолчанию B.
-    template_variant = Column(String(1), default="B")
+    # Ключ дизайна витрины: бесплатные "A"/"B" (мобильным → C) либо премиум-ключ
+    # (napr. "noir", "editorial") — реестр в app/designs.py. Премиум рендерится
+    # только при активном Pro; у премиумов свой мобильный адаптив.
+    template_variant = Column(String(32), default="A")
 
     # Claim-система (продажа готовых сайтов): для обезличенных сайтов из owner-панели
     claim_code      = Column(String(40), nullable=True, default=None, index=True)  # код привязки; NULL у клиентских
@@ -157,8 +188,13 @@ class Company(Base):
     # Биллинг
     next_payment_date = Column(DateTime, nullable=True)  # дата следующей оплаты
     client_email      = Column(String(255), default="")  # email клиента для уведомлений
-    notified_7d       = Column(Boolean, default=False)   # отправлено уведомление за 7 дней
-    notified_3d       = Column(Boolean, default=False)   # отправлено уведомление за 3 дня
+    notified_7d       = Column(Boolean, default=False)   # напоминание о продлении за 7 дней (оплаченные)
+    notified_3d       = Column(Boolean, default=False)   # напоминание о продлении за 3 дня (оплаченные)
+    # Цепочка писем триала/удержания (идемпотентность — одноразовые флаги)
+    notified_trial_d3 = Column(Boolean, default=False)   # письмо «3 дня триала: метрики»
+    notified_trial_d6 = Column(Boolean, default=False)   # письмо «триал кончается завтра»
+    welcome_sent      = Column(Boolean, default=False)   # письмо «что дальше» после первой оплаты
+    last_report_at    = Column(DateTime, nullable=True)  # когда слали последний ежемесячный отчёт
 
     # Флаги
     is_active       = Column(Boolean, default=True)
@@ -369,7 +405,8 @@ class Payment(Base):
     user_id       = Column(Integer, index=True)
     company_id    = Column(Integer, index=True)
     company_slug  = Column(String(120), default="")
-    amount        = Column(String(20), default="990.00")
+    amount        = Column(String(20), default="1990.00")
+    days          = Column(Integer, default=30)             # срок продления из тарифа (30/90/365)
     status        = Column(String(20), default="pending")  # pending / succeeded / canceled
     processed     = Column(Boolean, default=False)          # webhook уже применён (защита от дублей)
     created_at    = Column(DateTime, default=datetime.utcnow)
@@ -377,6 +414,58 @@ class Payment(Base):
 
     def __repr__(self) -> str:
         return f"<Payment {self.payment_id} {self.status} {self.amount}>"
+
+
+# ── Job (очередь фоновых Playwright-задач; Блок 9) ────────────────────────────
+
+class Job(Base):
+    """
+    Фоновая задача парсинга/скриншота. Выполняется отдельным процессом worker.py.
+    Очередь персистентна (переживает рестарт), диспетчер в app раздаёт воркерам.
+    """
+
+    __tablename__ = "jobs"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    type        = Column(String(30), index=True)   # build_site|collect_candidates|create_site|refresh_company|screenshot
+    payload     = Column(Text, default="{}")       # JSON-параметры задачи
+    status      = Column(String(20), default="pending", index=True)  # pending|running|done|failed
+    attempts    = Column(Integer, default=0)        # сделано попыток
+    max_attempts = Column(Integer, default=3)
+    timeout_sec = Column(Integer, default=180)      # индивидуальный таймаут
+    progress    = Column(String(255), default="")   # шаг/процент для панели
+    result      = Column(Text, default="")          # JSON итог (по желанию)
+    error       = Column(Text, default="")          # текст последней ошибки
+    worker_pid  = Column(Integer, nullable=True)     # pid держащего процесса
+    created_at  = Column(DateTime, default=datetime.utcnow, index=True)
+    started_at  = Column(DateTime, nullable=True)
+    finished_at = Column(DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<Job {self.id} {self.type} {self.status}>"
+
+
+class ChatMessage(Base):
+    """
+    Сообщение чата на сайте (Pro-фича). Двусторонний:
+      direction='in'  — от посетителя сайта → пересылаем владельцу в Telegram;
+      direction='out' — ответ владельца из Telegram → посетитель забирает поллингом.
+    Переписка одного посетителя связывается через visitor_id (генерит виджет).
+    """
+
+    __tablename__ = "chat_messages"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    company_id    = Column(Integer, index=True)
+    visitor_id    = Column(String(40), index=True)      # id посетителя (localStorage виджета)
+    direction     = Column(String(3))                    # 'in' | 'out'
+    text          = Column(Text, default="")
+    notify_msg_id = Column(Integer, nullable=True)        # message_id пересылки владельцу (для маршрутизации ответа reply-to)
+    tg_update_id  = Column(Integer, nullable=True, index=True)  # update_id ответа владельца (дедуп поллинга)
+    created_at    = Column(DateTime, default=datetime.utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<ChatMessage {self.id} c{self.company_id} {self.direction}>"
 
 
 # ── Init ──────────────────────────────────────────────────────────────────────

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% include "_seo_meta.html" %}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0c0f; --bg2:#101319; --card:#141821; --line:rgba(255,255,255,.08);
+  --tx:#eef1f6; --tx-soft:#8b93a3;
+  --glow:oklch(0.82 0.14 85); --glow-dim:oklch(0.62 0.12 85);
+  --disp:"Unbounded",system-ui,sans-serif; --sans:"Manrope",system-ui,-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--glow);text-decoration:none}
+a:hover{color:oklch(0.9 0.13 85)}
+img{display:block;max-width:100%}
+h1,h2,h3{font-family:var(--disp);font-weight:700;line-height:1.12;text-wrap:balance;letter-spacing:.01em}
+.wrap{max-width:1240px;margin:0 auto;padding:0 clamp(20px,4vw,56px)}
+.rv{opacity:0;transform:translateY(30px);transition:opacity .9s cubic-bezier(.2,.7,.25,1),transform .9s cubic-bezier(.2,.7,.25,1)}
+.rv.in{opacity:1;transform:none}
+.rv-d1{transition-delay:.12s}.rv-d2{transition-delay:.24s}
+@media (prefers-reduced-motion: reduce){.rv{opacity:1;transform:none;transition:none}*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+header{position:absolute;inset:0 0 auto;z-index:10}
+.hd{display:flex;align-items:center;gap:20px;padding:22px 0;font-size:14px}
+.hd-brand{display:flex;align-items:center;gap:12px;font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:.06em}
+.hd-mono{width:38px;height:38px;border:1px solid var(--glow-dim);display:grid;place-items:center;color:var(--glow);font-size:15px;border-radius:4px;overflow:hidden}
+.hd-mono img{width:100%;height:100%;object-fit:cover}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:22px}
+.hd-status{display:flex;align-items:center;gap:8px;color:var(--tx-soft)}
+.dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 10px #4ade80}
+.hd-phone{font-weight:700;color:var(--tx);font-variant-numeric:tabular-nums}
+@media(max-width:720px){.hd-status{display:none}}
+.hero{position:relative;min-height:92vh;display:flex;align-items:flex-end;overflow:hidden;isolation:isolate}
+.hero-bg{position:absolute;inset:-8% 0;z-index:-2}
+.hero-bg img{width:100%;height:100%;object-fit:cover;filter:brightness(.55) saturate(.9);will-change:transform}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(10,12,15,.55) 0%,rgba(10,12,15,.1) 40%,rgba(10,12,15,.92) 88%,var(--bg) 100%)}
+.hero-beam{position:absolute;z-index:-1;width:60vw;height:60vw;left:-15vw;top:-25vw;border-radius:50%;background:radial-gradient(circle,oklch(0.82 0.14 85 / .16),transparent 65%);pointer-events:none}
+.hero-in{padding:0 0 clamp(48px,7vh,90px);width:100%}
+.kicker{font-size:12.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--glow);font-weight:700;display:flex;align-items:center;gap:14px}
+.kicker::before{content:"";width:44px;height:1px;background:var(--glow);flex:none}
+.hero h1{font-size:clamp(34px,5.4vw,72px);margin:20px 0 22px;max-width:16ch}
+.hero-meta{display:flex;flex-wrap:wrap;gap:12px 34px;align-items:baseline;color:var(--tx-soft);font-size:15px}
+.rating{display:flex;align-items:baseline;gap:10px}
+.rating b{font-family:var(--disp);font-size:40px;color:var(--tx);line-height:1;font-variant-numeric:tabular-nums}
+.stars{color:var(--glow);letter-spacing:2px;font-size:14px;text-shadow:0 0 14px oklch(0.82 0.14 85/.6)}
+.hero-cta{margin-top:34px;display:flex;flex-wrap:wrap;gap:14px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:16px 32px;border-radius:6px;font-weight:700;font-size:15px;letter-spacing:.03em;transition:transform .25s ease,box-shadow .25s ease,background .25s ease;will-change:transform}
+.btn-glow{background:var(--glow);color:#141005!important;box-shadow:0 0 0 rgba(0,0,0,0)}
+.btn-glow:hover{transform:translateY(-2px);box-shadow:0 8px 34px oklch(0.82 0.14 85/.45)}
+.btn-ghost{border:1px solid rgba(255,255,255,.28);color:var(--tx)!important;backdrop-filter:blur(6px)}
+.btn-ghost:hover{transform:translateY(-2px);background:rgba(255,255,255,.07)}
+.feat-strip{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:15px 0;background:var(--bg)}
+.mq-track{display:flex;width:max-content;animation:mq 30s linear infinite}
+.feat-strip:hover .mq-track{animation-play-state:paused}
+.mq-item{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--tx-soft);padding:0 24px;white-space:nowrap;display:flex;align-items:center;gap:24px}
+.mq-item::after{content:"◆";font-size:8px;color:var(--glow-dim)}
+@keyframes mq{to{transform:translateX(-50%)}}
+section{padding:clamp(60px,8vw,110px) 0}
+.sec-head{margin-bottom:clamp(30px,4vw,52px)}
+.sec-head h2{font-size:clamp(26px,3.2vw,44px)}
+.sec-kick{font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--glow);font-weight:700;margin-bottom:14px}
+.srv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.srv{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;transition:transform .35s cubic-bezier(.2,.7,.25,1),box-shadow .35s,border-color .35s;will-change:transform}
+.srv:hover{transform:translateY(-6px);border-color:oklch(0.82 0.14 85/.35);box-shadow:0 24px 50px rgba(0,0,0,.5),0 0 40px oklch(0.82 0.14 85/.08)}
+.srv-ph{aspect-ratio:16/9;overflow:hidden}
+.srv-ph img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.25,1);filter:saturate(.9)}
+.srv:hover .srv-ph img{transform:scale(1.06)}
+.srv-body{padding:22px 24px 24px}
+.srv h3{font-size:17px;font-weight:500;margin-bottom:6px}
+.srv-note{font-size:14px;color:var(--tx-soft)}
+.srv-price{margin-top:16px;font-family:var(--disp);font-size:20px;color:var(--glow);font-variant-numeric:tabular-nums}
+.srv.nophoto{background:linear-gradient(180deg,#161a24,var(--card))}
+.srv.nophoto::before{content:"";position:absolute;left:24px;right:24px;top:0;height:2px;background:linear-gradient(90deg,var(--glow-dim),transparent);border-radius:2px}
+.pg-nav{display:flex;gap:8px;justify-content:center;margin-top:36px;flex-wrap:wrap}
+.pg-btn{min-width:42px;height:42px;padding:0 12px;border:1px solid var(--line);background:transparent;color:var(--tx-soft);border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+.pg-btn:hover:not(:disabled){border-color:var(--glow-dim);color:var(--glow)}
+.pg-btn.is-active{background:var(--glow);color:#141005;border-color:var(--glow)}
+.pg-btn:disabled{opacity:.35;cursor:default}
+.reel{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));grid-auto-rows:210px;gap:14px}
+.reel figure{overflow:hidden;border-radius:10px;position:relative;grid-row:span 1}
+.reel figure.wide{grid-column:span 2}
+.reel figure.tall{grid-row:span 2}
+.reel img{width:100%;height:100%;object-fit:cover;filter:saturate(.85);transition:transform .6s cubic-bezier(.2,.7,.25,1),filter .6s}
+.reel figure:hover img{transform:scale(1.05);filter:saturate(1.05)}
+@media(max-width:720px){.reel{grid-template-columns:repeat(2,1fr);grid-auto-rows:150px}.reel figure.wide{grid-column:span 2}.reel figure.tall{grid-row:span 1}}
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.rev{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:26px;transition:transform .35s,border-color .35s}
+.rev:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.18)}
+.rev-stars{color:var(--glow);letter-spacing:3px;font-size:13px;margin-bottom:14px}
+.rev p{font-size:15.5px;line-height:1.7;color:#c6ccd8}
+.rev-who{margin-top:18px;font-size:13.5px;color:var(--tx-soft)}
+.rev-who b{color:var(--tx);display:block;font-size:15px}
+.con-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,56px);align-items:start}
+@media(max-width:860px){.con-grid{grid-template-columns:1fr}}
+.hours{border-top:1px solid var(--line);margin-top:22px}
+.hr{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px;color:var(--tx-soft)}
+.hr.today{color:var(--tx);font-weight:700}
+.hr.today span:last-child{color:var(--glow)}
+.con-line{margin:10px 0;font-size:15.5px;color:var(--tx-soft)}
+.con-line b{display:block;color:var(--tx);font-size:18px;font-weight:700}
+.map{position:relative;min-height:360px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.map iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:invert(.92) hue-rotate(180deg) saturate(.4) brightness(.9)}
+.socials{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+.soc{height:44px;padding:0 16px;border:1px solid var(--line);border-radius:8px;display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--tx)!important;transition:all .25s}
+.soc:hover{border-color:var(--glow-dim);color:var(--glow)!important;transform:translateY(-2px);box-shadow:0 0 20px oklch(0.82 0.14 85/.15)}
+footer{border-top:1px solid var(--line);padding:34px 0 110px;color:var(--tx-soft);font-size:13.5px}
+.legal-slot{margin-top:14px}
+.call-fab{display:none}
+@media(max-width:720px){
+  .call-fab{position:fixed;left:18px;bottom:18px;z-index:50;display:flex;align-items:center;gap:10px;background:var(--glow);color:#141005!important;padding:15px 22px;border-radius:999px;font-weight:800;font-size:15px;box-shadow:0 10px 34px oklch(0.82 0.14 85/.4);max-width:calc(100vw - 122px)}
+  footer{padding-bottom:130px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hd">
+    <div class="hd-brand">
+      <span class="hd-mono">{% if company.logo_url %}<img src="{{ company.logo_url }}" alt="">{% else %}{{ company.title[:2]|upper }}{% endif %}</span>
+      <span>{{ company.title }}</span>
+    </div>
+    <div class="hd-right">
+      {% if status %}<span class="hd-status"><span class="dot"></span>{{ status }}</span>{% endif %}
+      {% if company.phone %}<a class="hd-phone" href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}">{{ company.phone }}</a>{% endif %}
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="hero" style="padding:0">
+  {% if company.gallery_photos %}
+  <div class="hero-bg" id="heroBg" aria-hidden="true"><img src="{{ company.gallery_photos[0] }}" alt=""></div>
+  {% endif %}
+  <div class="hero-beam" aria-hidden="true"></div>
+  <div class="wrap hero-in">
+    <p class="kicker">{{ company.category }}{% if company.address %} · {{ company.address }}{% endif %}</p>
+    <h1>{{ company.title }}</h1>
+    <div class="hero-meta">
+      {% if company.rating %}<span class="rating"><b id="ratingNum" data-rating="{{ company.rating|replace(',', '.') }}">0,0</b><span class="stars">★★★★★</span></span>{% endif %}
+      {% if company.reviews_count %}<span>{{ company.reviews_count }} на Яндекс.Картах</span>{% endif %}
+      {% if company.avg_bill %}<span>Средний чек {{ company.avg_bill }}</span>{% endif %}
+    </div>
+    <div class="hero-cta">
+      {% if company.book_url %}<a class="btn btn-glow" href="{{ company.book_url }}" target="_blank" rel="nofollow noopener">Записаться онлайн</a>{% endif %}
+      {% if company.phone %}<a class="btn btn-ghost" href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}">{{ company.phone }}</a>{% endif %}
+    </div>
+  </div>
+</section>
+
+{% if company.features %}
+<div class="feat-strip" aria-hidden="true">
+  <div class="mq-track" id="mqTrack">
+    {% for feat in company.features %}<span class="mq-item">{{ feat }}</span>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if company.about_text %}
+<section id="about" style="padding-bottom:0">
+  <div class="wrap" style="max-width:880px">
+    <p class="rv" style="font-size:clamp(19px,2vw,26px);line-height:1.6;font-weight:500;color:#d5dae4;text-wrap:pretty">{{ company.about_text }}</p>
+  </div>
+</section>
+{% endif %}
+
+{% if company.menu_items %}
+<section id="services">
+  <div class="wrap">
+    <div class="sec-head rv"><p class="sec-kick">Услуги и цены</p><h2>{{ company.catalog_title or 'Товары и услуги' }}</h2></div>
+    <div class="srv-grid" data-paginate="6">
+      {% for item in company.menu_items %}
+      <article class="srv{% if not item.image_url %} nophoto{% endif %}">
+        {% if item.image_url %}<div class="srv-ph"><img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy"></div>{% endif %}
+        <div class="srv-body">
+          <h3>{{ item.name }}</h3>
+          {% if item.description %}<p class="srv-note">{{ item.description }}</p>{% endif %}
+          {% if item.price %}<p class="srv-price">{{ item.price }}</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.gallery_photos|length > 1 %}
+<section id="gallery" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><p class="sec-kick">Галерея</p><h2>Как это выглядит</h2></div>
+    <div class="reel">
+      {% for photo in company.gallery_photos[1:] %}
+      <figure class="rv{% if loop.index0 == 0 %} wide{% elif loop.index0 % 4 == 2 %} tall{% endif %}"><img src="{{ photo }}" alt="Фото" loading="lazy"></figure>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.reviews %}
+<section id="reviews" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv"><p class="sec-kick">Отзывы с Яндекс.Карт</p><h2>Что говорят гости</h2></div>
+    <div class="rev-grid">
+      {% for r in company.reviews[:6] %}
+      <blockquote class="rev rv"><div class="rev-stars">{% for _ in range(r.rating|int) %}★{% endfor %}{% for _ in range(5 - (r.rating|int if r.rating else 5)) %}☆{% endfor %}</div><p>{{ r.text }}</p><div class="rev-who">{% if r.author %}<b>{{ r.author }}</b>{% endif %}{{ r.date }}</div></blockquote>
+      {% endfor %}
+    </div>
+    {% if company.yandex_url %}<p style="margin-top:26px"><a href="{{ company.yandex_url }}" target="_blank" rel="noopener">Все отзывы на Яндекс.Картах →</a></p>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+<section id="contacts" style="background:var(--bg2);border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head rv"><p class="sec-kick">Контакты</p><h2>Как нас найти</h2></div>
+    <div class="con-grid">
+      <div class="rv">
+        {% if company.address %}<p class="con-line"><b>{{ company.address }}</b>{% if company.transit_stop and company.transit_stop.name %}{{ company.transit_stop.distance }} до ост. {{ company.transit_stop.name }}{% endif %}</p>{% endif %}
+        {% if company.phone %}<p class="con-line"><a href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}" style="font-family:var(--disp);font-size:22px;color:var(--tx)">{{ company.phone }}</a></p>{% endif %}
+        {% if company.hours %}
+        {% set daymap = {'Mo':'1','Tu':'2','We':'3','Th':'4','Fr':'5','Sa':'6','Su':'0'} %}
+        {% set fulldays = {'Mo':'Понедельник','Tu':'Вторник','We':'Среда','Th':'Четверг','Fr':'Пятница','Sa':'Суббота','Su':'Воскресенье'} %}
+        <div class="hours">
+          {% for e in company.hours %}
+          <div class="hr" data-d="{{ daymap.get(e.day, '') }}"><span>{{ fulldays.get(e.day, e.day_ru) }}</span><span>{{ 'Выходной' if e.closed else e.time }}</span></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if company.social_links %}
+        {% from "_social_icons.html" import social_name %}
+        <div class="socials">
+          {% for s in company.social_links %}<a class="soc" href="{{ s.url }}" target="_blank" rel="noopener">{{ social_name(s.platform) }}</a>{% endfor %}
+        </div>
+        {% endif %}
+        {% if route_url %}<p style="margin-top:26px"><a class="btn btn-ghost" href="{{ route_url }}" target="_blank" rel="nofollow noopener">Построить маршрут →</a></p>{% endif %}
+      </div>
+      {% if yandex_map_url %}
+      <div class="map rv rv-d1"><iframe src="{{ yandex_map_url }}" loading="lazy" title="Карта"></iframe></div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>{{ company.title }} · данные — Яндекс.Карты · сайт создан на <a href="https://uqqi.ru">uqqi.ru</a></p>
+    <div class="legal-slot">{% include "_claim_disclaimer.html" %}</div>
+  </div>
+</footer>
+
+{% if company.phone %}<a class="call-fab" href="tel:{{ company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') }}">☏ Позвонить</a>{% endif %}
+
+{% include "_chat_widget.html" %}
+
+<script>
+(function(){
+"use strict";
+var rm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+if("IntersectionObserver" in window && !rm){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{threshold:.12,rootMargin:"0px 0px -6% 0px"});
+  document.querySelectorAll(".rv").forEach(function(el){io.observe(el)});
+}else{document.querySelectorAll(".rv").forEach(function(el){el.classList.add("in")})}
+var rn=document.getElementById("ratingNum");
+if(rn){var target=parseFloat(rn.dataset.rating)||0;
+  if(rm||!target){rn.textContent=target.toFixed(1).replace(".",",")}
+  else{var t0=null;requestAnimationFrame(function step(t){if(!t0)t0=t;var p=Math.min((t-t0)/1200,1);p=1-Math.pow(1-p,3);rn.textContent=(target*p).toFixed(1).replace(".",",");if(p<1)requestAnimationFrame(step)})}}
+if(!rm){var bg=document.querySelector("#heroBg img"),tick=false;
+  if(bg)addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){bg.style.transform="translateY("+(scrollY*0.18).toFixed(1)+"px)";tick=false})},{passive:true});}
+var mq=document.getElementById("mqTrack");if(mq&&mq.children.length)mq.innerHTML+=mq.innerHTML;
+var td=new Date().getDay();document.querySelectorAll(".hr[data-d]").forEach(function(r){if(r.dataset.d!==""&&+r.dataset.d===td)r.classList.add("today")});
+/* пагинация каталога: по data-paginate позиций на страницу; все позиции остаются в DOM (SEO) */
+document.querySelectorAll("[data-paginate]").forEach(function(grid){
+  var size=parseInt(grid.getAttribute("data-paginate"),10)||6;
+  var items=Array.prototype.slice.call(grid.children);
+  if(items.length<=size)return;
+  var pages=Math.ceil(items.length/size),cur=1;
+  var nav=document.createElement("div");nav.className="pg-nav";grid.parentNode.insertBefore(nav,grid.nextSibling);
+  function mkbtn(label,enabled,active,fn){var b=document.createElement("button");b.className="pg-btn"+(active?" is-active":"");b.textContent=label;if(!enabled){b.disabled=true}else{b.addEventListener("click",fn)}return b}
+  function to(p){cur=p;draw();var s=grid.closest("section")||grid;s.scrollIntoView({behavior:rm?"auto":"smooth",block:"start"})}
+  function draw(){
+    items.forEach(function(el,i){el.style.display=(i>=(cur-1)*size&&i<cur*size)?"":"none"});
+    nav.innerHTML="";
+    nav.appendChild(mkbtn("‹",cur>1,false,function(){to(cur-1)}));
+    for(var p=1;p<=pages;p++){(function(p){nav.appendChild(mkbtn(String(p),true,p===cur,function(){to(p)}))})(p)}
+    nav.appendChild(mkbtn("›",cur<pages,false,function(){to(cur+1)}));
+  }
+  draw();
+});
+})();
+</script>
+</body>
+</html>

@@ -96,7 +96,6 @@ SMTP_FROM=support@uqqi.ru
 # ЮKassa
 YUKASSA_SHOP_ID=<shop_id>
 YUKASSA_SECRET_KEY=<secret_key>
-SUBSCRIPTION_PRICE=990.00
 ```
 
 Права:
@@ -261,6 +260,89 @@ https://lk.uqqi.ru/api/yukassa/webhook
 
 События: `payment.succeeded`, `payment.canceled`.
 
+### Whitelist IP ЮKassa (доп. слой защиты webhook)
+
+Приложение уже проверяет каждый webhook напрямую у ЮKassa (статус + сумма,
+fail-closed) — подделать нельзя. Ограничение по IP на уровне nginx — **второй
+слой**: отсекает мусорные/поддельные POST'ы ещё до приложения.
+
+⚠️ **Список подсетей ЮKassa меняется** — возьми актуальный из офиц. доки
+(«IP-адреса, с которых приходят уведомления»):
+<https://yookassa.ru/developers/using-api/webhooks#ip>. Вшивать устаревший
+список опасно — заблокируешь реальные webhook'и.
+
+В `server`-блоке `lk.uqqi.ru` добавь отдельный `location` (подставь актуальные
+подсети вместо примера):
+
+```nginx
+location = /api/yukassa/webhook {
+    # Подсети ЮKassa (СВЕРЬ С ДОКОЙ — могут отличаться):
+    allow 185.71.76.0/27;
+    allow 185.71.77.0/27;
+    allow 77.75.153.0/25;
+    allow 77.75.156.11;
+    allow 77.75.156.35;
+    allow 77.75.154.128/25;
+    allow 2a02:5180::/32;
+    deny  all;
+
+    proxy_pass         http://127.0.0.1:8000;
+    proxy_set_header   Host              $host;
+    proxy_set_header   X-Real-IP         $remote_addr;
+    proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Proto $scheme;
+}
+```
+
+`nginx -t && systemctl reload nginx`. Проверь после: тестовый платёж должен
+проходить (webhook доходит), а `curl -X POST https://lk.uqqi.ru/api/yukassa/webhook`
+с твоего IP — отдавать 403.
+
+---
+
+## 12.5. Бэкапы БД (ежедневный дамп + вывоз в Telegram)
+
+Единственная защита от потери всех данных при смерти диска/VPS. Бэкап на том
+же сервере бесполезен — обязателен **вывоз копии наружу** (через Telegram-бот).
+
+**1. Создай Telegram-бота и узнай chat_id:**
+- Напиши [@BotFather](https://t.me/BotFather) → `/newbot` → получишь **токен**.
+- Напиши своему боту любое сообщение (иначе он не сможет тебе писать).
+- Узнай свой `chat_id`: напиши [@userinfobot](https://t.me/userinfobot) —
+  он пришлёт числовой ID. (Можно использовать ID канала/группы, куда добавлен бот.)
+
+**2. Впиши в `/var/www/uqqi/.env`:**
+```ini
+TELEGRAM_BOT_TOKEN=123456:AA...   # от BotFather
+TELEGRAM_CHAT_ID=123456789        # от userinfobot
+```
+
+**3. Проверь вручную (создаст бэкап и пришлёт файл в Telegram):**
+```bash
+cd /var/www/uqqi
+bash scripts/backup_db.sh
+```
+Должно закончиться `✓ Готово: …`, а в Telegram придёт файл `uqqi_YYYYMMDD_....db.gz`.
+Если креды не заданы — скрипт предупредит и вывоз пропустит (копия только локально).
+
+**4. Проверь восстановление (разворачивает бэкап в тестовую копию, прод не трогает):**
+```bash
+bash scripts/restore_check.sh          # берёт самый свежий из backups/
+```
+Должно вывести `integrity_check: ok` и ненулевые счётчики `companies`/`users`.
+
+**5. Добавь в крон (ежедневно в 04:00):**
+```bash
+mkdir -p /var/www/uqqi/logs
+crontab -e
+# добавь строку:
+0 4 * * * /var/www/uqqi/scripts/backup_db.sh >> /var/www/uqqi/logs/backup.log 2>&1
+```
+
+Локальные копии лежат в `backups/` (в git не коммитятся), ротация — 14 дней
+(меняется через `UQQI_BACKUP_RETENTION`). При любой ошибке скрипт шлёт алерт в
+тот же Telegram и выходит с кодом 1 (крон это залогирует).
+
 ---
 
 ## 13. Проверка после запуска
@@ -327,7 +409,8 @@ systemctl restart uqqi
 
 ## Что осталось сделать (известные пробелы)
 
-- 🔴 **Бэкапы БД** — не настроены. Обязательно до реальных клиентов.
+- ✅ **Бэкапы БД** — настроены: `scripts/backup_db.sh` (дамп + gzip + вывоз в
+  Telegram + ротация 14 дн.), см. раздел 12.5. Не забудь добавить в крон.
 - 🔴 **Проверка подписи webhook ЮKassa** — сейчас статус платежа
   перепроверяется через API ЮKassa, но при сбое проверки код доверяет
   запросу (fail-open). Стоит добавить HMAC-проверку подписи.

@@ -4,23 +4,32 @@
 const { useState: useStateB } = React;
 
 const INCLUDED = [
-  'Сайт на адресе название.uqqi.ru',
-  'Данные из Яндекс Карт: фото, отзывы, часы',
-  'Редактирование контента без программиста',
-  'Онлайн-запись и приём заявок',
-  'Поддержка и обновления',
+  'Премиум-дизайны сайта',
+  'Чат на сайте — заявки приходят вам в Telegram',
+  'Снятие пометки «демо» и индексация в поиске (для demo-сайтов)',
+  'Приоритетная поддержка',
 ];
 
 // ---- Сводка оплаты (внутри кабинета) ----
+// Тарифы Pro — синхронно с PLANS в app/cabinet.py
+const PLANS_LK = [
+  { id: 'month',   label: 'Месяц',    amount: 990,  perMonth: 990, period: '30 дней',  save: '' },
+  { id: 'quarter', label: '3 месяца', amount: 2490, perMonth: 830, period: '90 дней',  save: 'выгода 480 ₽' },
+  { id: 'year',    label: 'Год',      amount: 8900, perMonth: 742, period: '365 дней', save: 'выгода 2 980 ₽' },
+];
+const fmtRub = n => n.toLocaleString('ru-RU');
+
 function ScreenPayment({ nav, site, onProceed }) {
   const s = site || {};
   const [busy, setBusy] = useStateB(false);
   const [err, setErr] = useStateB('');
+  const [plan, setPlan] = useStateB('quarter');
+  const sel = PLANS_LK.find(p => p.id === plan) || PLANS_LK[1];
 
   async function pay() {
     setErr(''); setBusy(true);
     try {
-      const res = await window.API.createPayment(s.id);
+      const res = await window.API.createPayment(s.id, plan);
       if (res.confirmation_url) {
         window.location.href = res.confirmation_url;  // редирект на ЮKassa
       } else {
@@ -37,7 +46,7 @@ function ScreenPayment({ nav, site, onProceed }) {
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
-        <span className="eyebrow">Оплата подписки</span>
+        <span className="eyebrow">Оформление Pro</span>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 1.2rem' }}>{s.name || 'Ваш сайт'}</h2>
 
         <div className="row" style={{ padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
@@ -48,10 +57,28 @@ function ScreenPayment({ nav, site, onProceed }) {
           </div>
         </div>
 
-        <div style={{ marginTop: '1.2rem' }}>
-          <div className="sumrow"><span className="k">Тариф</span><span className="v">Стандарт — 990 ₽ / месяц</span></div>
-          <div className="sumrow"><span className="k">Период</span><span className="v">30 дней</span></div>
-          <div className="sum-total"><span className="k" style={{ color: 'var(--ink)', fontWeight: 600 }}>Итого сегодня</span><span className="amt">990 ₽</span></div>
+        <p className="field__label" style={{ margin: '1.3rem 0 .7rem' }}>Выберите тариф</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '.55rem' }}>
+          {PLANS_LK.map(p => (
+            <div key={p.id} onClick={() => setPlan(p.id)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '.8rem 1rem',
+                border: '2px solid ' + (plan === p.id ? 'var(--terracotta)' : 'var(--line)'),
+                borderRadius: 'var(--r-lg)', cursor: 'pointer',
+                background: plan === p.id ? 'var(--terracotta-wash)' : 'transparent' }}>
+              <div>
+                <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.95rem' }}>
+                  {p.label}
+                  {p.save && <span style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginLeft: '.5rem' }}>{p.save}</span>}
+                </div>
+                <div className="muted" style={{ fontSize: '.78rem', marginTop: '.1rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
+              </div>
+              <div style={{ fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{fmtRub(p.amount)} ₽</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '1.1rem' }}>
+          <div className="sum-total"><span className="k" style={{ color: 'var(--ink)', fontWeight: 600 }}>Итого сегодня</span><span className="amt">{fmtRub(sel.amount)} ₽</span></div>
         </div>
 
         <hr className="divider" style={{ margin: '1.3rem 0' }} />
@@ -61,7 +88,7 @@ function ScreenPayment({ nav, site, onProceed }) {
         </ul>
 
         {err && <div className="field__err" style={{ marginTop: '1rem' }}>{err}</div>}
-        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.5rem' }} onClick={pay} disabled={busy}><i data-lucide="lock"></i> {busy ? 'Создаём платёж…' : 'Перейти к оплате'}</button>
+        <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.5rem' }} onClick={pay} disabled={busy}><i data-lucide="lock"></i> {busy ? 'Создаём платёж…' : 'Перейти к оплате — ' + fmtRub(sel.amount) + ' ₽'}</button>
         <p className="legal" style={{ textAlign: 'center', marginTop: '.8rem' }}>Оплата проходит через ЮKassa. Мы не храним данные вашей карты.</p>
       </div>
     </div>
@@ -109,8 +136,8 @@ function ScreenPaymentProcessing({ onConfirmed }) {
       tries++;
       try {
         const data = await window.API.sites();
-        const anyActive = (data.sites || []).some(s => s.status === 'active');
-        if (anyActive) { clearInterval(iv); onConfirmed(); return; }
+        const anyPaid = (data.sites || []).some(s => s.status === 'pro');
+        if (anyPaid) { clearInterval(iv); onConfirmed(); return; }
       } catch (e) {}
       if (tries > 15) { clearInterval(iv); onConfirmed(); }
     }, 2000);
@@ -160,8 +187,9 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <StatusBadge site={s} />
-                  {(s.status === 'trial' || s.status === 'unpaid') && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оплатить</button>}
-                  {s.status === 'active' && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить</button>}
+                  {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
+                  {s.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                  {(s.status === 'protrial' || s.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
                 </div>
               </div>
             </div>
@@ -187,6 +215,81 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Возможности PRO (обзор + переход к оформлению) ----
+function ScreenPro({ sites, onPay, nav }) {
+  const list = sites || [];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.6rem' }}>
+      <div className="card" style={{ padding: '1.6rem' }}>
+        <span className="eyebrow" style={{ color: 'var(--terracotta)' }}>PRO · 7 дней бесплатно</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 .5rem' }}>Больше возможностей для вашего сайта</h2>
+        <p className="muted" style={{ fontSize: '.9rem', lineHeight: 1.6 }}>PRO подключается отдельно для каждого сайта. Первые 7 дней — бесплатно, без карты. После окончания PRO базовый сайт продолжает работать.</p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '.8rem', marginTop: '1.3rem' }}>
+          <div style={{ padding: '1.1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+            <i data-lucide="palette" style={{ width: 22, height: 22, color: 'var(--terracotta)' }}></i>
+            <div style={{ fontWeight: 700, color: 'var(--ink)', margin: '.5rem 0 .3rem' }}>Премиум-дизайны</div>
+            <div className="muted" style={{ fontSize: '.84rem', lineHeight: 1.55 }}>Курируемые оформления витрины с характером — под кофейню, салон, клинику или магазин.</div>
+          </div>
+          <div style={{ padding: '1.1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
+            <i data-lucide="message-circle" style={{ width: 22, height: 22, color: 'var(--terracotta)' }}></i>
+            <div style={{ fontWeight: 700, color: 'var(--ink)', margin: '.5rem 0 .3rem' }}>Чат с посетителями</div>
+            <div className="muted" style={{ fontSize: '.84rem', lineHeight: 1.55 }}>Сообщения с сайта приходят вам в Telegram. Отвечаете прямо из Telegram — ответ появляется у посетителя.</div>
+          </div>
+        </div>
+
+        <hr className="divider" style={{ margin: '1.3rem 0' }} />
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Что входит</p>
+        <ul className="feat-list">
+          {INCLUDED.map((f, i) => <li key={i}><i data-lucide="check"></i>{f}</li>)}
+        </ul>
+      </div>
+
+      <div>
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Тарифы PRO</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '.8rem' }}>
+          {PLANS_LK.map(p => (
+            <div key={p.id} className="card" style={{ padding: '1.1rem', textAlign: 'center', borderColor: p.id === 'quarter' ? 'var(--terracotta)' : 'var(--line)' }}>
+              <div className="muted" style={{ fontSize: '.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{p.label}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', margin: '.4rem 0 .1rem' }}>{fmtRub(p.amount)} ₽</div>
+              <div className="muted" style={{ fontSize: '.76rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
+              {p.save && <div style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginTop: '.3rem' }}>{p.save}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="field__label" style={{ marginBottom: '.7rem' }}>Подключить PRO для сайта</p>
+        {list.length === 0
+          ? <div className="card" style={{ padding: '1.4rem', textAlign: 'center' }}>
+              <p className="muted" style={{ fontSize: '.88rem', marginBottom: '1rem' }}>Сначала создайте сайт — потом сможете подключить к нему PRO.</p>
+              <button className="btn btn--primary" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Создать сайт</button>
+            </div>
+          : <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem' }}>
+              {list.map(s => (
+                <div key={s.id} className="card" style={{ padding: '1rem 1.2rem' }}>
+                  <div className="between">
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '.95rem' }}>{s.name}</div>
+                      <div className="muted" style={{ fontSize: '.8rem', marginTop: '.2rem' }}>{s.slug}.uqqi.ru</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <StatusBadge site={s} />
+                      {s.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Забрать сайт</button>}
+                      {s.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(s)}>Оформить Pro</button>}
+                      {(s.status === 'protrial' || s.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(s)}>Продлить Pro</button>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
       </div>
     </div>
   );
@@ -237,6 +340,44 @@ function ScreenSupport({ email, tickets, onSubmit }) {
   );
 }
 
+// ---- Подключение Telegram (чат с сайтов, Pro) ----
+function TelegramCard() {
+  const [st, setSt] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  async function load() {
+    try { setSt(await window.API.telegramStatus()); }
+    catch (e) { setSt({ connected: false, link: '', botConfigured: false }); }
+  }
+  React.useEffect(() => { load(); }, []);
+  async function disconnect() {
+    setBusy(true);
+    try { await window.API.telegramDisconnect(); await load(); }
+    finally { setBusy(false); }
+  }
+  return (
+    <div className="card" style={{ padding: '1.4rem 1.5rem' }}>
+      <p className="field__label" style={{ marginBottom: '.6rem' }}>Чат на сайте → Telegram <span style={{ fontSize: '.68rem', fontWeight: 700, color: 'var(--terracotta)', border: '1px solid var(--terracotta)', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>PRO</span></p>
+      <p className="muted" style={{ fontSize: '.84rem', lineHeight: 1.6 }}>Сообщения посетителей с ваших Pro-сайтов приходят вам в Telegram. Отвечайте прямо из Telegram (кнопка «Ответить») — ответ появится в чате на сайте.</p>
+      {!st && <p className="muted" style={{ marginTop: '.8rem', fontSize: '.84rem' }}>Загрузка…</p>}
+      {st && st.connected && (
+        <div className="between" style={{ marginTop: '.9rem', gap: '1rem' }}>
+          <span className="field__hint" style={{ color: 'var(--success-soft)' }}>✓ Telegram подключён</span>
+          <button className="btn btn--ghost btn--sm" onClick={disconnect} disabled={busy}>Отключить</button>
+        </div>
+      )}
+      {st && !st.connected && st.botConfigured && (
+        <div style={{ marginTop: '.9rem', display: 'flex', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <a className="btn btn--primary btn--sm" href={st.link} target="_blank" rel="noopener">Подключить Telegram</a>
+          <button className="btn btn--ghost btn--sm" onClick={load}>Я нажал «Старт» — проверить</button>
+        </div>
+      )}
+      {st && !st.connected && !st.botConfigured && (
+        <p className="field__err" style={{ marginTop: '.9rem' }}>Бот пока не настроен. Напишите в поддержку.</p>
+      )}
+    </div>
+  );
+}
+
 // ---- Настройки аккаунта ----
 function ScreenSettings({ email, onDelete }) {
   const [pw, setPw] = useStateB('');
@@ -280,6 +421,8 @@ function ScreenSettings({ email, onDelete }) {
           <div><button className="btn btn--dark" onClick={savePassword} disabled={busy}>{busy ? 'Сохраняем…' : 'Сохранить пароль'}</button></div>
         </div>
       </div>
+
+      <TelegramCard />
 
       <div className="card" style={{ padding: '1.4rem 1.5rem', borderColor: 'color-mix(in srgb,var(--danger) 25%,var(--line))' }}>
         <p className="field__label" style={{ marginBottom: '.5rem', color: 'var(--danger)' }}>Опасная зона</p>

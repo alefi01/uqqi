@@ -29,15 +29,20 @@ const API = {
 
   // ── Сайты ──
   sites()                           { return this._req('GET', '/sites'); },
-  addSite(url)                      { return this._req('POST', '/sites/add', { url }); },
+  addSite(url, design)              { return this._req('POST', '/sites/add', { url, design }); },
+  telegramStatus()                  { return this._req('GET', '/telegram'); },
+  telegramDisconnect()              { return this._req('POST', '/telegram/disconnect'); },
   claimSite(code)                   { return this._req('POST', '/claim/' + encodeURIComponent(code)); },
   claimInfo(code)                   { return this._req('GET', '/claim/' + encodeURIComponent(code) + '/info'); },
   siteStatus(id)                    { return this._req('GET', '/sites/' + id + '/status'); },
-  deleteSite(id)                    { return this._req('DELETE', '/sites/' + id); },
+  siteMetrics(id)                   { return this._req('GET', '/sites/' + id + '/metrics'); },
+  designs()                         { return this._req('GET', '/designs'); },
+  setDesign(id, design)             { return this._req('POST', '/sites/' + id + '/design', { design }); },
+  deleteSite(id, body)              { return this._req('DELETE', '/sites/' + id, body || {}); },
   cancelSubscription(id)            { return this._req('POST', '/sites/' + id + '/cancel'); },
 
   // ── Оплата ──
-  createPayment(siteId)             { return this._req('POST', '/payment/create', { site_id: siteId }); },
+  createPayment(siteId, plan)       { return this._req('POST', '/payment/create', { site_id: siteId, plan: plan || 'quarter' }); },
   paymentStatus(paymentId)          { return this._req('GET', '/payment/' + paymentId + '/status'); },
   payments()                        { return this._req('GET', '/payments'); },
 
@@ -47,7 +52,7 @@ const API = {
 
   // ── Настройки ──
   changePassword(current, next)     { return this._req('POST', '/account/password', { current, next }); },
-  deleteAccount()                   { return this._req('DELETE', '/account'); },
+  deleteAccount(password)           { return this._req('DELETE', '/account', { password: password || '' }); },
 };
 
 window.API = API;

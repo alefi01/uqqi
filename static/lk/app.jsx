@@ -5,23 +5,26 @@ const { useState, useEffect, useRef } = React;
 
 const NAV = [
   { id: 'sites', label: 'Мои сайты', ic: 'layout-grid' },
+  { id: 'pro', label: 'PRO', ic: 'sparkles' },
   { id: 'subscriptions', label: 'Подписки и платежи', ic: 'credit-card' },
   { id: 'support', label: 'Поддержка', ic: 'life-buoy' },
   { id: 'settings', label: 'Настройки', ic: 'settings' },
 ];
-const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
+const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', pro: 'pro', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
   sites: ['Мои сайты', 'Сайты вашего бизнеса на uqqi.ru'],
   'add-site': ['Новый сайт', null],
   building: ['Создаём сайт', null],
   payment: ['Оплата', null],
   admin: ['Редактор сайта', null],
+  design: ['Дизайн сайта', null],
+  pro: ['Возможности PRO', 'Премиум-дизайны и чат с посетителями'],
   subscriptions: ['Подписки и платежи', 'Статусы, продление и история'],
   support: ['Поддержка', 'Мы на связи и поможем'],
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
 
-const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'subscriptions', 'support', 'settings']);
+const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'design', 'pro', 'subscriptions', 'support', 'settings', 'metrics']);
 
 function plusDays(n) {
   const d = new Date(); d.setDate(d.getDate() + n);
@@ -35,12 +38,19 @@ function App() {
   const [payTarget, setPayTarget] = useState(null);
   const [menuSite, setMenuSite] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [delPw, setDelPw] = useState('');
+  const [delSite, setDelSite] = useState(null);
+  const [delSiteText, setDelSiteText] = useState('');
+  const [metrics, setMetrics] = useState(null);
+  const buildingRef = React.useRef(false);
   const [booted, setBooted] = useState(false);
   const [pendingClaim, setPendingClaim] = useState(null);
 
   const [sites, setSites] = useState([]);
   const [payments, setPayments] = useState([]);
   const [tickets, setTickets] = useState([]);
+  const [designs, setDesigns] = useState([]);
+  const [designSite, setDesignSite] = useState(null);
 
   const ctx = { email, setEmail, pendingClaim, setPendingClaim };
   const nav = (s) => {
@@ -52,6 +62,8 @@ function App() {
       window.API.payments().then(d => setPayments(d.payments || [])).catch(() => {});
     } else if (s === 'sites') {
       loadSites();
+    } else if (s === 'add-site') {
+      ensureDesigns();
     }
   };
   const ping = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
@@ -129,13 +141,17 @@ function App() {
   const [canAddReason, setCanAddReason] = useState('');
   const [buildId, setBuildId] = useState(null);
 
-  async function startBuild(url) {
+  async function startBuild(url, design) {
+    if (buildingRef.current) return;   // защита от двойного клика (дубль сайта)
+    buildingRef.current = true;
     try {
-      const res = await window.API.addSite(url);
+      const res = await window.API.addSite(url, design);
       setBuildId(res.id);
       nav('building');
     } catch (ex) {
       ping(ex.message || 'Не удалось создать сайт');
+    } finally {
+      buildingRef.current = false;
     }
   }
   async function finishBuild() {
@@ -148,15 +164,52 @@ function App() {
     nav('payment-success');
     loadSites();
   }
-  async function deleteSite(site) {
+  async function openMetrics(site) {
+    setMenuSite(null);
+    setMetrics(null);
+    nav('metrics');
+    try {
+      setMetrics(await window.API.siteMetrics(site.id));
+    } catch (ex) {
+      ping(ex.message || 'Не удалось загрузить статистику');
+      nav('sites');
+    }
+  }
+  async function ensureDesigns() {
+    if (designs.length) return;
+    try { const d = await window.API.designs(); setDesigns(d.designs || []); } catch (e) {}
+  }
+  function openDesign(site) {
+    setMenuSite(null);
+    setDesignSite(site);
+    ensureDesigns();
+    nav('design');
+  }
+  async function applyDesign(id, key) {
+    try {
+      await window.API.setDesign(id, key);
+      setSites(prev => prev.map(s => s.id === id ? { ...s, design: key } : s));
+      setDesignSite(prev => (prev && prev.id === id) ? { ...prev, design: key } : prev);
+      ping('Дизайн применён');
+    } catch (ex) {
+      ping(ex.message || 'Не удалось сменить дизайн');
+    }
+  }
+  function askDeleteSite(site) {
     if (site.canDelete === false) {
       ping('Дождитесь окончания trial-периода');
       return;
     }
+    setMenuSite(null);
+    setDelSiteText('');
+    setDelSite(site);
+  }
+  async function confirmDeleteSite() {
+    if (!delSite) return;
     try {
-      await window.API.deleteSite(site.id);
-      setSites(prev => prev.filter(s => s.id !== site.id));
-      setMenuSite(null);
+      await window.API.deleteSite(delSite.id, { confirm: delSiteText });
+      setSites(prev => prev.filter(s => s.id !== delSite.id));
+      setDelSite(null); setDelSiteText('');
       ping('Сайт удалён');
     } catch (ex) {
       ping(ex.message || 'Не удалось удалить сайт');
@@ -176,8 +229,13 @@ function App() {
     setEmail(''); setSites([]); setScreen('login');
   }
   async function deleteAccount() {
-    try { await window.API.deleteAccount(); } catch (e) {}
-    setConfirmDel(false); setEmail(''); setScreen('login'); ping('Аккаунт удалён');
+    try {
+      await window.API.deleteAccount(delPw);
+    } catch (ex) {
+      ping(ex.message || 'Не удалось удалить аккаунт');
+      return;
+    }
+    setConfirmDel(false); setDelPw(''); setEmail(''); setScreen('login'); ping('Аккаунт удалён');
   }
 
   if (!booted) {
@@ -204,14 +262,17 @@ function App() {
   const [title, sub] = TITLES[screen] || ['', null];
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} canAdd={canAdd} />;
-  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onStats={openMetrics} onDesign={openDesign} onDelete={askDeleteSite} canAdd={canAdd} />;
+  else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} />;
+  else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
   else if (screen === 'payment') body = <ScreenPayment nav={nav} site={payTarget} />;
   else if (screen === 'admin') body = <AdminStub nav={nav} site={payTarget} />;
+  else if (screen === 'pro') body = <ScreenPro sites={sites} onPay={openPay} nav={nav} />;
   else if (screen === 'subscriptions') body = <ScreenSubscriptions nav={nav} sites={sites} payments={payments} onPay={openPay} />;
   else if (screen === 'support') body = <ScreenSupport email={email} tickets={tickets} onSubmit={submitTicket} />;
   else if (screen === 'settings') body = <ScreenSettings email={email} onDelete={() => setConfirmDel(true)} />;
+  else if (screen === 'metrics') body = <ScreenMetrics nav={nav} metrics={metrics} />;
 
   return (
     <div className="app">
@@ -226,7 +287,7 @@ function App() {
               </a>
             ))}
             <div className="side__foot">
-              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}><div className="em">{email}</div></div></div>
+              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.06em', color: 'var(--terracotta)' }}>PRO</div>}<div className="em">{email}</div></div></div>
               <a className="nav-i" onClick={logout} style={{ marginTop: '.2rem' }}><i data-lucide="log-out"></i>Выйти</a>
             </div>
           </aside>
@@ -266,20 +327,21 @@ function App() {
           </section>
         </div>
 
-        {/* site menu modal */}
-        {menuSite && (
-          <div className="scrim" onClick={() => setMenuSite(null)}>
+        {/* Действия сайта («Статистика / Дизайн / Удалить») вынесены на карточку сайта. */}
+
+        {/* delete site modal */}
+        {delSite && (
+          <div className="scrim" onClick={() => { setDelSite(null); setDelSiteText(''); }}>
             <div className="modal" onClick={e => e.stopPropagation()}>
-              <h3>{menuSite.name}</h3>
-              <p>{menuSite.slug}.uqqi.ru</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
-                <a className="btn btn--ghost btn--block" href={'/site/' + menuSite.slug + '/edit'}><i data-lucide="pencil"></i> Редактировать контент</a>
-                {menuSite.canDelete === false
-                  ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
-                      <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                    </span>
-                  : <button className="btn btn--danger btn--block" onClick={() => deleteSite(menuSite)}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                }
+              <h3>Удалить сайт?</h3>
+              <p>Сайт <b>{delSite.name}</b> ({delSite.slug}.uqqi.ru) будет удалён безвозвратно.</p>
+              <p className="muted" style={{ fontSize: '.84rem', marginTop: '.6rem' }}>Введите название сайта для подтверждения:</p>
+              <input className="input" placeholder={delSite.name} value={delSiteText} onChange={e => setDelSiteText(e.target.value)} style={{ margin: '.5rem 0 .2rem' }} />
+              <div className="modal__actions">
+                <button className="btn btn--ghost btn--block" onClick={() => { setDelSite(null); setDelSiteText(''); }}>Отмена</button>
+                <button className="btn btn--danger btn--block"
+                        disabled={delSiteText.trim().toLowerCase() !== (delSite.name || '').trim().toLowerCase() && delSiteText.trim().toLowerCase() !== (delSite.slug || '').toLowerCase()}
+                        onClick={confirmDeleteSite}>Удалить</button>
               </div>
             </div>
           </div>
@@ -287,13 +349,14 @@ function App() {
 
         {/* delete account modal */}
         {confirmDel && (
-          <div className="scrim" onClick={() => setConfirmDel(false)}>
+          <div className="scrim" onClick={() => { setConfirmDel(false); setDelPw(''); }}>
             <div className="modal" onClick={e => e.stopPropagation()}>
               <h3>Удалить аккаунт?</h3>
               <p>Это действие необратимо. Все сайты будут отключены, а данные удалены навсегда.</p>
+              <input className="input" type="password" placeholder="Введите пароль для подтверждения" value={delPw} onChange={e => setDelPw(e.target.value)} style={{ margin: '.8rem 0 .2rem' }} />
               <div className="modal__actions">
-                <button className="btn btn--ghost btn--block" onClick={() => setConfirmDel(false)}>Отмена</button>
-                <button className="btn btn--danger btn--block" onClick={deleteAccount}>Удалить</button>
+                <button className="btn btn--ghost btn--block" onClick={() => { setConfirmDel(false); setDelPw(''); }}>Отмена</button>
+                <button className="btn btn--danger btn--block" disabled={!delPw} onClick={deleteAccount}>Удалить</button>
               </div>
             </div>
           </div>

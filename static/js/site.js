@@ -123,9 +123,32 @@
       <p class="review__text">${r.text}</p>
     </div>`;
   }
+  // Перетаскивание горизонтального рельса мышью (тач скроллит нативно).
+  function enableDragScroll(el){
+    if(!el) return;
+    let down=false, startX=0, startLeft=0, moved=false;
+    el.style.cursor='grab';
+    el.addEventListener('pointerdown', e=>{
+      if(e.pointerType!=='mouse') return;
+      down=true; moved=false; startX=e.clientX; startLeft=el.scrollLeft;
+      el.style.cursor='grabbing'; el.style.scrollSnapType='none';
+      try{ el.setPointerCapture(e.pointerId); }catch(_){}
+    });
+    el.addEventListener('pointermove', e=>{
+      if(!down) return;
+      const dx=e.clientX-startX;
+      if(Math.abs(dx)>3) moved=true;
+      el.scrollLeft=startLeft-dx;
+    });
+    function end(){ if(!down) return; down=false; el.style.cursor='grab'; el.style.scrollSnapType=''; }
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    // клик по карточке/ссылке не срабатывает, если это был драг
+    el.addEventListener('click', e=>{ if(moved){ e.preventDefault(); e.stopPropagation(); } }, true);
+  }
   function renderReviews(){
     const rail=$("#reviews-rail");
-    if(rail) rail.innerHTML=D.reviews.map(reviewCard).join("");
+    if(rail){ rail.innerHTML=D.reviews.map(reviewCard).join(""); enableDragScroll(rail); }
     const grid=$("#reviews-grid");
     if(grid){
       grid.innerHTML=D.reviews.map((r,i)=>{

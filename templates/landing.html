@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>uqqi — сайт для вашего бизнеса за минуту</title>
-<meta name="description" content="Делаем сайт для любого бизнеса, у которого его ещё нет. Вставьте ссылку на Яндекс Карты — соберём сайт за минуту. Вас находят, вам звонят, к вам приходят.">
+<meta name="description" content="Делаем сайт для любого бизнеса, у которого его ещё нет. Вставьте ссылку на Яндекс Карты — соберём сайт за минуту. Базовый сайт бесплатно навсегда.">
 <link rel="canonical" href="https://uqqi.ru/">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:title" content="uqqi — сайт для вашего бизнеса за минуту">
-<meta property="og:description" content="Вставьте ссылку на Яндекс Карты — соберём сайт за минуту. Вас находят, вам звонят, к вам приходят.">
+<meta property="og:description" content="Вставьте ссылку на Яндекс Карты — соберём сайт за минуту. Базовый сайт бесплатно навсегда.">
 <meta property="og:url" content="https://uqqi.ru/">
 <meta property="og:site_name" content="uqqi">
 <meta property="og:locale" content="ru_RU">
@@ -92,7 +92,9 @@ img,svg{display:block;max-width:100%;}
 .nav-links a:hover{color:var(--ink);}
 .nav-links a:hover::after{width:100%;}
 .nav-cta{padding:.6rem 1.2rem;font-size:.85rem;}
+.nav-act{display:flex;align-items:center;gap:.5rem;}
 @media(max-width:880px){.nav-links{display:none;}}
+@media(max-width:400px){.nav-cta{padding:.55rem .85rem;font-size:.8rem;}.nav-bar{padding:.5rem .5rem .5rem .8rem;}}
 
 /* ───── HERO ───── */
 .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:9rem 1.5rem 3rem;overflow:hidden;}
@@ -192,7 +194,10 @@ img,svg{display:block;max-width:100%;}
 /* category strip */
 .cats{margin-top:2.4rem;display:flex;flex-direction:column;align-items:center;gap:1rem;}
 .cats__label{font-size:.68rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);}
-.cats__row{display:flex;flex-wrap:wrap;justify-content:center;gap:.55rem .7rem;max-width:760px;}
+.cats__row{display:flex;flex-wrap:nowrap;justify-content:center;gap:.55rem .7rem;max-width:100%;overflow-x:auto;padding:.15rem .25rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+.cats__row::-webkit-scrollbar{display:none;}
+.cats__row .cat{flex:0 0 auto;}
+@media(max-width:760px){.cats__row{justify-content:flex-start;}}
 .cat{display:inline-flex;align-items:center;gap:.45rem;font-size:.86rem;font-weight:500;color:var(--ink-2);background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.7);padding:.4rem .85rem;border-radius:var(--r-pill);backdrop-filter:blur(4px);}
 .cat svg{width:15px;height:15px;color:var(--terracotta);}
 
@@ -429,9 +434,24 @@ section.block{padding:clamp(4.5rem,9vw,8rem) 0;}
 }
 
 /* ───── PRICING ───── */
+.price-free{max-width:960px;margin:0 auto 3rem;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-lg);padding:2.2rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem 2.6rem;align-items:center;box-shadow:var(--sh-card);}
+@media(max-width:760px){.price-free{grid-template-columns:1fr;gap:1.4rem;padding:1.8rem;}}
+.price-free__main .pcard__name{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--signal);margin-bottom:1rem;}
+.price-free__main .pcard__amt{font-family:var(--display);font-weight:900;font-size:2.8rem;line-height:1;letter-spacing:-.02em;}
+.price-free__main .pcard__amt span{font-family:var(--body);font-size:.92rem;font-weight:400;color:var(--muted);}
+.price-free__main .pcard__sub{font-size:.86rem;color:var(--muted);margin:.6rem 0 1.6rem;max-width:320px;}
+.price-free__list{list-style:none;display:grid;grid-template-columns:1fr;gap:.6rem;}
+.price-free__list li{display:flex;align-items:flex-start;gap:.55rem;font-size:.9rem;color:var(--ink-2);}
+.price-free__list li svg{width:16px;height:16px;color:var(--signal);flex-shrink:0;margin-top:.15em;}
+.pro-lead{text-align:center;max-width:640px;margin:0 auto 2.2rem;}
+.pro-lead__title{font-size:clamp(1.5rem,3.4vw,2.2rem);line-height:1.1;letter-spacing:-.02em;}
+.pro-lead__sub{margin-top:.8rem;color:var(--muted);font-size:.95rem;}
 .price-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem;max-width:760px;margin:0 auto;}
 .price-grid--single{grid-template-columns:1fr;max-width:440px;}
-@media(max-width:620px){.price-grid{grid-template-columns:1fr;}}
+.price-grid--three{grid-template-columns:repeat(3,1fr);max-width:960px;align-items:stretch;}
+.pcard__save{display:inline-block;margin-top:.5rem;font-size:.76rem;font-weight:700;color:var(--terracotta);background:#FBEDE4;padding:.2rem .6rem;border-radius:20px;}
+.pcard__pop{position:absolute;top:-.7rem;left:50%;transform:translateX(-50%);font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:var(--terracotta);padding:.25rem .8rem;border-radius:20px;}
+@media(max-width:820px){.price-grid,.price-grid--three{grid-template-columns:1fr;max-width:440px;}}
 .pcard{position:relative;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-lg);padding:2.2rem;transition:transform .3s var(--ease),box-shadow .3s;}
 .pcard:hover{transform:translateY(-5px);box-shadow:var(--sh-md);}
 .pcard--feat{border-color:var(--terracotta);background:linear-gradient(160deg,#fff,#FCF1EA);}
@@ -454,6 +474,7 @@ section.block{padding:clamp(4.5rem,9vw,8rem) 0;}
 .faq-q svg{width:20px;height:20px;color:var(--muted);flex-shrink:0;transition:transform .35s var(--ease);}
 .faq-item.open .faq-q svg{transform:rotate(180deg);color:var(--terracotta);}
 .faq-a{overflow:hidden;max-height:0;transition:max-height .4s var(--ease);}
+.faq-item.open .faq-a{max-height:32rem;}
 .faq-a p{padding:0 .25rem 1.4rem;color:var(--muted);font-size:.92rem;line-height:1.7;max-width:660px;}
 
 /* ───── FINAL CTA ───── */
@@ -475,7 +496,7 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
 .foot-col a{display:block;font-size:.88rem;color:var(--muted);margin-bottom:.65rem;transition:color .2s;}
 .foot-col a:hover{color:var(--terracotta);}
 .foot-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;padding:1.5rem 0;font-size:.78rem;color:var(--muted);}
-.watermark{font-family:var(--display);font-weight:900;font-size:clamp(4rem,20vw,17rem);line-height:.78;letter-spacing:-.05em;text-align:center;background:linear-gradient(180deg,#F0D2BF 0%,var(--paper) 92%);-webkit-background-clip:text;background-clip:text;color:transparent;user-select:none;margin-bottom:-.12em;}
+.watermark{font-family:var(--display);font-weight:900;font-size:clamp(4rem,20vw,17rem);line-height:.92;padding-top:.12em;letter-spacing:-.05em;text-align:center;background:linear-gradient(180deg,#F0D2BF 0%,var(--paper) 92%);-webkit-background-clip:text;background-clip:text;color:transparent;user-select:none;margin-bottom:-.12em;}
 .watermark span{color:transparent;}
 
 @media(prefers-reduced-motion:reduce){
@@ -497,7 +518,10 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
       <a href="#price">Цены</a>
       <a href="#faq">Вопросы</a>
     </div>
-    <a href="https://lk.uqqi.ru/" class="btn btn-ink nav-cta">Создать сайт</a>
+    <div class="nav-act">
+      <a href="https://lk.uqqi.ru/" class="btn btn-ghost nav-cta nav-login">Войти</a>
+      <a href="https://lk.uqqi.ru/" class="btn btn-ink nav-cta">Создать сайт</a>
+    </div>
   </nav>
 </div>
 
@@ -511,7 +535,7 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
       <span class="l1 anim-up d2">Сайт за минуту.</span>
       <span class="l2 anim-up d3">В одну кнопку.</span>
     </h1>
-    <p class="hero__sub anim-up d4">Делаем сайт для любого бизнеса, у которого его ещё нет. Нажимаете одну кнопку — и сайт собирается автоматически за минуту из вашей карточки Яндекс Карт. Вас находят, вам звонят, к вам приходят.</p>
+    <p class="hero__sub anim-up d4">Делаем сайт для любого бизнеса, у которого его ещё нет. Нажимаете одну кнопку — и сайт собирается автоматически за минуту из вашей карточки Яндекс Карт. Базовый сайт бесплатно навсегда.</p>
 
     <div class="herocta anim-up d5">
       <a href="https://lk.uqqi.ru/" class="btn btn-ink herocta__main">Создать сайт бесплатно <i data-lucide="arrow-right"></i></a>
@@ -521,7 +545,7 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
         <a class="btn herocta__demo herocta__demolink" id="demoLink" href="#" target="_blank" rel="noopener">Открыть готовый сайт <i data-lucide="arrow-up-right"></i></a>
       </div>
     </div>
-    <p class="herocta__note anim-up d5" id="bHint">7 дней бесплатно · без карты · оплата только после запуска</p>
+    <p class="herocta__note anim-up d5" id="bHint">Базовый сайт бесплатно навсегда · без карты · Pro — 7 дней бесплатно</p>
 
     <div class="cats anim-up d5">
       <div class="cats__label">Уже с сайтом на uqqi</div>
@@ -614,7 +638,7 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
       </div>
       <div class="avail reveal" style="--d:.18s">
         <div class="avail__item"><i data-lucide="globe"></i><p>После создания сайт становится доступен по адресу <b>название.uqqi.ru</b> в течение нескольких минут.</p></div>
-        <div class="avail__item"><i data-lucide="layout-dashboard"></i><p>Управление и редактирование — в личном кабинете</p></div>
+        <div class="avail__item"><i data-lucide="layout-dashboard"></i><p>Управление сайтом — в личном кабинете</p></div>
       </div>
     </div>
   </div>
@@ -660,12 +684,12 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
 
       <div class="fcard reveal" style="--d:.1s">
         <div class="fcard__demo">
-          <div class="d-toggle">Часы работы<span class="d-sw"></span></div>
-          <div class="d-toggle">Витрина и меню<span class="d-sw"></span></div>
-          <div class="d-saved"><i data-lucide="check"></i>Сохранено · сайт обновлён</div>
+          <div class="d-toggle">Оформление сайта<span class="d-sw"></span></div>
+          <div class="d-toggle">Чат с посетителями<span class="d-sw"></span></div>
+          <div class="d-saved"><i data-lucide="check"></i>Готово · всё под рукой</div>
         </div>
-        <div class="fcard__head"><div class="fcard__ic"><i data-lucide="sliders-horizontal"></i></div><h3>Меняете сами за минуту</h3></div>
-        <p>Простая панель на русском. Включайте блоки, меняйте текст и фото без обращения к нам.</p>
+        <div class="fcard__head"><div class="fcard__ic"><i data-lucide="sliders-horizontal"></i></div><h3>Личный кабинет на русском</h3></div>
+        <p>Понятная панель: выбираете дизайн, смотрите статистику посещений и подключаете Pro — без программиста.</p>
       </div>
 
       <div class="fcard reveal" style="--d:.2s">
@@ -679,7 +703,7 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
     </div>
 
     <div class="feat-simple">
-      <div class="scard reveal" style="--d:0s"><div class="scard__ic"><i data-lucide="image"></i></div><div><h4>Фотогалерея</h4><p>До 5 фото заведения — загружаете через панель, сайт обновляется мгновенно.</p></div></div>
+      <div class="scard reveal" style="--d:0s"><div class="scard__ic"><i data-lucide="image"></i></div><div><h4>Фотогалерея</h4><p>Фотографии заведения с вашей карточки Яндекс Карт — сразу на сайте.</p></div></div>
       <div class="scard reveal" style="--d:.08s"><div class="scard__ic"><i data-lucide="utensils"></i></div><div><h4>Витрина и меню</h4><p>Позиции с фото и ценами прямо с карточки Яндекс Карт — клиент видит ассортимент сразу.</p></div></div>
       <div class="scard reveal" style="--d:.16s"><div class="scard__ic"><i data-lucide="smartphone"></i></div><div><h4>Мобильная версия</h4><p>Сайт отлично выглядит на телефоне — там, где его открывает большинство ваших клиентов.</p></div></div>
     </div>
@@ -709,26 +733,60 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="kicker">Стоимость</span>
-      <h2 class="sec-title"><span class="h-bold">Прозрачные цены</span> <span class="h-serif">без сюрпризов</span></h2>
+      <h2 class="sec-title"><span class="h-bold">Базовый сайт —</span> <span class="h-serif">бесплатно навсегда</span></h2>
+      <p class="sub">Публикуете сайт и пользуетесь бесплатно. Pro подключаете отдельно, когда нужны премиум-дизайны и чат с посетителями.</p>
     </div>
-    <div class="price-grid price-grid--single reveal">
-      <div class="pcard pcard--feat">
-        <div class="pcard__name">На нашем домене</div>
-        <div class="pcard__amt">990 <span>₽/мес</span></div>
-        <div class="pcard__sub">Сайт на адресе название.uqqi.ru · первые 7 дней бесплатно</div>
-        <ul>
-          <li><i data-lucide="check"></i>7 дней бесплатно, без карты</li>
-          <li><i data-lucide="check"></i>Полноценный одностраничный сайт</li>
-          <li><i data-lucide="check"></i>Панель редактирования</li>
-          <li><i data-lucide="check"></i>Фото, часы, контакты, соцсети</li>
-          <li><i data-lucide="check"></i>Витрина, отзывы, особенности</li>
-          <li><i data-lucide="check"></i>SEO-оптимизация</li>
-          <li><i data-lucide="check"></i>Соответствие требованиям РКН 2026</li>
-          <li><i data-lucide="check"></i>SSL-сертификат и защита</li>
-        </ul>
-        <a href="https://lk.uqqi.ru/" class="btn btn-terra">Начать бесплатно</a>
+
+    <!-- FREE -->
+    <div class="price-free reveal">
+      <div class="price-free__main">
+        <div class="pcard__name">Бесплатно</div>
+        <div class="pcard__amt">0 <span>₽ навсегда</span></div>
+        <p class="pcard__sub">Всё, чтобы вас находили и выбирали. Без карты и без оплаты.</p>
+        <a href="https://lk.uqqi.ru/" class="btn btn-ink">Создать сайт бесплатно <i data-lucide="arrow-right"></i></a>
+      </div>
+      <ul class="price-free__list">
+        <li><i data-lucide="check"></i> Сайт на название.uqqi.ru</li>
+        <li><i data-lucide="check"></i> Данные организации: адрес, телефон, часы работы</li>
+        <li><i data-lucide="check"></i> Фото, витрина и меню, отзывы</li>
+        <li><i data-lucide="check"></i> Кнопки звонка и маршрута</li>
+        <li><i data-lucide="check"></i> Мобильная версия и SSL</li>
+        <li><i data-lucide="check"></i> Индексация в Яндексе и Google</li>
+      </ul>
+    </div>
+
+    <!-- PRO -->
+    <div class="pro-lead reveal">
+      <span class="kicker" style="display:block;margin-bottom:1rem;">Pro</span>
+      <h3 class="pro-lead__title"><span class="h-bold">Когда нужно</span> <span class="h-serif">больше</span></h3>
+      <p class="pro-lead__sub">Премиум-дизайны витрины и чат с посетителями прямо в вашем Telegram. Первые 7 дней — бесплатно. Pro подключается отдельно для каждого сайта.</p>
+    </div>
+    <div class="price-grid price-grid--three reveal">
+      <div class="pcard">
+        <div class="pcard__name">Месяц</div>
+        <div class="pcard__amt">990 <span>₽</span></div>
+        <div class="pcard__sub">990 ₽ / мес · 30 дней</div>
+        <a href="https://lk.uqqi.ru/" class="btn btn-terra">Попробовать Pro</a>
+      </div>
+      <div class="pcard pcard--feat" style="position:relative">
+        <div class="pcard__name">3 месяца</div>
+        <div class="pcard__amt">2490 <span>₽</span></div>
+        <div class="pcard__sub">830 ₽ / мес · 90 дней<span class="pcard__save">выгода 480 ₽</span></div>
+        <a href="https://lk.uqqi.ru/" class="btn btn-terra">Попробовать Pro</a>
+      </div>
+      <div class="pcard">
+        <div class="pcard__name">Год</div>
+        <div class="pcard__amt">8900 <span>₽</span></div>
+        <div class="pcard__sub">742 ₽ / мес · 365 дней<span class="pcard__save">выгода 2980 ₽</span></div>
+        <a href="https://lk.uqqi.ru/" class="btn btn-terra">Попробовать Pro</a>
       </div>
     </div>
+    <ul class="price-included reveal" style="max-width:700px;margin:2rem auto 0;list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:.5rem .5rem;font-size:.86rem;color:var(--ink-2)">
+      <li><i data-lucide="check" style="width:15px;height:15px;color:var(--terracotta);vertical-align:-2px"></i> Премиум-дизайны витрины</li>
+      <li><i data-lucide="check" style="width:15px;height:15px;color:var(--terracotta);vertical-align:-2px"></i> Чат с посетителями → в ваш Telegram</li>
+      <li><i data-lucide="check" style="width:15px;height:15px;color:var(--terracotta);vertical-align:-2px"></i> 7 дней бесплатно, без карты</li>
+      <li><i data-lucide="check" style="width:15px;height:15px;color:var(--terracotta);vertical-align:-2px"></i> После Pro базовый сайт продолжает работать</li>
+    </ul>
   </div>
 </section>
 
@@ -744,7 +802,7 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
         <div class="faq-item"><button class="faq-q">Сколько времени займёт запуск?<i data-lucide="chevron-down"></i></button><div class="faq-a"><p>Минуту. Вы нажимаете одну кнопку, сайт собирается автоматически и становится доступен по адресу название.uqqi.ru в течение нескольких минут. Управляете им в личном кабинете lk.uqqi.ru.</p></div></div>
         <div class="faq-item"><button class="faq-q">Нужно ли разбираться в технике?<i data-lucide="chevron-down"></i></button><div class="faq-a"><p>Нет. Панель управления простая и на русском языке. Любой текст, фото, часы работы и контакты вы меняете сами за пару минут — программист не понадобится.</p></div></div>
         <div class="faq-item"><button class="faq-q">Что если у меня ещё нет карточки в Яндекс Картах?<i data-lucide="chevron-down"></i></button><div class="faq-a"><p>Напишите нам в заявке — поможем разобраться. Карточку на Яндекс Картах можно завести бесплатно, и это полезно само по себе: так клиенты находят вас на карте.</p></div></div>
-        <div class="faq-item"><button class="faq-q">Сколько это стоит?<i data-lucide="chevron-down"></i></button><div class="faq-a"><p>990 ₽/мес за сайт на нашем домене название.uqqi.ru со всеми возможностями. Первые 7 дней — бесплатно и без карты, потом оплата только если сайт остаётся с вами.</p></div></div>
+        <div class="faq-item"><button class="faq-q">Сколько это стоит?<i data-lucide="chevron-down"></i></button><div class="faq-a"><p>Базовый сайт — бесплатно навсегда, без карты. Платный только Pro (премиум-дизайны и чат с посетителями в Telegram): месяц — 990 ₽, 3 месяца — 2490 ₽ (830 ₽/мес), год — 8900 ₽ (742 ₽/мес). Первые 7 дней Pro бесплатны. Pro подключается отдельно для каждого сайта, и после его окончания базовый сайт продолжает работать.</p></div></div>
       </div>
     </div>
   </div>
@@ -757,9 +815,9 @@ footer{background:var(--paper);padding:4rem 0 0;overflow:hidden;}
     <div class="moment__grain"></div>
     <div class="moment__inner reveal">
       <h2><span class="b" style="color:#fff;">Запустим ваш сайт</span> <span class="s" style="color:#FBE6D8;">за минуту</span></h2>
-      <p class="moment__sub">Одна кнопка — и сайт собирается автоматически. 7 дней бесплатно.</p>
+      <p class="moment__sub">Одна кнопка — и сайт собирается автоматически. Базовый сайт бесплатно навсегда.</p>
       <a href="https://lk.uqqi.ru/" class="btn btn-white">Создать сайт <i data-lucide="arrow-right" class="arr"></i></a>
-      <p class="final__note">7 дней бесплатно · без карты · оплата только после запуска.</p>
+      <p class="final__note">Базовый сайт бесплатно навсегда · без карты · Pro — 7 дней бесплатно.</p>
     </div>
   </div>
 </section>
@@ -927,6 +985,17 @@ function showRandomSite(){
     }
   })();
 })();
+
+// FAQ-аккордеон: клик по вопросу раскрывает ответ (и закрывает остальные)
+document.querySelectorAll('.faq-q').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var item = btn.closest('.faq-item');
+    if(!item) return;
+    var wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(function(o){ o.classList.remove('open'); });
+    if(!wasOpen) item.classList.add('open');
+  });
+});
 </script>
 </body>
 </html>

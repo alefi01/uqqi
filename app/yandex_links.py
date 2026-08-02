@@ -72,7 +72,11 @@ def extract_yandex_url(raw: str) -> tuple[str | None, str | None]:
         return without_query, None
     if ORG_ID_IN_PATH_RE.search(without_query):
         return without_query, None
-    # Mapframe: org_id живёт в query (oid=/poi[uri]=...), срезать нельзя
-    if OID_RE.search(without_fragment):
-        return without_fragment, None
+    # Mapframe (org_id в query как oid=): канонизируем в прямой org-URL.
+    # По mapframe-ссылке карточка открывается poi-оверлеем на карте города:
+    # вкладки каталога не работают, лого не извлекается — парс идёт криво.
+    m_oid = OID_RE.search(without_fragment)
+    if m_oid:
+        host = re.match(r'https?://[^/]+', without_fragment).group(0)
+        return f"{host}/maps/org/{m_oid.group(1)}/", None
     return None, ERR_NOT_ORG
