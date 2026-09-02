@@ -285,6 +285,45 @@ migrate.py         # ручные миграции БД (идемпотентн�
   (владелец записывает — см. `static/designs/README.md`). Пока файла нет —
   карточка показывает плейсхолдер с названием (`video.onError`), ничего не ломает.
 
+### Дизайн-кит `ux-ui-agent-skills` (установлен 2026-09)
+
+В репозиторий вкопан кит [plugin87/ux-ui-agent-skills](https://github.com/plugin87/ux-ui-agent-skills)
+(MIT, v2.5.1) — набор скиллов, доктрины вкуса и объективных гейтов, чтобы
+дизайн не скатывался в «ИИ-слоп». Это **не плагин**, а файлы в проекте.
+
+**Что где лежит:**
+- `.claude/skills/` — 15 скиллов (`design-tokens`, `design-component`, `design-code`,
+  `design-review`, `a11y-audit`, `apply-aesthetic`, `redesign`, `image-to-code`,
+  `brandkit`, `ux-writing`, `prototype`, `design-qa`, `performance`, `governance`,
+  `migrate-design-system`); `.claude/commands/` — `/gate`, `/ship`, `/critique`,
+  `/scaffold-project`; `.claude/agents/design-critic.md` — злой ревьюер.
+- `.claude/rules/` — глубина (токены, компоненты, a11y, типографика, фреймворки) +
+  `00-design-architect.md` — **это CLAUDE.md кита**, положен сюда, чтобы не
+  конфликтовать с этим файлом. В нём Request Router: какой скилл на какой запрос.
+- Данные: `tokens/` (DTCG), `components/` (42 спеки), `taste/` (анти-слоп доктрина,
+  архетипы, хореография анимаций), `design-systems/` (138 систем + протокол),
+  `frameworks/`, `accessibility/`, `workflows/`, `content/`, `examples/`, `evals/`.
+- Гейты — в общем `scripts/` (python + node .mjs), запуск через `npm run …`
+  (`package.json`, private). Перед первым запуском: `bash scripts/design_gate_setup.sh`
+  (ставит node-playwright и подкладывает симлинки на chromium контейнера).
+- `design-kit-starter/` — стартер кита для НОВЫХ репозиториев. Нам не нужен,
+  лежит вне `templates/`, чтобы не путался с Jinja-витринами.
+
+**Наши правила поверх кита (важно, кит писан под англоязычные SPA):**
+- ❌ Правило «em-dash = признак ИИ» **отключено** (`check_no_emoji.py --dash` —
+  только если понадобится для англ. копии). В русском тире обязательно.
+  Запрет **эмодзи как иконок** в витринах и ЛК — оставляем, он по делу.
+- `lint_hardcodes.py` НЕ применять к `templates/designs/*.html`: у премиум-витрин
+  своя палитра внутри файла — это by design, а не долг токенизации.
+- Гейты применяем к **новому/переписанному** коду, а не «прогнать по всему репо».
+- ❌ Кит любит React/Tailwind — витрины остаются Jinja+CSS (SEO, скорость).
+- `.mcp.json` кита (Figma MCP) намеренно НЕ ставили.
+
+**Практика:** дизайн-работа = `apply-aesthetic` (направление → токены) →
+`design-component` (спека + состояния) → `npm run taste` / `npm run taste:slop` /
+`npm run verify:responsive` → `/critique`. Числа про контраст называть только
+после запуска гейта.
+
 ### Безопасность
 
 - Access-лог `logs/access.log`: время, IP, метод, путь, статус, ms, UA.

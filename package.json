@@ -1,0 +1,31 @@
+{
+  "name": "uqqi-design-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Дизайн-гейты uqqi поверх ux-ui-agent-skills (MIT, plugin87). Прод на Python/FastAPI — node здесь только для проверок дизайна.",
+  "type": "commonjs",
+  "scripts": {
+    "verify": "node scripts/accuracy_report.mjs",
+    "taste": "node scripts/taste_audit.mjs",
+    "taste:slop": "node scripts/slop_tells.mjs",
+    "render": "node scripts/measure_render.mjs",
+    "a11y:target-size": "node scripts/verify_target_size.mjs",
+    "a11y:keyboard": "node scripts/verify_keyboard.mjs",
+    "a11y:reduced-motion": "node scripts/verify_reduced_motion.mjs",
+    "verify:responsive": "node scripts/verify_responsive.mjs",
+    "verify:overflow": "node scripts/verify_overflow.mjs",
+    "verify:states": "node scripts/verify_states.mjs",
+    "verify:interactive": "node scripts/verify_interactive.mjs",
+    "axe": "node scripts/axe_audit.mjs",
+    "lint:taste": "python3 scripts/lint_taste.py",
+    "lint:emoji": "python3 scripts/check_no_emoji.py",
+    "contrast": "python3 scripts/contrast.py"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "license": "MIT"
+}

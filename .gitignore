@@ -25,6 +25,12 @@ venv/
 # Node / сборка
 node_modules/
 .build/
+package-lock.json
+
+# Дизайн-кит: рантайм-вывод гейтов
+dist/
+evals/out/
+.design-gate/
 
 # Playwright
 .cache/
