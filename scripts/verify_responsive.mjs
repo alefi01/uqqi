@@ -41,7 +41,9 @@ const files = statSync(abs).isDirectory()
   ? readdirSync(abs).filter(f => f.endsWith('.html')).map(f => join(abs, f)).sort()
   : [abs];
 
-const browser = await chromium.launch({ channel: 'chrome' });
+// uqqi-адаптация: как в остальных гейтах — фолбэк на встроенный chromium,
+// если системного Chrome нет (в контейнерах Claude Code его нет).
+const browser = await chromium.launch({ channel: 'chrome' }).catch(() => chromium.launch());
 const fails = [];
 for (const w of widths) {
   const page = await browser.newPage({ viewport: { width: w, height: 800 } });

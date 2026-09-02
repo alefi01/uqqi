@@ -143,7 +143,8 @@ const MARK = () => {
   return { controls, composites, scoped: !!openDialog };
 };
 
-const browser = await chromium.launch({ channel: 'chrome' });
+// uqqi-адаптация: фолбэк на встроенный chromium, если системного Chrome нет.
+const browser = await chromium.launch({ channel: 'chrome' }).catch(() => chromium.launch());
 const problems = [];
 let totalControls = 0, totalComposites = 0;
 

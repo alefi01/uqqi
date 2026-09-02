@@ -134,7 +134,8 @@ const AUDIT = (MIN) => {
   return { total: measured.length, bad };
 };
 
-const browser = await chromium.launch({ channel: 'chrome' });
+// uqqi-адаптация: фолбэк на встроенный chromium, если системного Chrome нет.
+const browser = await chromium.launch({ channel: 'chrome' }).catch(() => chromium.launch());
 const fails = [];
 let totalTargets = 0;
 

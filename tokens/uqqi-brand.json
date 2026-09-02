@@ -1,0 +1,116 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "uqqi brand tokens (2026-09). Single source of truth for uqqi's OWN surfaces: the landing page (templates/landing.html) and the client cabinet (static/lk/styles.css). Storefront templates (site_a/b/c, templates/designs/*) deliberately carry their own palettes and do NOT consume these. Direction: industrial workshop sign. Cool paper, off-black ink, mono labels, one signal orange used as a mark. Every pair below was measured with scripts/contrast.py.",
+
+  "primitive": {
+    "$description": "Raw values. Reference the semantic layer instead.",
+    "paper": {
+      "0": { "$type": "color", "$value": "#FBFBF9", "$description": "raised surface" },
+      "1": { "$type": "color", "$value": "#F2F2F0", "$description": "page ground" },
+      "2": { "$type": "color", "$value": "#E9E9E5", "$description": "recessed band" },
+      "line": { "$type": "color", "$value": "#D7D8D2" },
+      "line-soft": { "$type": "color", "$value": "#E3E4DF" }
+    },
+    "ink": {
+      "900": { "$type": "color", "$value": "#121417", "$description": "off-black, never #000" },
+      "700": { "$type": "color", "$value": "#22262B" },
+      "500": { "$type": "color", "$value": "#40464E" },
+      "300": { "$type": "color", "$value": "#5F656D" },
+      "line": { "$type": "color", "$value": "#2C3138", "$description": "hairline on dark bands" }
+    },
+    "signal": {
+      "orange": { "$type": "color", "$value": "#E1541F", "$description": "brand mark orange (logo dot). Graphics and fills only on light: 3.41:1" },
+      "orange-ink": { "$type": "color", "$value": "#B33A0C", "$description": "text-safe orange on paper: 5.31:1" },
+      "orange-soft": { "$type": "color", "$value": "#F7E2D8" },
+      "green": { "$type": "color", "$value": "#12734A", "$description": "status open / success: 5.24:1 on paper" },
+      "amber": { "$type": "color", "$value": "#8A5A06" },
+      "red": { "$type": "color", "$value": "#B32B1E" }
+    },
+    "on-dark": {
+      "text": { "$type": "color", "$value": "#FBFBF9", "$description": "17.81:1 on ink.900" },
+      "muted": { "$type": "color", "$value": "#B9BFC7", "$description": "9.96:1 on ink.900" },
+      "accent": { "$type": "color", "$value": "#E1541F", "$description": "4.82:1 on ink.900, text-safe" }
+    }
+  },
+
+  "semantic": {
+    "surface": {
+      "page": { "$type": "color", "$value": "{primitive.paper.1}" },
+      "raised": { "$type": "color", "$value": "{primitive.paper.0}" },
+      "sunken": { "$type": "color", "$value": "{primitive.paper.2}" },
+      "inverse": { "$type": "color", "$value": "{primitive.ink.900}" }
+    },
+    "text": {
+      "primary": { "$type": "color", "$value": "{primitive.ink.900}", "$description": "16.46:1 on page" },
+      "secondary": { "$type": "color", "$value": "{primitive.ink.500}", "$description": "8.50:1 on page" },
+      "muted": { "$type": "color", "$value": "{primitive.ink.300}", "$description": "5.25:1 on page, 4.83:1 on sunken" },
+      "accent": { "$type": "color", "$value": "{primitive.signal.orange-ink}" },
+      "on-inverse": { "$type": "color", "$value": "{primitive.on-dark.text}" },
+      "on-inverse-muted": { "$type": "color", "$value": "{primitive.on-dark.muted}" }
+    },
+    "border": {
+      "subtle": { "$type": "color", "$value": "{primitive.paper.line-soft}" },
+      "default": { "$type": "color", "$value": "{primitive.paper.line}" },
+      "strong": { "$type": "color", "$value": "{primitive.ink.900}" },
+      "on-inverse": { "$type": "color", "$value": "{primitive.ink.line}" }
+    },
+    "action": {
+      "primary-bg": { "$type": "color", "$value": "{primitive.ink.900}", "$description": "primary action is ink, not the accent" },
+      "primary-text": { "$type": "color", "$value": "{primitive.on-dark.text}" },
+      "primary-bg-hover": { "$type": "color", "$value": "{primitive.ink.700}" },
+      "mark": { "$type": "color", "$value": "{primitive.signal.orange}", "$description": "the dot, underline marks, active rules. Never body text on light." },
+      "focus-ring": { "$type": "color", "$value": "{primitive.signal.orange}" }
+    },
+    "status": {
+      "open": { "$type": "color", "$value": "{primitive.signal.green}" },
+      "warning": { "$type": "color", "$value": "{primitive.signal.amber}" },
+      "danger": { "$type": "color", "$value": "{primitive.signal.red}" }
+    }
+  },
+
+  "typography": {
+    "family": {
+      "ui": { "$type": "fontFamily", "$value": "'Golos Text', system-ui, -apple-system, 'Segoe UI', sans-serif", "$description": "Cyrillic-native grotesque, 400..900 variable. Carries both display and body." },
+      "mono": { "$type": "fontFamily", "$value": "'IBM Plex Mono', 'SF Mono', ui-monospace, monospace", "$description": "eyebrows, numerals, labels, spec rows" }
+    },
+    "scale": {
+      "display": { "$type": "dimension", "$value": "clamp(2.6rem, 6.4vw, 5.4rem)", "$description": "line-height 0.98, tracking -0.035em" },
+      "h2": { "$type": "dimension", "$value": "clamp(1.9rem, 3.8vw, 3.1rem)" },
+      "h3": { "$type": "dimension", "$value": "1.18rem" },
+      "body": { "$type": "dimension", "$value": "1rem" },
+      "small": { "$type": "dimension", "$value": "0.86rem" },
+      "label": { "$type": "dimension", "$value": "0.72rem", "$description": "mono, uppercase, tracking 0.14em" }
+    },
+    "measure": {
+      "prose": { "$type": "dimension", "$value": "66ch" },
+      "display": { "$type": "dimension", "$value": "18ch" }
+    }
+  },
+
+  "spacing": {
+    "section": { "$type": "dimension", "$value": "clamp(4.5rem, 9vw, 8.5rem)", "$description": "outer > inner, never inverted" },
+    "block": { "$type": "dimension", "$value": "clamp(2rem, 4vw, 3.5rem)" },
+    "card": { "$type": "dimension", "$value": "1.4rem" },
+    "gap": { "$type": "dimension", "$value": "0.75rem" }
+  },
+
+  "border-radius": {
+    "$description": "Sharp radius language: a workshop sign has square corners. Pills are reserved for status chips only.",
+    "none": { "$type": "dimension", "$value": "0" },
+    "sm": { "$type": "dimension", "$value": "3px" },
+    "md": { "$type": "dimension", "$value": "6px" },
+    "pill": { "$type": "dimension", "$value": "99px" }
+  },
+
+  "shadow": {
+    "$description": "Depth comes from hairlines and flat surfaces. Shadow appears twice on the whole page.",
+    "raised": { "$type": "shadow", "$value": "0 1px 2px rgba(18, 20, 23, 0.06), 0 12px 28px rgba(18, 20, 23, 0.07)" },
+    "overlay": { "$type": "shadow", "$value": "0 24px 70px rgba(18, 20, 23, 0.22)" }
+  },
+
+  "motion": {
+    "fast": { "$type": "duration", "$value": "140ms" },
+    "base": { "$type": "duration", "$value": "220ms" },
+    "ease-out": { "$type": "cubicBezier", "$value": [0.16, 1, 0.3, 1] }
+  }
+}

@@ -119,7 +119,8 @@ const dist = (a, b) => {
   return Math.hypot(x - p, y - q, z - r);
 };
 
-const browser = await chromium.launch({ channel: 'chrome' });
+// uqqi-адаптация: фолбэк на встроенный chromium, если системного Chrome нет.
+const browser = await chromium.launch({ channel: 'chrome' }).catch(() => chromium.launch());
 const problems = [];
 const byLabel = new Map();
 let checked = 0;

@@ -111,7 +111,8 @@ const SNAPSHOT = ({ THRESHOLD, linkedCss }) => {
   return { hasPolicy, declaresMotion, visible, moving };
 };
 
-const browser = await chromium.launch({ channel: 'chrome' });
+// uqqi-адаптация: фолбэк на встроенный chromium, если системного Chrome нет.
+const browser = await chromium.launch({ channel: 'chrome' }).catch(() => chromium.launch());
 const problems = [];
 
 for (const f of files) {
