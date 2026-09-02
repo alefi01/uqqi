@@ -557,7 +557,9 @@ function DesignPreview({ d, slug, onClose, onApply, applying }) {
     return function () { window.removeEventListener('keydown', onKey); };
   }, [onClose]);
   const url = designPreviewUrl(slug, d.key);
-  return (
+  // Портал в body: экран дизайна лежит внутри прокручиваемой области кабинета,
+  // и position:fixed там ограничивается контейнером — предпросмотр не накрывал бы меню.
+  return ReactDOM.createPortal((
     <div className="dpv" role="dialog" aria-modal="true" aria-label={'Предпросмотр оформления ' + d.name}>
       <div className="dpv__bar">
         <div className="dpv__title">
@@ -590,7 +592,7 @@ function DesignPreview({ d, slug, onClose, onApply, applying }) {
           title={'Предпросмотр оформления ' + d.name}></iframe>
       </div>
     </div>
-  );
+  ), document.body);
 }
 
 // ---- экран «Дизайн сайта» (смена оформления + живой предпросмотр) ----
