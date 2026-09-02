@@ -53,7 +53,16 @@ async def security_headers(request: Request, call_next):
     elapsed_ms = (_t.time() - start) * 1000
 
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    # Предпросмотр дизайна в ЛК встраивает витрину (slug.uqqi.ru) в iframe на
+    # lk.uqqi.ru — это другой origin, SAMEORIGIN его бы запретил. Такие ответы
+    # помечаются заголовком X-Uqqi-Embeddable и получают CSP frame-ancestors,
+    # разрешающий вложение только внутрь нашего домена.
+    if response.headers.pop("X-Uqqi-Embeddable", None) == "1":
+        response.headers["Content-Security-Policy"] = (
+            "frame-ancestors 'self' https://uqqi.ru https://*.uqqi.ru"
+        )
+    else:
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
 
     # Access-лог: только метаданные, без тел запросов (не пишем пароли/токены)
     log_access(ip, method, path, response.status_code, ua, elapsed_ms)
@@ -724,8 +733,12 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
             pctx = _build_site_context(request, company)
             pctx["unpaid_overlay"] = False
             pctx["chat_enabled"] = False
+            pctx["seo_noindex"] = True     # превью не должно попадать в выдачу
             presp = templates.TemplateResponse(ptpl, pctx)
             presp.headers["Cache-Control"] = "no-store"
+            # Разрешаем встроить превью в iframe кабинета (см. middleware выше):
+            # клиент листает дизайны на СВОИХ данных, не открывая новую вкладку.
+            presp.headers["X-Uqqi-Embeddable"] = "1"
             return presp
 
     tpl = _variant_template(request, company)

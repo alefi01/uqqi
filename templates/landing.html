@@ -42,7 +42,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400..900&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -50,127 +50,113 @@
 <script src="https://unpkg.com/lucide@0.456.0/dist/umd/lucide.min.js"></script>
 <style>
 /* ============================================================
-   uqqi.ru — главная. Дизайн-направление: «мастерская».
-   Холодная бумага, чёрные чернила, моно-подписи, оранжевая метка
-   бренда как единственный акцент. Значения — из tokens/uqqi-brand.json.
+   uqqi.ru — главная. Светлый спокойный продукт:
+   белая и кремовая бумага, карточки с волосяной рамкой,
+   крупный заголовок, часть фразы — курсивной антиквой,
+   фирменная тёплая градиентная панель вместо декоративного шума.
+   Токены — tokens/uqqi-brand.json, контраст измерен scripts/contrast.py.
    ============================================================ */
 :root{
-  /* поверхности */
-  --paper:#F2F2F0; --paper-2:#E9E9E5; --surface:#FBFBF9;
-  /* текст */
-  --ink:#121417; --ink-2:#40464E; --muted:#5F656D;
-  /* линии */
-  --line:#D7D8D2; --line-soft:#E3E4DF; --line-dark:#2C3138;
-  /* метка бренда и статусы */
-  --mark:#E1541F; --mark-ink:#B33A0C; --mark-soft:#F7E2D8;
-  --open:#12734A; --warn:#8A5A06;
-  /* на тёмном */
-  --on-dark:#FBFBF9; --on-dark-muted:#B9BFC7;
-  /* типографика */
-  --ui:'Golos Text',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --mono:'IBM Plex Mono','SF Mono',ui-monospace,monospace;
-  /* геометрия */
-  --r-sm:3px; --r-md:6px; --r-pill:99px;
-  --maxw:1240px; --gutter:clamp(1.1rem,4vw,2.5rem);
-  --section:clamp(4.5rem,9vw,8.5rem);
-  /* глубина: две тени на всю страницу, не больше */
-  --sh-raised:0 1px 2px rgba(18,20,23,.06),0 12px 28px rgba(18,20,23,.07);
-  --sh-overlay:0 24px 70px rgba(18,20,23,.22);
-  /* движение */
+  --page:#FFFFFF; --cream:#FAFAF8; --cool:#F1F3F6; --sunken:#F1F3F6;
+  --ink:#14171F; --ink-2:#3F4653; --muted:#5C636E;
+  --line:#E6E7E3; --line-2:#DCDEDA; --line-dark:#272B34;
+  --mark:#E1541F; --mark-ink:#B33A0C; --mark-deep:#8F2E08; --mark-soft:#FBEAE2;
+  --open:#0F6540;
+  --dark:#14171F; --dark-2:#1B1F28; --on-dark:#FFFFFF; --on-dark-muted:#B9BFC7;
+  --ui:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --serif:'Playfair Display',Georgia,serif;
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:22px; --r-pill:99px;
+  --maxw:1200px; --gutter:clamp(1.1rem,4vw,2.5rem);
+  --section:clamp(4rem,7.5vw,6.5rem);
+  --sh-card:0 1px 2px rgba(20,23,31,.04),0 8px 24px rgba(20,23,31,.05);
+  --sh-raised:0 2px 6px rgba(20,23,31,.06),0 18px 40px rgba(20,23,31,.09);
+  --sh-overlay:0 30px 80px rgba(20,23,31,.20);
+  --dots:radial-gradient(circle,rgba(20,23,31,.07) 1px,transparent 1px);
   --t-fast:140ms; --t-base:220ms; --ease:cubic-bezier(.16,1,.3,1);
 }
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
-body{
-  font-family:var(--ui);background:var(--paper);color:var(--ink);
-  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
-  text-rendering:optimizeLegibility;overflow-x:hidden;
-}
+body{font-family:var(--ui);background:var(--page);color:var(--ink);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;}
 a{color:inherit;text-decoration:none;}
 img,svg{display:block;max-width:100%;}
 ul,ol{list-style:none;}
-::selection{background:var(--ink);color:var(--surface);}
+::selection{background:var(--ink);color:var(--page);}
 :focus-visible{outline:2px solid var(--mark);outline-offset:3px;}
-
 .wrap{max-width:var(--maxw);margin:0 auto;padding-inline:var(--gutter);}
 .section{padding-block:var(--section);}
+.section--cream{background:var(--cream);border-block:1px solid var(--line);}
 
-/* ---- типографика ---- */
-.display{
-  font-weight:800;letter-spacing:-.035em;line-height:.98;
-  font-size:clamp(2rem,4.6vw,4.2rem);max-width:22ch;text-wrap:balance;overflow-wrap:break-word;
-}
-.h2{
-  font-weight:800;letter-spacing:-.03em;line-height:1.04;
-  font-size:clamp(1.9rem,3.8vw,3.1rem);max-width:20ch;text-wrap:balance;
-}
-.h3{font-weight:700;letter-spacing:-.015em;font-size:1.18rem;line-height:1.25;}
-.lead{font-size:clamp(1rem,1.25vw,1.14rem);color:var(--ink-2);max-width:56ch;}
-.prose{color:var(--ink-2);max-width:66ch;}
-.small{font-size:.86rem;}
-.muted{color:var(--muted);}
-.label{
-  font-family:var(--mono);font-weight:600;font-size:.72rem;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
-}
-.num{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;}
+/* типографика */
+.display{font-weight:700;letter-spacing:-.035em;line-height:1.05;
+  font-size:clamp(2.1rem,5vw,4.2rem);max-width:20ch;text-wrap:balance;overflow-wrap:break-word;margin-inline:auto;}
+.h2{font-weight:700;letter-spacing:-.03em;line-height:1.1;
+  font-size:clamp(1.7rem,3.3vw,2.7rem);max-width:24ch;text-wrap:balance;overflow-wrap:break-word;}
+.serif{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.005em;}
+.lead{font-size:clamp(1rem,1.2vw,1.12rem);color:var(--muted);max-width:56ch;}
+.kicker{font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+.small{font-size:.86rem;} .muted{color:var(--muted);}
 .dot{color:var(--mark-ink);}
+.sec-head{text-align:center;max-width:46ch;margin:0 auto 3rem;}
+.sec-head h2{margin-inline:auto;}
+.sec-head .kicker{display:block;margin-top:.9rem;}
 
-/* ---- кнопки ---- */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
-  font-family:var(--ui);font-weight:600;font-size:.95rem;line-height:1;
-  min-height:44px;padding:.85rem 1.35rem;border:1.5px solid transparent;
-  border-radius:var(--r-sm);cursor:pointer;text-align:center;max-inline-size:100%;
-  transition:background var(--t-fast) linear,color var(--t-fast) linear,
-             border-color var(--t-fast) linear,transform var(--t-fast) linear;
-}
+/* кнопки */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--ui);
+  font-weight:600;font-size:.95rem;line-height:1;min-height:46px;padding:.85rem 1.5rem;
+  border:1px solid transparent;border-radius:var(--r-pill);cursor:pointer;text-align:center;max-inline-size:100%;
+  transition:background var(--t-fast) linear,color var(--t-fast) linear,border-color var(--t-fast) linear,
+             box-shadow var(--t-base) linear,transform var(--t-fast) linear;}
 .btn svg{width:17px;height:17px;flex:none;}
 .btn--primary{background:var(--ink);color:var(--on-dark);}
-.btn--primary:hover{background:#22262B;}
-.btn--primary:active{transform:translateY(1px);}
-.btn--outline{background:transparent;color:var(--ink);border-color:var(--ink);}
-.btn--outline:hover{background:var(--ink);color:var(--on-dark);}
-.btn--outline:active{transform:translateY(1px);}
+.btn--primary:hover{background:#252A35;box-shadow:0 8px 22px rgba(20,23,31,.20);transform:translateY(-1px);}
+.btn--primary:active{transform:translateY(0);}
+.btn--outline{background:var(--page);color:var(--ink);border-color:var(--line-2);box-shadow:var(--sh-card);}
+.btn--outline:hover{border-color:var(--ink);transform:translateY(-1px);}
+.btn--outline:active{transform:translateY(0);}
+.btn--onmark{background:var(--page);color:var(--mark-deep);}
+.btn--onmark:hover{background:#FFF3EE;transform:translateY(-1px);}
+.btn--onmark-outline{background:#8F2E08;color:#fff;border-color:rgba(255,255,255,.5);}
+.btn--onmark-outline:hover{border-color:#fff;background:#A93A10;}
 .btn--ondark{background:var(--on-dark);color:var(--ink);}
-.btn--ondark:hover{background:#E6E7E2;}
-.btn--ondark-outline{background:transparent;color:var(--on-dark);border-color:#4A5158;}
-.btn--ondark-outline:hover{border-color:var(--on-dark);}
+.btn--ondark:hover{background:#E8EAED;transform:translateY(-1px);}
+.btn--ondark-outline{background:transparent;color:var(--on-dark);border-color:#3A414C;}
+.btn--ondark-outline:hover{border-color:#FFFFFF;background:#242932;}
 
-/* ---- навигация ---- */
-.nav{position:sticky;top:0;z-index:80;background:rgba(242,242,240,.92);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--line);}
-.nav__in{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;
-  height:64px;max-width:var(--maxw);margin:0 auto;padding-inline:var(--gutter);}
-.brand{display:flex;align-items:center;gap:.5rem;font-size:1.05rem;}
-.brand b{font-weight:800;letter-spacing:-.03em;}
-.brand img{width:28px;height:28px;}
-.nav__links{display:flex;gap:1.75rem;}
-.nav__links a{font-size:.9rem;font-weight:500;color:var(--ink-2);padding-block:.4rem;
-  border-bottom:1.5px solid transparent;transition:color var(--t-fast) linear,border-color var(--t-fast) linear;}
-.nav__links a:hover{color:var(--ink);border-color:var(--mark);}
-.nav__cta{min-height:38px;padding:.55rem 1.05rem;font-size:.88rem;}
+/* навигация */
+.nav{position:sticky;top:0;z-index:80;padding:.7rem var(--gutter) 0;}
+.nav__in{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;max-width:1040px;margin:0 auto;
+  height:58px;padding:0 .55rem 0 1.1rem;background:rgba(255,255,255,.9);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-card);}
+.brand{display:flex;align-items:center;gap:.5rem;font-size:1.02rem;}
+.brand img{width:26px;height:26px;}
+.brand b{font-weight:700;letter-spacing:-.03em;}
+.nav__links{display:flex;gap:1.5rem;}
+.nav__links a{font-size:.89rem;font-weight:500;color:var(--muted);padding-block:.4rem;transition:color var(--t-fast) linear;}
+.nav__links a:hover{color:var(--ink);}
+.nav__cta{min-height:38px;padding:.55rem 1.1rem;font-size:.87rem;}
 @media(max-width:900px){.nav__links{display:none;}}
 
-/* ---- герой: асимметричный сплит 7/5 ---- */
-.hero{padding-block:clamp(3rem,7vw,6rem) clamp(3.5rem,7vw,6.5rem);}
-.hero__grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(2rem,5vw,4.5rem);align-items:start;}
-@media(max-width:940px){.hero__grid{grid-template-columns:minmax(0,1fr);gap:2.75rem;}}
-.hero .label{display:block;margin-bottom:1.4rem;}
-.hero h1{margin-bottom:1.5rem;}
-.hero__lead{margin-bottom:2rem;}
-.hero__cta{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;}
+/* герой на фотографии */
+.hero{position:relative;margin-top:-58px;padding-top:58px;min-height:min(720px,100svh);
+  display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;}
+.hero__bg{position:absolute;inset:0;z-index:0;background-color:#C3DAE9;
+  background-image:url('/static/hero.jpg'),
+    linear-gradient(180deg,#8FC0E3 0%,#BDD9EA 34%,#DCE6DE 52%,#A8BE9A 72%,#7E9B72 100%);
+  background-size:cover,auto;background-position:center;background-repeat:no-repeat;}
+.hero__scrim{position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.80) 0%,rgba(255,255,255,.70) 45%,rgba(255,255,255,.90) 100%);}
+.hero__in{position:relative;z-index:2;width:100%;max-width:920px;padding:clamp(3.5rem,8vw,6rem) var(--gutter) clamp(3rem,6vw,4.5rem);}
+.hero h1{margin-bottom:1.4rem;}
+.hero__lead{margin:0 auto 2.2rem;color:var(--ink-2);}
+.hero__cta{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;justify-content:center;}
 @media(max-width:520px){.hero__cta{flex-direction:column;align-items:stretch;}.hero__cta .btn,.demo-slot{width:100%;}}
-.hero__note{margin-top:1.1rem;font-family:var(--mono);font-size:.76rem;color:var(--muted);min-height:1.2em;max-width:46ch;}
+.hero__note{margin-top:1.2rem;font-size:.85rem;color:var(--ink-2);font-weight:500;min-height:1.2em;max-width:46ch;margin-inline:auto;}
 
-/* слот «показать готовый сайт»: кнопка → спиннер → ссылка */
 .demo-slot{position:relative;display:inline-flex;}
 .demo-slot .btn,.demo-spin,.demo-link{transition:opacity var(--t-base) linear;}
 .demo-spin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;}
-.demo-spin__ring{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);
-  border-top-color:var(--mark);animation:spin .7s linear infinite;}
+.demo-spin__ring{width:20px;height:20px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--mark);animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .demo-link{position:absolute;inset:0;opacity:0;pointer-events:none;}
 .demo-slot.loading .btn{opacity:0;pointer-events:none;}
@@ -178,254 +164,291 @@ ul,ol{list-style:none;}
 .demo-slot.ready .btn{opacity:0;pointer-events:none;}
 .demo-slot.ready .demo-link{opacity:1;pointer-events:auto;}
 
-/* спецификация «что переносим» — плотный список, не карточки */
-.spec{background:var(--surface);border:1px solid var(--line);}
-.spec__head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.4rem 1rem;
-  padding:.9rem 1.1rem;border-bottom:1px solid var(--line);}
-.spec__rows{display:flex;flex-direction:column;}
-.spec__row{display:grid;grid-template-columns:2.2rem minmax(0,1fr) auto;align-items:center;gap:.6rem;
-  padding:.72rem 1.1rem;border-bottom:1px solid var(--line-soft);font-size:.92rem;}
-.spec__row:last-child{border-bottom:0;}
-.spec__row .num{font-size:.72rem;color:var(--muted);}
-.spec__row svg{width:16px;height:16px;color:var(--muted);}
-.spec__foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
-  padding:.9rem 1.1rem;background:var(--paper-2);border-top:1px solid var(--line);}
-.spec__addr{font-family:var(--mono);font-size:.84rem;color:var(--ink);}
-.chip{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;font-weight:600;
-  color:var(--open);border:1px solid rgba(18,115,74,.3);border-radius:var(--r-pill);padding:.22rem .6rem;}
-.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--open);}
+/* строка «что переносим» вместо витрины чужих логотипов */
+.spec{background:var(--cream);border-bottom:1px solid var(--line);}
+.spec__in{padding-block:2.2rem 2.4rem;}
+.spec .kicker{display:block;text-align:center;margin-bottom:1.5rem;}
+.spec__rows{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;}
+@media(max-width:900px){.spec__rows{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:520px){.spec__rows{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.spec__row{background:var(--page);padding:1.1rem .9rem;display:flex;flex-direction:column;align-items:center;
+  gap:.5rem;text-align:center;font-size:.86rem;color:var(--ink-2);}
+.spec__row svg{width:19px;height:19px;color:var(--mark-ink);}
 
-/* ---- тёмная полоса: кому подходит ---- */
-.band{background:var(--ink);color:var(--on-dark);padding-block:clamp(3rem,6vw,4.75rem);}
-.band .label{color:var(--on-dark-muted);}
-.band__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line-dark);
-  border:1px solid var(--line-dark);}
-@media(max-width:820px){.band__grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:520px){.band__grid{grid-template-columns:minmax(0,1fr);}}
-.band__col{background:var(--ink);padding:1.5rem 1.4rem 1.7rem;}
-.band__intro{background:#1B1F24;display:flex;flex-direction:column;justify-content:space-between;gap:1.5rem;}
-.band__intro h2{font-weight:800;letter-spacing:-.03em;font-size:clamp(1.6rem,2.6vw,2.2rem);line-height:1.06;max-width:14ch;}
-.band__intro p{font-size:.88rem;color:var(--on-dark-muted);max-width:36ch;}
-.band__col h3{font-size:.98rem;font-weight:700;letter-spacing:-.01em;margin-bottom:.75rem;}
-.band__col li{font-size:.88rem;color:var(--on-dark-muted);padding-block:.2rem;}
-.band__mark{width:18px;height:2px;background:var(--mark);margin-bottom:.9rem;}
+/* бенто «что вы получаете» */
+.bento{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;}
+@media(max-width:1000px){.bento{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:560px){.bento{grid-template-columns:minmax(0,1fr);}}
+.tile{background:var(--page);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-card);
+  padding:1.4rem;display:flex;flex-direction:column;gap:.45rem;min-height:172px;
+  transition:transform var(--t-base) var(--ease),box-shadow var(--t-base) linear;}
+.tile:hover{transform:translateY(-2px);box-shadow:var(--sh-raised);}
+.tile__ic{display:flex;align-items:center;gap:.5rem;margin-bottom:.15rem;}
+.tile__ic svg{width:18px;height:18px;color:var(--ink);}
+.tile h3{font-size:.98rem;font-weight:600;letter-spacing:-.01em;}
+.tile p{font-size:.87rem;color:var(--muted);line-height:1.5;max-width:44ch;}
+.tile--w2{grid-column:span 2;}
+@media(max-width:560px){.tile--w2{grid-column:span 1;}}
+.mock{background:var(--cool);border:1px solid var(--line);border-radius:var(--r-md);background-image:var(--dots);
+  background-size:16px 16px;padding:1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:.5rem;
+  justify-content:center;min-height:126px;}
+.mock__card{background:var(--page);border:1px solid var(--line);border-radius:var(--r-sm);padding:.6rem .7rem;
+  display:flex;align-items:center;justify-content:space-between;gap:.7rem;font-size:.8rem;color:var(--ink-2);}
+.mock__card b{font-weight:600;color:var(--ink);white-space:nowrap;}
+.mock__chip{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:600;color:var(--open);}
+.mock__chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--open);}
+.mock__stars{display:inline-flex;gap:.12rem;color:var(--mark-ink);}
+.mock__stars svg{width:13px;height:13px;fill:currentColor;}
+.mock__bars{display:flex;align-items:flex-end;gap:.35rem;height:52px;}
+.mock__bars i{flex:1;background:var(--mark-soft);border-radius:3px 3px 0 0;display:block;}
+.mock__bars i:nth-child(2),.mock__bars i:nth-child(4){background:var(--mark);}
+.mock__btns{display:flex;gap:.4rem;}
+.mock__btns span{flex:1;text-align:center;font-size:.74rem;font-weight:600;padding:.45rem;border-radius:var(--r-sm);}
+.mock__btns .d{background:var(--ink);color:var(--on-dark);}
+.mock__btns .o{background:var(--page);color:var(--ink);border:1px solid var(--line-2);}
+.tile--dark{grid-column:span 2;grid-row:span 2;background:var(--dark);border-color:var(--line-dark);color:var(--on-dark);
+  justify-content:space-between;padding:1.9rem;position:relative;overflow:hidden;}
+.tile--dark::before{content:"";position:absolute;inset:0;background-size:20px 20px;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(251,251,249,.09) 1px,transparent 1px);}
+.tile--dark:hover{transform:none;box-shadow:var(--sh-card);}
+@media(max-width:560px){.tile--dark{grid-column:span 1;grid-row:span 1;}}
+.tile--dark > *{position:relative;}
+.tile--dark h3{font-size:clamp(1.3rem,2.2vw,1.75rem);font-weight:700;letter-spacing:-.03em;line-height:1.15;max-width:16ch;overflow-wrap:anywhere;}
+.tile--dark p{color:var(--on-dark-muted);max-width:38ch;}
+.tile--dark .kicker{color:var(--on-dark-muted);}
+.urlbar{display:flex;align-items:center;gap:.5rem;background:var(--dark-2);border:1px solid var(--line-dark);
+  border-radius:var(--r-sm);padding:.7rem .85rem;font-size:.86rem;color:var(--on-dark);overflow:hidden;}
+.urlbar svg{width:14px;height:14px;color:var(--mark);}
+.urlbar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-/* ---- возражения: строки-развороты ---- */
-.obj{border-top:1px solid var(--line);}
-.obj__row{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(1.25rem,4vw,3.5rem);
-  padding-block:clamp(2rem,3.6vw,3rem);border-bottom:1px solid var(--line);}
-@media(max-width:860px){.obj__row{grid-template-columns:minmax(0,1fr);gap:1.1rem;}}
-.obj__q{display:flex;gap:1rem;align-items:flex-start;}
-.obj__q .num{font-size:.78rem;color:var(--mark-ink);padding-top:.45rem;}
-.obj__q p{font-size:clamp(1.15rem,2vw,1.6rem);font-weight:700;letter-spacing:-.02em;line-height:1.2;max-width:22ch;}
-.obj__a p{color:var(--ink-2);max-width:64ch;}
-.obj__fact{display:inline-flex;flex-wrap:wrap;gap:.45rem;margin-top:1rem;}
-.obj__fact span{font-family:var(--mono);font-size:.74rem;color:var(--ink);
-  background:var(--paper-2);border:1px solid var(--line);padding:.25rem .55rem;}
-
-/* ---- как это работает: шаги + телефон ---- */
-.how{background:var(--paper-2);border-block:1px solid var(--line);}
-.how__grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(2rem,5vw,4rem);align-items:start;margin-top:2.5rem;}
+/* «как это работает»: фирменная тёплая панель */
+.how{padding-block:var(--section);}
+.how__panel{position:relative;overflow:hidden;border-radius:var(--r-xl);color:#fff;padding:clamp(2.2rem,5vw,3.6rem);
+  background-color:#8F2E08;background-image:linear-gradient(155deg,#C2410C 0%,#A03308 48%,#7E2A08 100%);}
+.how__panel::before{content:"";position:absolute;inset:0;background-size:22px 22px;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.10) 1px,transparent 1px);}
+.how__head{position:relative;text-align:center;max-width:42ch;margin:0 auto 2.4rem;}
+.how__head h2{color:#fff;margin-inline:auto;}
+.how__head .kicker{color:rgba(255,255,255,.88);display:block;margin-top:.9rem;}
+.how__grid{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(2rem,5vw,3.5rem);align-items:center;}
 @media(max-width:900px){.how__grid{grid-template-columns:minmax(0,1fr);justify-items:center;}.how__steps{order:2;}.phone{order:1;}}
-.how__steps{width:100%;max-width:460px;border-top:1px solid var(--line);}
-.dstep{display:grid;grid-template-columns:2.4rem 1fr;gap:.9rem;padding:1rem .6rem;
-  border-bottom:1px solid var(--line);opacity:.45;transition:opacity var(--t-base) linear,background var(--t-base) linear;}
-.dstep.on{opacity:1;background:var(--surface);}
-.dstep__n{font-family:var(--mono);font-weight:600;font-size:.78rem;color:var(--muted);padding-top:.15rem;}
-.dstep.on .dstep__n{color:var(--mark-ink);}
-.dstep b{display:block;font-weight:600;font-size:.98rem;margin-bottom:.15rem;}
-.dstep span{display:block;font-size:.86rem;color:var(--muted);line-height:1.45;}
+.how__steps{width:100%;max-width:440px;display:flex;flex-direction:column;gap:.5rem;}
+.dstep{display:grid;grid-template-columns:2rem 1fr;gap:.8rem;padding:.95rem 1rem;border-radius:var(--r-md);
+  border:1px solid transparent;transition:background var(--t-base) linear,border-color var(--t-base) linear;}
+.dstep.on{background:#A93A10;border-color:rgba(255,255,255,.38);}
+.dstep__n{font-size:.8rem;font-weight:700;color:rgba(255,255,255,.9);padding-top:.15rem;font-variant-numeric:tabular-nums;}
+.dstep b{display:block;font-weight:600;font-size:.98rem;color:#fff;margin-bottom:.15rem;}
+.dstep span{display:block;font-size:.87rem;color:rgba(255,255,255,.9);line-height:1.45;}
 
-.phone{position:relative;width:300px;flex:none;background:var(--ink);border-radius:36px;padding:10px;
-  box-shadow:var(--sh-overlay);}
-.phone__screen{position:relative;width:100%;aspect-ratio:280/572;border-radius:27px;overflow:hidden;background:var(--paper);}
+.phone{position:relative;width:300px;flex:none;background:var(--ink);border-radius:38px;padding:10px;box-shadow:var(--sh-overlay);}
+.phone__screen{position:relative;width:100%;aspect-ratio:280/572;border-radius:29px;overflow:hidden;background:var(--page);}
 @media(max-width:900px){.phone{width:min(300px,100%);}}
-.phone__notch{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:88px;height:24px;
-  background:var(--ink);border-radius:var(--r-pill);z-index:30;}
+.phone__notch{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:88px;height:24px;background:var(--ink);border-radius:var(--r-pill);z-index:30;}
 .scr{position:absolute;inset:0;opacity:0;transition:opacity .45s var(--ease);}
 .scr.on{opacity:1;}
 .scr--yandex img{width:100%;}
 .scr--share__bg{position:absolute;inset:0;width:100%;}
-.scr--share__dim{position:absolute;inset:0;background:rgba(18,20,23,.45);opacity:0;transition:opacity .4s linear;}
+.scr--share__dim{position:absolute;inset:0;background:rgba(20,23,31,.45);opacity:0;transition:opacity .4s linear;}
 .scr--share.on .scr--share__dim{opacity:1;}
 .scr--share .sheet{position:absolute;left:0;right:0;bottom:0;width:100%;transform:translateY(106%);transition:transform .5s var(--ease);}
 .scr--share.on .sheet{transform:translateY(0);}
 .finger{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;z-index:25;pointer-events:none;opacity:0;
   transition:left .55s var(--ease),top .55s var(--ease),opacity .3s linear;}
-.finger::before{content:"";position:absolute;inset:5px;border-radius:50%;background:rgba(18,20,23,.4);
-  box-shadow:0 0 0 1.5px rgba(251,251,249,.6);}
-.finger::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--surface);opacity:0;}
+.finger::before{content:"";position:absolute;inset:5px;border-radius:50%;background:rgba(20,23,31,.4);box-shadow:0 0 0 1.5px rgba(255,255,255,.65);}
+.finger::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid #fff;opacity:0;}
 .finger.tap::after{animation:tapPulse .5s var(--ease);}
 @keyframes tapPulse{0%{opacity:.9;transform:scale(.4);}100%{opacity:0;transform:scale(1.5);}}
 .toast{position:absolute;left:50%;bottom:24px;transform:translate(-50%,10px);display:inline-flex;align-items:center;gap:.4rem;
-  background:var(--ink);color:var(--on-dark);font-size:.74rem;font-weight:600;padding:.5rem .8rem;border-radius:var(--r-sm);
+  background:var(--ink);color:var(--on-dark);font-size:.74rem;font-weight:600;padding:.5rem .8rem;border-radius:var(--r-pill);
   white-space:nowrap;opacity:0;transition:opacity .3s linear,transform .3s var(--ease);z-index:28;}
 .toast.on{opacity:1;transform:translate(-50%,0);}
 .toast svg{width:14px;height:14px;color:var(--mark);}
-.scr--lk,.scr--build{background:var(--paper);padding:50px 14px 14px;display:flex;flex-direction:column;}
+.scr--lk,.scr--build{background:var(--cream);padding:50px 14px 14px;display:flex;flex-direction:column;}
 .mini-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.mini-logo{font-weight:800;font-size:.88rem;letter-spacing:-.03em;}
-.mini-eyebrow{font-family:var(--mono);font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
-.lk-card{background:var(--surface);border:1px solid var(--line);padding:14px;}
-.lk-eyebrow{font-family:var(--mono);font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
-.lk-card h4{font-weight:700;font-size:.98rem;letter-spacing:-.02em;margin:.4rem 0 .25rem;}
+.mini-logo{font-weight:700;font-size:.88rem;letter-spacing:-.03em;color:var(--ink);}
+.mini-eyebrow{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.lk-card{background:var(--page);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;box-shadow:var(--sh-card);}
+.lk-eyebrow{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.lk-card h4{font-weight:700;font-size:.98rem;letter-spacing:-.02em;margin:.4rem 0 .25rem;color:var(--ink);}
 .lk-desc{font-size:.74rem;color:var(--muted);line-height:1.45;margin-bottom:12px;}
-.lk-flabel{display:block;font-family:var(--mono);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem;}
-.lk-input{position:relative;min-height:38px;background:var(--surface);border:1.5px solid var(--line);
-  padding:.55rem .6rem;font-family:var(--mono);font-size:.72rem;display:flex;align-items:center;overflow:hidden;
-  transition:border-color .3s linear;}
+.lk-flabel{display:block;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.35rem;}
+.lk-input{position:relative;min-height:38px;background:var(--page);border:1.5px solid var(--line-2);border-radius:var(--r-sm);
+  padding:.55rem .6rem;font-size:.72rem;color:var(--ink);display:flex;align-items:center;overflow:hidden;transition:border-color .3s linear;}
 .lk-input.filled{border-color:var(--open);}
 .lk-input__txt{white-space:nowrap;}
-.lk-input:not(.filled) .lk-input__txt::before{content:"https://yandex.ru/maps/org/…";color:#9AA0A7;}
+.lk-input:not(.filled) .lk-input__txt::before{content:"https://yandex.ru/maps/org/…";color:#8E949C;}
 .lk-caret{width:1.5px;height:14px;background:var(--mark);margin-left:1px;flex:none;animation:caret 1s steps(1) infinite;}
 @keyframes caret{50%{opacity:0;}}
-.lk-ok{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:600;color:var(--open);
-  margin-top:.45rem;opacity:0;transition:opacity .3s linear;}
+.lk-ok{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:600;color:var(--open);margin-top:.45rem;opacity:0;transition:opacity .3s linear;}
 .lk-ok.on{opacity:1;}
 .lk-ok svg{width:13px;height:13px;}
-.lk-btn{margin-top:14px;width:100%;background:var(--ink);color:var(--on-dark);font-family:var(--ui);
-  font-weight:600;font-size:.84rem;border:none;border-radius:var(--r-sm);padding:.7rem;cursor:pointer;
-  transition:transform .15s linear;}
+.lk-btn{margin-top:14px;width:100%;background:var(--ink);color:var(--on-dark);font-family:var(--ui);font-weight:600;
+  font-size:.84rem;border:none;border-radius:var(--r-sm);padding:.7rem;cursor:pointer;transition:transform .15s linear;}
 .lk-btn.press{transform:scale(.97);}
 .lk-card--build{text-align:center;}
-.bspin{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--mark);
-  animation:spin .7s linear infinite;margin:2px auto 10px;}
-.bbar{height:4px;background:var(--paper-2);overflow:hidden;margin:10px 0 12px;}
-.bbar__fill{height:100%;width:0;background:var(--mark);transition:width .5s var(--ease);}
+.bspin{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line-2);border-top-color:var(--mark);animation:spin .7s linear infinite;margin:2px auto 10px;}
+.bbar{height:4px;background:var(--sunken);border-radius:var(--r-pill);overflow:hidden;margin:10px 0 12px;}
+.bbar__fill{height:100%;width:0;background:var(--mark);border-radius:var(--r-pill);transition:width .5s var(--ease);}
 .bsteps{text-align:left;display:flex;flex-direction:column;gap:.5rem;}
 .bsteps li{display:flex;align-items:center;gap:.5rem;font-size:.76rem;color:var(--muted);transition:color .3s linear;}
-.bs-ic{width:16px;height:16px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;flex:none;
+.bs-ic{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);display:flex;align-items:center;justify-content:center;flex:none;
   transition:background .3s linear,border-color .3s linear;}
 .bsteps li.active{color:var(--ink);font-weight:500;}
-.bsteps li.active .bs-ic{border-color:var(--mark);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;}
+.bsteps li.active .bs-ic{border-color:var(--mark);border-top-color:transparent;animation:spin .7s linear infinite;}
 .bsteps li.done{color:var(--ink-2);}
 .bsteps li.done .bs-ic{background:var(--open);border-color:var(--open);animation:none;}
-.bsteps li.done .bs-ic::after{content:"";width:4px;height:7px;border:2px solid var(--surface);border-top:0;border-left:0;
-  transform:rotate(42deg);margin-top:-2px;}
-.scr--site{background:var(--paper);}
+.bsteps li.done .bs-ic::after{content:"";width:4px;height:7px;border:2px solid #fff;border-top:0;border-left:0;transform:rotate(42deg);margin-top:-2px;}
+.scr--site{background:var(--page);}
 .ms{height:100%;display:flex;flex-direction:column;}
-.ms__nav{display:flex;align-items:center;justify-content:space-between;padding:46px 12px 8px;background:var(--surface);}
-.ms__brand{font-weight:800;font-size:.8rem;letter-spacing:-.02em;}
+.ms__nav{display:flex;align-items:center;justify-content:space-between;padding:46px 12px 8px;background:var(--page);}
+.ms__brand{font-weight:700;font-size:.8rem;letter-spacing:-.02em;color:var(--ink);}
 .ms__open{display:inline-flex;align-items:center;gap:.3rem;font-size:.62rem;font-weight:600;color:var(--open);}
 .ms__open::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--open);}
-.ms__cover{position:relative;height:160px;background-color:#1B1F24;background-size:cover;background-position:center;display:flex;
-  flex-direction:column;justify-content:flex-end;padding:12px;}
-.ms__cover::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(18,20,23,.75),transparent 62%);}
-.ms__cat{position:relative;z-index:1;font-family:var(--mono);font-size:.54rem;letter-spacing:.12em;text-transform:uppercase;
-  color:rgba(251,251,249,.85);margin-bottom:.2rem;}
-.ms__name{position:relative;z-index:1;font-weight:800;font-size:1.4rem;letter-spacing:-.03em;color:var(--on-dark);line-height:1;}
-.ms__body{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;background:var(--surface);}
-.ms__meta{font-size:.74rem;font-weight:600;}
+.ms__cover{position:relative;height:160px;background-color:var(--dark-2);background-size:cover;background-position:center;
+  display:flex;flex-direction:column;justify-content:flex-end;padding:12px;}
+.ms__cover::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(20,23,31,.78),transparent 62%);}
+.ms__cat{position:relative;z-index:1;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:.2rem;}
+.ms__name{position:relative;z-index:1;font-weight:700;font-size:1.4rem;letter-spacing:-.03em;color:#fff;line-height:1;}
+.ms__body{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1;background:var(--page);}
+.ms__meta{font-size:.74rem;font-weight:600;color:var(--ink);}
 .ms__addr{display:flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--muted);}
 .ms__addr svg{width:13px;height:13px;}
 .ms__acts{display:flex;gap:.45rem;}
 .ms-btn{flex:1;text-align:center;font-size:.73rem;font-weight:600;padding:.55rem;border-radius:var(--r-sm);}
 .ms-btn.d{background:var(--ink);color:var(--on-dark);}
-.ms-btn.o{background:transparent;color:var(--ink);border:1.5px solid var(--ink);}
-.ms-btn.block{width:100%;background:var(--mark);color:var(--ink);}
+.ms-btn.o{background:var(--page);color:var(--ink);border:1px solid var(--line-2);}
+.ms-btn.block{width:100%;background:var(--mark-ink);color:#fff;}
 
-/* ---- бенто: что вы получаете ---- */
-.bento{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);
-  border:1px solid var(--line);margin-top:2.5rem;}
-@media(max-width:1000px){.bento{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:560px){.bento{grid-template-columns:minmax(0,1fr);}}
-.tile{background:var(--surface);padding:1.4rem;display:flex;flex-direction:column;gap:.5rem;min-height:158px;}
-.tile svg{width:19px;height:19px;color:var(--ink);}
-.tile h3{font-size:.98rem;font-weight:700;letter-spacing:-.01em;}
-.tile p{font-size:.86rem;color:var(--muted);line-height:1.5;}
-.tile--lead{grid-column:span 2;grid-row:span 2;background:var(--ink);color:var(--on-dark);justify-content:space-between;padding:1.75rem;}
-@media(max-width:560px){.tile--lead{grid-column:span 1;grid-row:span 1;}}
-.tile--lead h3{font-size:clamp(1.2rem,2.4vw,1.85rem);letter-spacing:-.03em;line-height:1.1;max-width:16ch;overflow-wrap:anywhere;}
-.tile--lead p{color:var(--on-dark-muted);max-width:38ch;}
-.tile--lead .label{color:var(--on-dark-muted);}
-.urlbar{display:flex;align-items:center;gap:.5rem;background:#1B1F24;border:1px solid var(--line-dark);
-  padding:.6rem .75rem;font-family:var(--mono);font-size:.82rem;color:var(--on-dark);overflow:hidden;}
-.urlbar svg{width:14px;height:14px;color:var(--mark);}
-.urlbar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* возражения */
+.obj{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;}
+@media(max-width:860px){.obj{grid-template-columns:minmax(0,1fr);}}
+.obj__card{background:var(--page);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-card);
+  padding:1.6rem 1.7rem 1.7rem;display:flex;flex-direction:column;gap:.9rem;}
+.obj__card:first-child{grid-column:span 2;}
+@media(max-width:860px){.obj__card:first-child{grid-column:span 1;}}
+.obj__q{display:flex;gap:.8rem;align-items:baseline;}
+.obj__q .n{font-size:.78rem;font-weight:700;color:var(--mark-ink);font-variant-numeric:tabular-nums;}
+.obj__q p{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.25rem,2vw,1.7rem);
+  line-height:1.22;color:var(--ink);max-width:28ch;}
+.obj__a{color:var(--ink-2);max-width:64ch;font-size:.95rem;}
+.obj__fact{display:flex;flex-wrap:wrap;gap:.45rem;}
+.obj__fact span{font-size:.78rem;font-weight:500;color:var(--ink-2);background:var(--cream);border:1px solid var(--line);
+  border-radius:var(--r-pill);padding:.32rem .75rem;}
 
-/* ---- Pro ---- */
-.pro{background:var(--ink);color:var(--on-dark);}
-.pro__grid{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:clamp(2rem,5vw,4rem);align-items:start;}
+/* кому подходит: веер карточек */
+.fan{display:flex;justify-content:center;align-items:flex-start;flex-wrap:wrap;gap:1rem;}
+@media(min-width:900px){.fan{flex-wrap:nowrap;gap:0;padding-top:1.5rem;}}
+.fcard{width:216px;background:var(--page);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-card);
+  padding:1.4rem;transition:transform .4s var(--ease),box-shadow .4s linear;will-change:transform;}
+.fcard__ic{width:38px;height:38px;border-radius:var(--r-md);background:var(--ink);display:flex;align-items:center;justify-content:center;margin-bottom:1rem;}
+.fcard__ic svg{width:18px;height:18px;color:var(--on-dark);}
+.fcard h3{font-size:1rem;font-weight:600;letter-spacing:-.015em;margin-bottom:.5rem;}
+.fcard li{font-size:.84rem;color:var(--muted);padding-block:.12rem;}
+@media(min-width:900px){
+  .fan .fcard{margin-left:-24px;}
+  .fan .fcard:first-child{margin-left:0;}
+  .fan .fcard:nth-child(1){transform:rotate(-8deg) translateY(16px);}
+  .fan .fcard:nth-child(2){transform:rotate(-4deg) translateY(5px);}
+  .fan .fcard:nth-child(3){transform:rotate(0deg);}
+  .fan .fcard:nth-child(4){transform:rotate(4deg) translateY(5px);}
+  .fan .fcard:nth-child(5){transform:rotate(8deg) translateY(16px);}
+  .fan .fcard:hover{transform:rotate(0deg) translateY(-14px);box-shadow:var(--sh-raised);z-index:5;}
+}
+
+/* Pro */
+.pro__panel{position:relative;overflow:hidden;border-radius:var(--r-xl);background:var(--dark);color:var(--on-dark);
+  border:1px solid var(--line-dark);padding:clamp(2rem,4.5vw,3.2rem);}
+.pro__panel::before{content:"";position:absolute;inset:0;background-size:22px 22px;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(251,251,249,.08) 1px,transparent 1px);}
+.pro__grid{position:relative;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(2rem,5vw,4rem);align-items:start;}
 @media(max-width:900px){.pro__grid{grid-template-columns:minmax(0,1fr);gap:2rem;}}
-.pro .label{color:var(--on-dark-muted);}
-.pro__lead{color:var(--on-dark-muted);max-width:52ch;margin-top:1.25rem;}
-.pro__list{margin-top:1.75rem;border-top:1px solid var(--line-dark);}
-.pro__list li{display:grid;grid-template-columns:22px 1fr;gap:.85rem;align-items:start;
-  padding:1rem .2rem;border-bottom:1px solid var(--line-dark);}
+.pro__panel h2{color:var(--on-dark);}
+.pro__panel .kicker{color:var(--on-dark-muted);}
+.pro__lead{color:var(--on-dark-muted);max-width:52ch;margin-top:1.1rem;}
+.pro__list{margin-top:1.7rem;display:flex;flex-direction:column;gap:.8rem;}
+.pro__list li{display:grid;grid-template-columns:22px 1fr;gap:.85rem;align-items:start;background:var(--dark-2);
+  border:1px solid var(--line-dark);border-radius:var(--r-md);padding:1rem 1.1rem;}
 .pro__list svg{width:18px;height:18px;color:var(--mark);margin-top:.15rem;}
-.pro__list b{display:block;font-weight:600;font-size:.98rem;}
-.pro__list span{display:block;font-size:.87rem;color:var(--on-dark-muted);line-height:1.5;max-width:58ch;}
-.plans{border:1px solid var(--line-dark);}
-.plan{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:1.05rem 1.25rem;
-  border-bottom:1px solid var(--line-dark);}
+.pro__list b{display:block;font-weight:600;font-size:.98rem;color:#FFFFFF;}
+.pro__list span{display:block;font-size:.88rem;color:var(--on-dark-muted);line-height:1.5;max-width:58ch;margin-top:.2rem;}
+.plans{background:var(--dark-2);border:1px solid var(--line-dark);border-radius:var(--r-lg);overflow:hidden;}
+.plan{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:1.1rem 1.3rem;border-bottom:1px solid var(--line-dark);}
 .plan:last-of-type{border-bottom:0;}
-.plan__name{font-size:.95rem;font-weight:600;}
-.plan__price{font-family:var(--mono);font-weight:600;font-size:1.05rem;}
-.plan__per{font-family:var(--mono);font-size:.74rem;color:var(--on-dark-muted);display:block;text-align:right;margin-top:.15rem;}
-.plan--best{background:#1B1F24;}
-.plan--best .plan__name::after{content:"выгоднее";font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--mark);margin-left:.6rem;}
-.pro__cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.5rem;}
-.pro__fine{font-family:var(--mono);font-size:.74rem;color:var(--on-dark-muted);margin-top:1rem;max-width:52ch;}
+.plan__name{font-size:.95rem;font-weight:600;color:var(--on-dark);}
+.plan__price{font-weight:700;font-size:1.15rem;color:var(--on-dark);font-variant-numeric:tabular-nums;}
+.plan__per{font-size:.76rem;color:var(--on-dark-muted);display:block;text-align:right;margin-top:.2rem;}
+.plan--best{background:rgba(225,84,31,.13);}
+.plan--best .plan__name::after{content:"выгоднее";font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--mark);margin-left:.6rem;}
+.pro__cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.4rem;}
+.pro__fine{font-size:.82rem;color:var(--on-dark-muted);margin-top:1rem;max-width:52ch;}
 
-/* ---- сравнение тарифов ---- */
-.cmp{width:100%;border-collapse:collapse;margin-top:2.5rem;font-size:.92rem;}
-.cmp th,.cmp td{text-align:left;padding:.85rem 1rem;border-bottom:1px solid var(--line);vertical-align:top;}
-.cmp thead th{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--muted);border-bottom:1.5px solid var(--ink);}
+/* цены */
+.cmp-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--page);box-shadow:var(--sh-card);}
+.cmp{width:100%;border-collapse:collapse;font-size:.93rem;}
+.cmp th,.cmp td{text-align:left;padding:.95rem 1.2rem;border-bottom:1px solid var(--line);vertical-align:top;}
+.cmp thead th{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--cream);}
 .cmp tbody th{font-weight:500;color:var(--ink-2);width:46%;}
 .cmp td{width:27%;color:var(--ink);}
 .cmp .yes{display:inline-flex;align-items:center;gap:.4rem;}
 .cmp .yes svg{width:15px;height:15px;color:var(--open);}
 .cmp .no{color:var(--muted);}
-.cmp tfoot td,.cmp tfoot th{border-bottom:0;padding-top:1.25rem;}
-.cmp__price{font-family:var(--mono);font-weight:600;font-size:1.15rem;}
-.cmp-wrap{overflow-x:auto;}
+.cmp tfoot td,.cmp tfoot th{border-bottom:0;padding-top:1.3rem;padding-bottom:1.4rem;background:var(--cream);}
+.cmp__price{font-weight:700;font-size:1.2rem;font-variant-numeric:tabular-nums;}
 @media(max-width:620px){.cmp{min-width:520px;}}
 
-/* ---- FAQ ---- */
-.faq{max-width:820px;border-top:1px solid var(--line);margin-top:2.5rem;}
+/* вопросы */
+.faq{max-width:820px;margin:0 auto;}
 .faq-item{border-bottom:1px solid var(--line);}
-.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:none;border:none;
-  cursor:pointer;font-family:var(--ui);font-weight:600;font-size:1.02rem;color:var(--ink);text-align:left;
-  padding:1.15rem .25rem;min-height:44px;}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:none;border:none;cursor:pointer;
+  font-family:var(--ui);font-weight:600;font-size:1rem;color:var(--ink);text-align:left;padding:1.2rem .2rem;min-height:44px;
+  transition:color var(--t-fast) linear;}
 .faq-q:hover{color:var(--mark-ink);}
 .faq-q svg{width:18px;height:18px;color:var(--muted);flex:none;transition:transform var(--t-base) var(--ease);}
-.faq-item.open .faq-q svg{transform:rotate(180deg);color:var(--mark);}
+.faq-item.open .faq-q svg{transform:rotate(180deg);color:var(--mark-ink);}
 .faq-a{overflow:hidden;max-height:0;transition:max-height .35s var(--ease);}
 .faq-item.open .faq-a{max-height:34rem;}
-.faq-a p{padding:0 .25rem 1.3rem;color:var(--ink-2);max-width:66ch;font-size:.94rem;}
+.faq-a p{padding:0 .2rem 1.3rem;color:var(--muted);max-width:70ch;font-size:.94rem;}
 
-/* ---- финальный блок ---- */
-.final{background:var(--ink);color:var(--on-dark);padding-block:clamp(4rem,8vw,7rem);}
-.final h2{max-width:16ch;}
-.final p{color:var(--on-dark-muted);margin-top:1.1rem;max-width:48ch;}
-.final__cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2rem;}
-.final__note{font-family:var(--mono);font-size:.76rem;color:var(--on-dark-muted);margin-top:1.2rem;}
+/* финальная панель */
+.final{padding-block:0 var(--section);}
+.final__panel{position:relative;overflow:hidden;border-radius:var(--r-xl);text-align:center;color:#fff;
+  padding:clamp(3rem,6vw,4.6rem) clamp(1.4rem,4vw,3rem);
+  background-color:#8F2E08;background-image:linear-gradient(155deg,#C2410C 0%,#A03308 52%,#7E2A08 100%);}
+.final__panel::before{content:"";position:absolute;inset:0;background-size:22px 22px;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.10) 1px,transparent 1px);}
+.final__panel > *{position:relative;}
+.final__panel h2{color:#fff;margin-inline:auto;max-width:20ch;}
+.final__panel p{color:rgba(255,255,255,.94);margin:1.1rem auto 0;max-width:48ch;}
+.final__cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2rem;justify-content:center;}
+.final__note{font-size:.84rem;color:rgba(255,255,255,.94);margin-top:1.2rem;}
 
-/* ---- подвал ---- */
-footer{background:var(--paper);border-top:1px solid var(--line);padding-block:3.5rem 2rem;}
+/* подвал */
+footer{background:var(--page);border-top:1px solid var(--line);padding-top:3.5rem;overflow:hidden;}
 .foot__top{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:2rem;padding-bottom:2.5rem;}
 @media(max-width:760px){.foot__top{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.75rem;}.foot__brand{grid-column:span 2;}}
 @media(max-width:420px){.foot__top{grid-template-columns:minmax(0,1fr);}.foot__brand{grid-column:span 1;}}
-.foot__brand p{font-size:.87rem;color:var(--muted);max-width:34ch;margin-top:.9rem;}
-.foot__brand a.mail{display:inline-block;margin-top:.9rem;font-family:var(--mono);font-size:.84rem;
-  color:var(--ink);border-bottom:1.5px solid var(--mark);}
-.foot__col h4{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:.9rem;}
-.foot__col a{display:block;font-size:.9rem;color:var(--ink-2);padding-block:.28rem;}
-.foot__col a:hover{color:var(--mark-ink);}
-.foot__bottom{border-top:1px solid var(--line);padding-top:1.4rem;display:flex;justify-content:space-between;
-  flex-wrap:wrap;gap:.5rem;font-size:.8rem;color:var(--muted);}
+.foot__brand p{font-size:.88rem;color:var(--muted);max-width:34ch;margin-top:.9rem;}
+.foot__brand a.mail{display:inline-block;margin-top:.9rem;font-size:.88rem;font-weight:600;color:var(--ink);border-bottom:1.5px solid var(--mark);}
+.foot__col h4{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.9rem;}
+.foot__col a{display:block;font-size:.9rem;color:var(--muted);padding-block:.3rem;transition:color var(--t-fast) linear;}
+.foot__col a:hover{color:var(--ink);}
+.foot__bottom{border-top:1px solid var(--line);padding-block:1.4rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;
+  font-size:.82rem;color:var(--muted);}
+.watermark{font-weight:800;font-size:clamp(4rem,19vw,15rem);line-height:.86;letter-spacing:-.05em;text-align:center;
+  color:#8E949E;user-select:none;margin-bottom:-.14em;padding-top:.4rem;}
+.watermark span{color:#CE7A50;}
 
-/* ---- появление при скролле ---- */
-.js .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s var(--ease),transform .6s var(--ease);
-  transition-delay:var(--d,0s);}
+/* появление при скролле */
+.js .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s var(--ease),transform .6s var(--ease);transition-delay:var(--d,0s);}
 .reveal.vis{opacity:1;transform:none;}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
     transition-duration:.001ms!important;scroll-behavior:auto!important;}
   .reveal{opacity:1;transform:none;}
+  .scr{opacity:0;}
+  .scr[data-scr="5"],.scr.on{opacity:1;}
+  .dstep{opacity:1;}
 }
 </style>
 </head>
@@ -436,9 +459,9 @@ footer{background:var(--paper);border-top:1px solid var(--line);padding-block:3.
   <div class="nav__in">
     <a class="brand" href="#top"><img src="/static/logo-seal.png" alt=""><b>uqqi<span class="dot">.</span>ru</b></a>
     <nav class="nav__links">
-      <a href="#why">Почему нет сайта</a>
-      <a href="#how">Как это работает</a>
       <a href="#included">Что входит</a>
+      <a href="#how">Как это работает</a>
+      <a href="#why">Почему нет сайта</a>
       <a href="#price">Цены</a>
       <a href="#faq">Вопросы</a>
     </nav>
@@ -446,353 +469,377 @@ footer{background:var(--paper);border-top:1px solid var(--line);padding-block:3.
   </div>
 </header>
 
-<!-- ───── ГЕРОЙ ───── -->
 <main id="top">
-<section class="hero wrap">
-  <div class="hero__grid">
-    <div>
-      <span class="label">Сайт из карточки Яндекс Карт</span>
-      <h1 class="display">Сайт вашего дела<span class="dot">.</span><br>За одну минуту.</h1>
-      <p class="lead hero__lead">Вставьте ссылку на карточку организации. Через минуту у вас работающий сайт: фото, часы, услуги с ценами, отзывы, телефон и маршрут. Базовый сайт бесплатный и остаётся бесплатным.</p>
-      <div class="hero__cta">
-        <a href="https://lk.uqqi.ru/" class="btn btn--primary">Создать сайт бесплатно <i data-lucide="arrow-right"></i></a>
-        <div class="demo-slot" id="demoSlot">
-          <button type="button" class="btn btn--outline" id="demoBtn" onclick="showRandomSite()"><i data-lucide="store"></i> Показать готовый сайт</button>
-          <div class="demo-spin" id="demoSpin"><span class="demo-spin__ring"></span></div>
-          <a class="btn btn--outline demo-link" id="demoLink" href="#" target="_blank" rel="noopener">Открыть пример <i data-lucide="arrow-up-right"></i></a>
-        </div>
-      </div>
-      <p class="hero__note" id="bHint">Без карты. Без договора. Без программиста.</p>
-    </div>
 
-    <div class="spec reveal">
-      <div class="spec__head">
-        <span class="label">Переносим с карточки</span>
-        <span class="label">6 из 6</span>
+<!-- ───── ГЕРОЙ ───── -->
+<section class="hero">
+  <div class="hero__bg"></div>
+  <div class="hero__scrim"></div>
+  <div class="hero__in">
+    <h1 class="display">Сайт вашего дела<br><span class="serif">за одну минуту</span></h1>
+    <p class="lead hero__lead">Вставьте ссылку на карточку Яндекс Карт. Мы соберём сайт с вашими фото, часами, услугами и отзывами и опубликуем его на отдельном адресе. Базовый сайт бесплатный и остаётся бесплатным.</p>
+    <div class="hero__cta">
+      <a href="https://lk.uqqi.ru/" class="btn btn--primary">Создать сайт бесплатно <i data-lucide="arrow-right"></i></a>
+      <div class="demo-slot" id="demoSlot">
+        <button type="button" class="btn btn--outline" id="demoBtn" onclick="showRandomSite()"><i data-lucide="store"></i> Показать готовый сайт</button>
+        <div class="demo-spin" id="demoSpin"><span class="demo-spin__ring"></span></div>
+        <a class="btn btn--outline demo-link" id="demoLink" href="#" target="_blank" rel="noopener">Открыть пример <i data-lucide="arrow-up-right"></i></a>
       </div>
-      <div class="spec__rows">
-        <div class="spec__row"><span class="num">01</span><span>Название, логотип, описание</span><i data-lucide="type"></i></div>
-        <div class="spec__row"><span class="num">02</span><span>Фотографии заведения</span><i data-lucide="image"></i></div>
-        <div class="spec__row"><span class="num">03</span><span>Часы работы и статус «Открыто»</span><i data-lucide="clock"></i></div>
-        <div class="spec__row"><span class="num">04</span><span>Услуги и товары с ценами</span><i data-lucide="list"></i></div>
-        <div class="spec__row"><span class="num">05</span><span>Отзывы и рейтинг</span><i data-lucide="star"></i></div>
-        <div class="spec__row"><span class="num">06</span><span>Телефон, адрес, маршрут</span><i data-lucide="map-pin"></i></div>
-      </div>
-      <div class="spec__foot">
-        <span class="spec__addr">вашеимя.uqqi.ru</span>
-        <span class="chip">опубликован</span>
-      </div>
+    </div>
+    <p class="hero__note" id="bHint">Бесплатно навсегда. Без карты. Без договора.</p>
+  </div>
+</section>
+
+<!-- ───── ЧТО ПЕРЕНОСИМ С КАРТОЧКИ ───── -->
+<section class="spec">
+  <div class="wrap spec__in">
+    <span class="kicker">Переносим из вашей карточки Яндекс Карт</span>
+    <div class="spec__rows">
+      <div class="spec__row"><i data-lucide="type"></i>Название и описание</div>
+      <div class="spec__row"><i data-lucide="image"></i>Фотографии</div>
+      <div class="spec__row"><i data-lucide="clock"></i>Часы работы</div>
+      <div class="spec__row"><i data-lucide="list"></i>Услуги и цены</div>
+      <div class="spec__row"><i data-lucide="star"></i>Отзывы и рейтинг</div>
+      <div class="spec__row"><i data-lucide="map-pin"></i>Телефон и адрес</div>
     </div>
   </div>
 </section>
 
-<!-- ───── ПОЛОСА: КОМУ ПОДХОДИТ ───── -->
-<section class="band">
+<!-- ───── ЧТО ВЫ ПОЛУЧАЕТЕ ───── -->
+<section id="included" class="section">
   <div class="wrap">
-    <div class="band__grid">
-      <div class="band__col band__intro">
+    <div class="sec-head">
+      <h2 class="h2">Что вы получаете <span class="serif">бесплатно</span></h2>
+      <span class="kicker">Работает с первого дня и не требует оплаты</span>
+    </div>
+
+    <div class="bento">
+      <div class="tile tile--dark">
         <div>
-          <span class="label">Кому подходит</span>
-          <h2 style="margin-top:.9rem;">Локальному делу, которое ищут рядом с домом</h2>
+          <span class="kicker">Ваш адрес в интернете</span>
+          <h3 style="margin-top:.9rem;">Сайт на вашеимя.uqqi.ru</h3>
+          <p style="margin-top:.7rem;">Открыт для всех, индексируется Яндексом и Google, работает по защищённому соединению. Ссылку можно давать в рекламе, на визитке и в переписке.</p>
         </div>
-        <p>Если люди находят вас в Яндекс Картах, сайт соберётся из той же карточки. Ниша значения не имеет.</p>
+        <div class="urlbar"><i data-lucide="lock"></i><span>https://вашеимя.uqqi.ru</span></div>
       </div>
-      <div class="band__col">
-        <div class="band__mark"></div>
-        <h3>Бытовые услуги</h3>
-        <ul>
-          <li>Автосервисы</li><li>Шиномонтажи</li><li>Автомойки</li>
-          <li>Ремонт обуви</li><li>Изготовление ключей</li><li>Ателье</li>
-          <li>Химчистки</li><li>Ремонт техники</li>
-        </ul>
-      </div>
-      <div class="band__col">
-        <div class="band__mark"></div>
-        <h3>Красота и здоровье</h3>
-        <ul>
-          <li>Парикмахерские у дома</li><li>Барбершопы</li><li>Маникюр</li>
-          <li>Частные массажисты</li><li>Косметологи</li>
-        </ul>
-      </div>
-      <div class="band__col">
-        <div class="band__mark"></div>
-        <h3>Розница</h3>
-        <ul>
-          <li>Цветочные</li><li>Овощи и фрукты</li><li>Фермерские продукты</li>
-          <li>Кондитерские</li><li>Зоомагазины</li><li>Лавки у дома</li>
-        </ul>
-      </div>
-      <div class="band__col">
-        <div class="band__mark"></div>
-        <h3>Общепит</h3>
-        <ul>
-          <li>Кофейни</li><li>Пекарни</li><li>Шаурма и бургеры</li>
-          <li>Пивные магазины</li>
-        </ul>
-      </div>
-      <div class="band__col">
-        <div class="band__mark"></div>
-        <h3>Стройка и ремонт</h3>
-        <ul>
-          <li>Локальные бригады</li><li>Мастер на час</li><li>Окна и двери</li>
-          <li>Отделка</li><li>Сантехника</li><li>Электрика</li><li>Натяжные потолки</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ───── ВОЗРАЖЕНИЯ ───── -->
-<section id="why" class="section wrap">
-  <span class="label">Что обычно мешает</span>
-  <h2 class="h2" style="margin:1rem 0 2.5rem;">Почему у вас до сих пор нет сайта</h2>
-
-  <div class="obj">
-    <div class="obj__row">
-      <div class="obj__q"><span class="num">01</span><p>«Это дорого. От 50 тысяч, и ещё техзадание писать»</p></div>
-      <div class="obj__a">
-        <p>Столько стоит сайт, который делают руками с нуля. Здесь его собирает робот из данных, которые вы уже заполнили в Яндекс Картах, поэтому базовый сайт стоит ноль рублей и остаётся бесплатным. Техзадание не нужно: описание, фото, услуги и часы берём из карточки. Деньги появляются только если захотите премиум-оформление и чат с клиентами.</p>
-        <div class="obj__fact"><span>0 ₽ базовый</span><span>990 ₽ Pro в месяц</span><span>без ТЗ</span></div>
+      <div class="tile tile--w2">
+        <div class="mock">
+          <div class="mock__card"><span>Сегодня</span><span class="mock__chip">Открыто до 20:00</span></div>
+          <div class="mock__card"><span>Завтра</span><b>09:00 – 20:00</b></div>
+        </div>
+        <div class="tile__ic"><i data-lucide="clock"></i><h3>Часы работы и статус</h3></div>
+        <p>Клиент сразу видит, работаете ли вы прямо сейчас и до скольки. Меньше звонков «а вы открыты?».</p>
       </div>
-    </div>
 
-    <div class="obj__row">
-      <div class="obj__q"><span class="num">02</span><p>«Нет времени. Смены, поставщики, сезон»</p></div>
-      <div class="obj__a">
-        <p>Ваше участие занимает две минуты: скопировать ссылку в Яндекс Картах и вставить её в кабинет. Дальше без вас: сборка идёт автоматически и сайт публикуется сам. Нет ни встреч, ни согласования макетов, ни переписки с фрилансером, которого нужно подгонять.</p>
-        <div class="obj__fact"><span>2 действия</span><span>~60 секунд сборки</span><span>0 созвонов</span></div>
+      <div class="tile">
+        <div class="mock">
+          <div class="mock__card"><span>Замена масла</span><b>1 200 ₽</b></div>
+          <div class="mock__card"><span>Шиномонтаж R16</span><b>2 400 ₽</b></div>
+        </div>
+        <div class="tile__ic"><i data-lucide="list"></i><h3>Услуги и цены</h3></div>
+        <p>Витрина с позициями и ценами прямо с карточки.</p>
       </div>
-    </div>
 
-    <div class="obj__row">
-      <div class="obj__q"><span class="num">03</span><p>«Я не умею администрировать сайт. Придётся кого-то нанимать»</p></div>
-      <div class="obj__a">
-        <p>Управление выглядит как обычное приложение на русском: поменять фото, часы, тексты, выбрать оформление. Ничего не сломается от нажатия не туда. Данные с карточки Яндекса подтягиваются сами, так что сайт не устареет, даже если вы не заходите в кабинет месяцами.</p>
-        <div class="obj__fact"><span>панель на русском</span><span>без кода</span><span>обновление автоматом</span></div>
+      <div class="tile">
+        <div class="mock">
+          <div class="mock__card"><span class="mock__stars"><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i><i data-lucide="star"></i></span><b>4,9</b></div>
+          <div class="mock__card"><span>«Сделали за час, всё честно»</span></div>
+        </div>
+        <div class="tile__ic"><i data-lucide="star"></i><h3>Отзывы с Карт</h3></div>
+        <p>Оценка и живые отзывы на видном месте.</p>
       </div>
-    </div>
 
-    <div class="obj__row">
-      <div class="obj__q"><span class="num">04</span><p>«У меня есть карточка в Картах. Зачем ещё сайт?»</p></div>
-      <div class="obj__a">
-        <p>Карточка показывает вас в общем списке, где сразу под вами конкуренты, а правила показа устанавливает Яндекс и меняет их когда захочет. Сайт работает иначе: отдельный адрес, который можно дать в рекламе, на визитке и в переписке; полное меню, цены и акции без модерации; и вас находят в поиске Яндекса и Google, а не только на карте. Карточка приводит тех, кто уже ищет на карте. Сайт забирает тех, кто ищет в поиске.</p>
-        <div class="obj__fact"><span>свой адрес</span><span>поиск Яндекс и Google</span><span>без соседей в списке</span></div>
+      <div class="tile">
+        <div class="tile__ic"><i data-lucide="refresh-cw"></i><h3>Данные обновляются сами</h3></div>
+        <p>Поменяли часы или телефон в Яндекс Картах — сайт подтянет изменения без вас.</p>
+      </div>
+
+      <div class="tile">
+        <div class="mock" style="min-height:96px;">
+          <div class="mock__btns"><span class="d">Позвонить</span><span class="o">Маршрут</span></div>
+        </div>
+        <div class="tile__ic"><i data-lucide="phone-call"></i><h3>Звонок и маршрут</h3></div>
+        <p>В один тап с телефона.</p>
+      </div>
+
+      <div class="tile">
+        <div class="mock" style="min-height:96px;">
+          <div class="mock__bars"><i style="height:38%"></i><i style="height:72%"></i><i style="height:52%"></i><i style="height:88%"></i><i style="height:60%"></i></div>
+        </div>
+        <div class="tile__ic"><i data-lucide="bar-chart-3"></i><h3>Статистика посещений</h3></div>
+        <p>Сколько людей зашло за неделю и месяц.</p>
+      </div>
+
+      <div class="tile">
+        <div class="tile__ic"><i data-lucide="smartphone"></i><h3>Мобильная версия</h3></div>
+        <p>Отдельная вёрстка под телефон, где сайт и открывает большинство ваших клиентов.</p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ───── КАК ЭТО РАБОТАЕТ ───── -->
-<section id="how" class="how section">
+<section id="how" class="how">
   <div class="wrap">
-    <span class="label">Как это работает</span>
-    <h2 class="h2" style="margin-top:1rem;">Ссылка из Яндекс Карт. Дальше всё сами.</h2>
-    <div class="how__grid">
-      <ol class="how__steps">
-        <li class="dstep" data-s="1"><span class="dstep__n">01</span><div><b>Нажмите «Поделиться» в Яндекс Картах</b><span>Откройте карточку своей компании и нажмите стрелку.</span></div></li>
-        <li class="dstep" data-s="2"><span class="dstep__n">02</span><div><b>Выберите «Скопировать ссылку»</b><span>Ссылка на карточку окажется в буфере обмена.</span></div></li>
-        <li class="dstep" data-s="3"><span class="dstep__n">03</span><div><b>Вставьте её в кабинет</b><span>Откройте lk.uqqi.ru, вставьте ссылку, нажмите «Создать сайт».</span></div></li>
-        <li class="dstep" data-s="4"><span class="dstep__n">04</span><div><b>Сайт собран и опубликован</b><span>Адрес название.uqqi.ru открывается через минуту.</span></div></li>
-      </ol>
+    <div class="how__panel">
+      <div class="how__head">
+        <h2 class="h2">Одна ссылка <span class="serif">и всё</span></h2>
+        <span class="kicker">Ваше участие занимает две минуты</span>
+      </div>
+      <div class="how__grid">
+        <ol class="how__steps">
+          <li class="dstep" data-s="1"><span class="dstep__n">01</span><div><b>Нажмите «Поделиться» в Яндекс Картах</b><span>Откройте карточку своей компании и нажмите стрелку.</span></div></li>
+          <li class="dstep" data-s="2"><span class="dstep__n">02</span><div><b>Выберите «Скопировать ссылку»</b><span>Ссылка на карточку окажется в буфере обмена.</span></div></li>
+          <li class="dstep" data-s="3"><span class="dstep__n">03</span><div><b>Вставьте её в кабинет</b><span>Откройте lk.uqqi.ru, вставьте ссылку, нажмите «Создать сайт».</span></div></li>
+          <li class="dstep" data-s="4"><span class="dstep__n">04</span><div><b>Сайт собран и опубликован</b><span>Адрес название.uqqi.ru открывается через минуту.</span></div></li>
+        </ol>
 
-      <div class="phone">
-        <div class="phone__notch"></div>
-        <div class="phone__screen" id="demoScreen">
-          <div class="scr scr--yandex" data-scr="1"><img src="/static/demo/yandex.png" alt="Карточка организации в Яндекс Картах"></div>
-          <div class="scr scr--share" data-scr="2">
-            <img class="scr--share__bg" src="/static/demo/yandex.png" alt="">
-            <div class="scr--share__dim"></div>
-            <img class="sheet" src="/static/demo/share.png" alt="Меню «Поделиться»">
-            <div class="toast" id="toastCopy"><i data-lucide="check"></i> Скопировано</div>
-          </div>
-          <div class="scr scr--lk" data-scr="3">
-            <div class="mini-top"><span class="mini-logo">uqqi<span class="dot">.</span>ru</span><span class="mini-eyebrow">Кабинет</span></div>
-            <div class="lk-card">
-              <span class="lk-eyebrow">Новый сайт</span>
-              <h4>Ссылка на Яндекс Карты</h4>
-              <p class="lk-desc">Вставьте ссылку на карточку организации.</p>
-              <span class="lk-flabel">Ссылка на карточку</span>
-              <div class="lk-input" id="lkInput"><span class="lk-input__txt"></span><span class="lk-caret"></span></div>
-              <span class="lk-ok" id="lkOk"><i data-lucide="check"></i> Ссылка распознана</span>
-              <button class="lk-btn" id="lkBtn" type="button">Создать сайт</button>
+        <div class="phone">
+          <div class="phone__notch"></div>
+          <div class="phone__screen" id="demoScreen">
+            <div class="scr scr--yandex" data-scr="1"><img src="/static/demo/yandex.png" alt="Карточка организации в Яндекс Картах"></div>
+            <div class="scr scr--share" data-scr="2">
+              <img class="scr--share__bg" src="/static/demo/yandex.png" alt="">
+              <div class="scr--share__dim"></div>
+              <img class="sheet" src="/static/demo/share.png" alt="Меню «Поделиться»">
+              <div class="toast" id="toastCopy"><i data-lucide="check"></i> Скопировано</div>
             </div>
-          </div>
-          <div class="scr scr--build" data-scr="4">
-            <div class="mini-top"><span class="mini-logo">uqqi<span class="dot">.</span>ru</span><span class="mini-eyebrow">Кабинет</span></div>
-            <div class="lk-card lk-card--build">
-              <div class="bspin"></div>
-              <h4>Собираем сайт</h4>
-              <p class="lk-desc">Обычно меньше минуты.</p>
-              <div class="bbar"><div class="bbar__fill" id="bbarFill"></div></div>
-              <ul class="bsteps" id="bsteps">
-                <li><span class="bs-ic"></span>Читаем карточку</li>
-                <li><span class="bs-ic"></span>Загружаем фото</li>
-                <li><span class="bs-ic"></span>Переносим отзывы</li>
-                <li><span class="bs-ic"></span>Публикуем сайт</li>
-              </ul>
-            </div>
-          </div>
-          <div class="scr scr--site" data-scr="5">
-            <div class="ms">
-              <div class="ms__nav"><span class="ms__brand">Рыбный базар</span><span class="ms__open">Открыто</span></div>
-              <div class="ms__cover" style="background-image:url(/static/demo/cover.png)">
-                <span class="ms__cat">Ресторан · Москва</span>
-                <h3 class="ms__name">Рыбный базар</h3>
-              </div>
-              <div class="ms__body">
-                <div class="ms__meta">4,9 · 5456 отзывов</div>
-                <div class="ms__addr"><i data-lucide="map-pin"></i>Трёхпрудный пер., 10/2с2</div>
-                <div class="ms__acts"><span class="ms-btn d">Позвонить</span><span class="ms-btn o">Маршрут</span></div>
-                <span class="ms-btn block">Забронировать столик</span>
+            <div class="scr scr--lk" data-scr="3">
+              <div class="mini-top"><span class="mini-logo">uqqi<span class="dot">.</span>ru</span><span class="mini-eyebrow">Кабинет</span></div>
+              <div class="lk-card">
+                <span class="lk-eyebrow">Новый сайт</span>
+                <h4>Ссылка на Яндекс Карты</h4>
+                <p class="lk-desc">Вставьте ссылку на карточку организации.</p>
+                <span class="lk-flabel">Ссылка на карточку</span>
+                <div class="lk-input" id="lkInput"><span class="lk-input__txt"></span><span class="lk-caret"></span></div>
+                <span class="lk-ok" id="lkOk"><i data-lucide="check"></i> Ссылка распознана</span>
+                <button class="lk-btn" id="lkBtn" type="button">Создать сайт</button>
               </div>
             </div>
-            <div class="toast" id="toastSite"><i data-lucide="check"></i> рыбный-базар.uqqi.ru готов</div>
+            <div class="scr scr--build" data-scr="4">
+              <div class="mini-top"><span class="mini-logo">uqqi<span class="dot">.</span>ru</span><span class="mini-eyebrow">Кабинет</span></div>
+              <div class="lk-card lk-card--build">
+                <div class="bspin"></div>
+                <h4>Собираем сайт</h4>
+                <p class="lk-desc">Обычно меньше минуты.</p>
+                <div class="bbar"><div class="bbar__fill" id="bbarFill"></div></div>
+                <ul class="bsteps" id="bsteps">
+                  <li><span class="bs-ic"></span>Читаем карточку</li>
+                  <li><span class="bs-ic"></span>Загружаем фото</li>
+                  <li><span class="bs-ic"></span>Переносим отзывы</li>
+                  <li><span class="bs-ic"></span>Публикуем сайт</li>
+                </ul>
+              </div>
+            </div>
+            <div class="scr scr--site" data-scr="5">
+              <div class="ms">
+                <div class="ms__nav"><span class="ms__brand">Рыбный базар</span><span class="ms__open">Открыто</span></div>
+                <div class="ms__cover" style="background-image:url(/static/demo/cover.png)">
+                  <span class="ms__cat">Ресторан · Москва</span>
+                  <h3 class="ms__name">Рыбный базар</h3>
+                </div>
+                <div class="ms__body">
+                  <div class="ms__meta">4,9 · 5456 отзывов</div>
+                  <div class="ms__addr"><i data-lucide="map-pin"></i>Трёхпрудный пер., 10/2с2</div>
+                  <div class="ms__acts"><span class="ms-btn d">Позвонить</span><span class="ms-btn o">Маршрут</span></div>
+                  <span class="ms-btn block">Забронировать столик</span>
+                </div>
+              </div>
+              <div class="toast" id="toastSite"><i data-lucide="check"></i> рыбный-базар.uqqi.ru готов</div>
+            </div>
+            <div class="finger" id="demoFinger"></div>
           </div>
-          <div class="finger" id="demoFinger"></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ───── ЧТО ВХОДИТ (БЕНТО) ───── -->
-<section id="included" class="section wrap">
-  <span class="label">Бесплатно, с первого дня</span>
-  <h2 class="h2" style="margin-top:1rem;">Что вы получаете</h2>
-
-  <div class="bento">
-    <div class="tile tile--lead">
-      <div>
-        <span class="label">Ваш адрес в интернете</span>
-        <h3 style="margin-top:.9rem;">Сайт на вашеимя.uqqi.ru</h3>
-        <p style="margin-top:.7rem;">Открыт для всех, индексируется Яндексом и Google, работает по защищённому соединению. Ссылку можно давать в рекламе, на визитке и в переписке.</p>
-      </div>
-      <div class="urlbar"><i data-lucide="lock"></i><span>https://вашеимя.uqqi.ru</span></div>
+<!-- ───── ПОЧЕМУ САЙТА ДО СИХ ПОР НЕТ ───── -->
+<section id="why" class="section section--cream">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="h2">Почему у вас <span class="serif">до сих пор нет сайта</span></h2>
+      <span class="kicker">Четыре причины, которые мы слышим чаще всего</span>
     </div>
 
-    <div class="tile"><i data-lucide="refresh-cw"></i><h3>Данные обновляются сами</h3><p>Поменяли часы или телефон в Яндекс Картах — сайт подтянет изменения без вас.</p></div>
-    <div class="tile"><i data-lucide="clock"></i><h3>Часы и статус</h3><p>Клиент сразу видит «Открыто» или «Закрыто» и до скольки вы работаете сегодня.</p></div>
-    <div class="tile"><i data-lucide="list"></i><h3>Услуги и цены</h3><p>Витрина с позициями, фото и ценами прямо с карточки. Клиент видит ассортимент до звонка.</p></div>
-    <div class="tile"><i data-lucide="star"></i><h3>Отзывы с Карт</h3><p>Оценка и живые отзывы на видном месте, со ссылкой на полный список в Яндексе.</p></div>
-    <div class="tile"><i data-lucide="phone-call"></i><h3>Звонок и маршрут</h3><p>Кнопка набора номера и кнопка «как доехать» в один тап с телефона.</p></div>
-    <div class="tile"><i data-lucide="image"></i><h3>Фотогалерея</h3><p>Фото из карточки плюс свои, если хотите показать что-то, чего в Яндексе нет.</p></div>
-    <div class="tile"><i data-lucide="bar-chart-3"></i><h3>Статистика посещений</h3><p>Сколько людей зашло за неделю и месяц, с динамикой по дням. Без сторонних счётчиков.</p></div>
-    <div class="tile"><i data-lucide="smartphone"></i><h3>Мобильная версия</h3><p>Отдельная вёрстка под телефон, где сайт и открывает большинство ваших клиентов.</p></div>
+    <div class="obj">
+      <div class="obj__card">
+        <div class="obj__q"><span class="n">01</span><p>«Это дорого. От 50 тысяч, и ещё техзадание писать»</p></div>
+        <p class="obj__a">Столько стоит сайт, который делают руками с нуля. Здесь его собирает робот из данных, которые вы уже заполнили в Яндекс Картах, поэтому базовый сайт стоит ноль рублей и остаётся бесплатным. Техзадание не нужно: описание, фото, услуги и часы берём из карточки. Деньги появляются, только если захотите премиум-оформление и чат с клиентами.</p>
+        <div class="obj__fact"><span>0 ₽ базовый</span><span>990 ₽ Pro в месяц</span><span>без техзадания</span></div>
+      </div>
+
+      <div class="obj__card">
+        <div class="obj__q"><span class="n">02</span><p>«Нет времени. Смены, поставщики, сезон»</p></div>
+        <p class="obj__a">Ваше участие занимает две минуты: скопировать ссылку в Яндекс Картах и вставить её в кабинет. Дальше без вас: сборка идёт автоматически, сайт публикуется сам. Ни встреч, ни согласования макетов, ни переписки с фрилансером, которого нужно подгонять.</p>
+        <div class="obj__fact"><span>2 действия</span><span>около 60 секунд</span><span>0 созвонов</span></div>
+      </div>
+
+      <div class="obj__card">
+        <div class="obj__q"><span class="n">03</span><p>«Не умею администрировать. Придётся кого-то нанимать»</p></div>
+        <p class="obj__a">Кабинет выглядит как обычное приложение на русском: поменять фото, часы, тексты, выбрать оформление. Ничего не сломается от нажатия не туда. Данные с карточки Яндекса подтягиваются сами, так что сайт не устареет, даже если вы не заходите месяцами.</p>
+        <div class="obj__fact"><span>панель на русском</span><span>без кода</span><span>обновление автоматом</span></div>
+      </div>
+
+      <div class="obj__card">
+        <div class="obj__q"><span class="n">04</span><p>«У меня есть карточка в Картах. Зачем ещё сайт?»</p></div>
+        <p class="obj__a">Карточка показывает вас в общем списке, где сразу под вами конкуренты, а правила показа устанавливает Яндекс. Сайт работает иначе: отдельный адрес для рекламы, визитки и переписки, полное меню и цены без модерации, и вас находят в поиске Яндекса и Google, а не только на карте. Карточка приводит тех, кто ищет на карте. Сайт забирает тех, кто ищет в поиске.</p>
+        <div class="obj__fact"><span>свой адрес</span><span>поиск Яндекс и Google</span><span>без соседей в списке</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── КОМУ ПОДХОДИТ ───── -->
+<section class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="h2">Локальному делу, <span class="serif">которое ищут рядом</span></h2>
+      <span class="kicker">Если вас находят в Яндекс Картах, сайт соберётся из той же карточки</span>
+    </div>
+    <div class="fan">
+      <div class="fcard">
+        <div class="fcard__ic"><i data-lucide="wrench"></i></div>
+        <h3>Бытовые услуги</h3>
+        <ul><li>Автосервисы</li><li>Шиномонтажи</li><li>Автомойки</li><li>Ремонт обуви</li><li>Изготовление ключей</li><li>Ателье и химчистки</li></ul>
+      </div>
+      <div class="fcard">
+        <div class="fcard__ic"><i data-lucide="scissors"></i></div>
+        <h3>Красота и здоровье</h3>
+        <ul><li>Парикмахерские у дома</li><li>Барбершопы</li><li>Маникюр</li><li>Частные массажисты</li><li>Косметологи</li></ul>
+      </div>
+      <div class="fcard">
+        <div class="fcard__ic"><i data-lucide="flower-2"></i></div>
+        <h3>Розница</h3>
+        <ul><li>Цветочные</li><li>Овощи и фрукты</li><li>Фермерские продукты</li><li>Кондитерские</li><li>Зоомагазины</li></ul>
+      </div>
+      <div class="fcard">
+        <div class="fcard__ic"><i data-lucide="coffee"></i></div>
+        <h3>Общепит</h3>
+        <ul><li>Кофейни</li><li>Пекарни</li><li>Шаурма и бургеры</li><li>Стрит-фуд</li><li>Пивные магазины</li></ul>
+      </div>
+      <div class="fcard">
+        <div class="fcard__ic"><i data-lucide="hammer"></i></div>
+        <h3>Стройка и ремонт</h3>
+        <ul><li>Локальные бригады</li><li>Мастер на час</li><li>Окна и двери</li><li>Отделка</li><li>Сантехника и электрика</li></ul>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ───── PRO ───── -->
-<section class="pro section">
-  <div class="wrap pro__grid">
-    <div>
-      <span class="label">Тариф Pro</span>
-      <h2 class="h2" style="margin-top:1rem;">Когда сайт становится витриной</h2>
-      <p class="pro__lead">Базовый сайт решает задачу «меня находят». Pro нужен, когда сайт должен ещё и продавать: другое оформление и возможность ответить клиенту, пока он на странице.</p>
-      <ul class="pro__list">
-        <li><i data-lucide="layout-template"></i><div><b>Премиум-оформления витрины</b><span>Десять готовых дизайнов под разные ниши: тёмный кинематографичный для барбершопа, журнальный для кофейни, технический для автосервиса. Переключается в один клик, содержимое остаётся тем же.</span></div></li>
-        <li><i data-lucide="message-square"></i><div><b>Чат с сайта в ваш Telegram</b><span>Посетитель пишет прямо на странице, сообщение приходит вам в Telegram, вы отвечаете ответом на него. Ни приложений, ни отдельной панели.</span></div></li>
-        <li><i data-lucide="gift"></i><div><b>Семь дней бесплатно</b><span>Pro-период включается один раз на аккаунт: посмотрите оформления и чат на своих данных, потом решайте.</span></div></li>
-      </ul>
-    </div>
-
-    <div>
-      <div class="plans">
-        <div class="plan"><span class="plan__name">Месяц</span><span><span class="plan__price">990 ₽</span><span class="plan__per">30 дней</span></span></div>
-        <div class="plan plan--best"><span class="plan__name">3 месяца</span><span><span class="plan__price">2490 ₽</span><span class="plan__per">830 ₽ в месяц</span></span></div>
-        <div class="plan"><span class="plan__name">Год</span><span><span class="plan__price">8900 ₽</span><span class="plan__per">742 ₽ в месяц</span></span></div>
+<section class="section section--cream">
+  <div class="wrap">
+    <div class="pro__panel">
+      <div class="pro__grid">
+        <div>
+          <span class="kicker">Тариф Pro</span>
+          <h2 class="h2" style="margin-top:.9rem;">Когда сайт становится <span class="serif">витриной</span></h2>
+          <p class="pro__lead">Базовый сайт решает задачу «меня находят». Pro нужен, когда сайт должен ещё и продавать: другое оформление и возможность ответить клиенту, пока он на странице.</p>
+          <ul class="pro__list">
+            <li><i data-lucide="layout-template"></i><div><b>Премиум-оформления витрины</b><span>Десять готовых дизайнов под разные ниши: тёмный кинематографичный для барбершопа, журнальный для кофейни, технический для автосервиса. Переключается в один клик, содержимое остаётся тем же.</span></div></li>
+            <li><i data-lucide="message-square"></i><div><b>Чат с сайта в ваш Telegram</b><span>Посетитель пишет прямо на странице, сообщение приходит вам в Telegram, вы отвечаете ответом на него. Ни приложений, ни отдельной панели.</span></div></li>
+            <li><i data-lucide="gift"></i><div><b>Семь дней бесплатно</b><span>Pro-период включается один раз на аккаунт: посмотрите оформления и чат на своих данных, потом решайте.</span></div></li>
+          </ul>
+        </div>
+        <div>
+          <div class="plans">
+            <div class="plan"><span class="plan__name">Месяц</span><span><span class="plan__price">990 ₽</span><span class="plan__per">30 дней</span></span></div>
+            <div class="plan plan--best"><span class="plan__name">3 месяца</span><span><span class="plan__price">2490 ₽</span><span class="plan__per">830 ₽ в месяц</span></span></div>
+            <div class="plan"><span class="plan__name">Год</span><span><span class="plan__price">8900 ₽</span><span class="plan__per">742 ₽ в месяц</span></span></div>
+          </div>
+          <div class="pro__cta">
+            <a href="https://lk.uqqi.ru/" class="btn btn--ondark">Попробовать Pro <i data-lucide="arrow-right"></i></a>
+            <a href="#price" class="btn btn--ondark-outline">Сравнить с базовым</a>
+          </div>
+          <p class="pro__fine">Оплата картой через ЮKassa. Отключить можно в любой момент: сайт останется, вернётся базовое оформление.</p>
+        </div>
       </div>
-      <div class="pro__cta">
-        <a href="https://lk.uqqi.ru/" class="btn btn--ondark">Попробовать Pro <i data-lucide="arrow-right"></i></a>
-        <a href="#price" class="btn btn--ondark-outline">Сравнить с базовым</a>
-      </div>
-      <p class="pro__fine">Оплата картой через ЮKassa. Отключить можно в любой момент: сайт останется, вернётся базовое оформление.</p>
     </div>
   </div>
 </section>
 
 <!-- ───── ЦЕНЫ ───── -->
-<section id="price" class="section wrap">
-  <span class="label">Цены</span>
-  <h2 class="h2" style="margin-top:1rem;">Базовый бесплатный. Платите, только если нужно больше.</h2>
-
-  <div class="cmp-wrap">
-    <table class="cmp">
-      <thead>
-        <tr><th scope="col">Что входит</th><th scope="col">Базовый</th><th scope="col">Pro</th></tr>
-      </thead>
-      <tbody>
-        <tr><th scope="row">Сайт на адресе название.uqqi.ru</th>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
-        <tr><th scope="row">Данные с Яндекс Карт и автообновление</th>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
-        <tr><th scope="row">Панель управления, фото, тексты, часы</th>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
-        <tr><th scope="row">Статистика посещений</th>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
-        <tr><th scope="row">Мобильная версия, SSL, индексация</th>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
-        <tr><th scope="row">Оформления витрины</th>
-          <td>2 базовых</td>
-          <td>2 базовых и 10 премиум</td></tr>
-        <tr><th scope="row">Чат с клиентами в Telegram</th>
-          <td class="no">нет</td>
-          <td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <th scope="row">Цена</th>
-          <td><span class="cmp__price">0 ₽</span><br><span class="small muted">навсегда</span></td>
-          <td><span class="cmp__price">990 ₽</span><br><span class="small muted">в месяц, дешевле при оплате за 3 месяца и год</span></td>
-        </tr>
-      </tfoot>
-    </table>
+<section id="price" class="section">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="h2">Базовый бесплатный, <span class="serif">Pro по желанию</span></h2>
+      <span class="kicker">Никаких скрытых списаний и обязательных периодов</span>
+    </div>
+    <div class="cmp-wrap">
+      <table class="cmp">
+        <thead><tr><th scope="col">Что входит</th><th scope="col">Базовый</th><th scope="col">Pro</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Сайт на адресе название.uqqi.ru</th>
+            <td><span class="yes"><i data-lucide="check"></i>есть</span></td><td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
+          <tr><th scope="row">Данные с Яндекс Карт и автообновление</th>
+            <td><span class="yes"><i data-lucide="check"></i>есть</span></td><td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
+          <tr><th scope="row">Панель управления: фото, тексты, часы</th>
+            <td><span class="yes"><i data-lucide="check"></i>есть</span></td><td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
+          <tr><th scope="row">Статистика посещений</th>
+            <td><span class="yes"><i data-lucide="check"></i>есть</span></td><td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
+          <tr><th scope="row">Мобильная версия, SSL, индексация</th>
+            <td><span class="yes"><i data-lucide="check"></i>есть</span></td><td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
+          <tr><th scope="row">Оформления витрины</th><td>2 базовых</td><td>2 базовых и 10 премиум</td></tr>
+          <tr><th scope="row">Чат с клиентами в Telegram</th><td class="no">нет</td><td><span class="yes"><i data-lucide="check"></i>есть</span></td></tr>
+        </tbody>
+        <tfoot>
+          <tr><th scope="row">Цена</th>
+            <td><span class="cmp__price">0 ₽</span><br><span class="small muted">навсегда</span></td>
+            <td><span class="cmp__price">990 ₽</span><br><span class="small muted">в месяц, дешевле при оплате за 3 месяца и год</span></td></tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 </section>
 
 <!-- ───── ВОПРОСЫ ───── -->
-<section id="faq" class="section wrap">
-  <span class="label">Вопросы</span>
-  <h2 class="h2" style="margin-top:1rem;">Что обычно спрашивают</h2>
-  <div class="faq" id="faqList">
-    <div class="faq-item"><button class="faq-q" type="button">Сколько это стоит?<i data-lucide="chevron-down"></i></button>
-      <div class="faq-a"><p>Базовый сайт бесплатный и остаётся бесплатным: с него не берут денег ни через месяц, ни через год. Платный только Pro: 990 ₽ за месяц, 2490 ₽ за три месяца, 8900 ₽ за год. Pro даёт премиум-оформления и чат с клиентами в Telegram.</p></div></div>
+<section id="faq" class="section section--cream">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="h2">Частые <span class="serif">вопросы</span></h2>
+      <span class="kicker">Если чего-то не хватает, напишите на support@uqqi.ru</span>
+    </div>
+    <div class="faq" id="faqList">
+      <div class="faq-item"><button class="faq-q" type="button">Сколько это стоит?<i data-lucide="chevron-down"></i></button>
+        <div class="faq-a"><p>Базовый сайт бесплатный и остаётся бесплатным: с него не берут денег ни через месяц, ни через год. Платный только Pro: 990 ₽ за месяц, 2490 ₽ за три месяца, 8900 ₽ за год. Pro даёт премиум-оформления и чат с клиентами в Telegram.</p></div></div>
 
-    <div class="faq-item"><button class="faq-q" type="button">Что входит в бесплатный сайт?<i data-lucide="chevron-down"></i></button>
-      <div class="faq-a"><p>Всё, что нужно, чтобы вас находили и вам звонили: сайт на своём адресе, данные из карточки с автообновлением, фото, часы работы со статусом, услуги и цены, отзывы, кнопки звонка и маршрута, мобильная версия, защищённое соединение, панель управления и статистика посещений.</p></div></div>
+      <div class="faq-item"><button class="faq-q" type="button">Что входит в бесплатный сайт?<i data-lucide="chevron-down"></i></button>
+        <div class="faq-a"><p>Всё, что нужно, чтобы вас находили и вам звонили: сайт на своём адресе, данные из карточки с автообновлением, фото, часы работы со статусом, услуги и цены, отзывы, кнопки звонка и маршрута, мобильная версия, защищённое соединение, панель управления и статистика посещений.</p></div></div>
 
-    <div class="faq-item"><button class="faq-q" type="button">Сколько времени занимает запуск?<i data-lucide="chevron-down"></i></button>
-      <div class="faq-a"><p>Около минуты. Вы вставляете ссылку на карточку организации, сайт собирается автоматически и открывается по адресу название.uqqi.ru. Ваше участие на этом заканчивается.</p></div></div>
+      <div class="faq-item"><button class="faq-q" type="button">Сколько времени занимает запуск?<i data-lucide="chevron-down"></i></button>
+        <div class="faq-a"><p>Около минуты. Вы вставляете ссылку на карточку организации, сайт собирается автоматически и открывается по адресу название.uqqi.ru. Ваше участие на этом заканчивается.</p></div></div>
 
-    <div class="faq-item"><button class="faq-q" type="button">Нужно ли разбираться в технике?<i data-lucide="chevron-down"></i></button>
-      <div class="faq-a"><p>Нет. Панель на русском языке: поменять фото, часы, текст и оформление можно самому за пару минут. Программист не нужен ни при запуске, ни потом.</p></div></div>
+      <div class="faq-item"><button class="faq-q" type="button">Нужно ли разбираться в технике?<i data-lucide="chevron-down"></i></button>
+        <div class="faq-a"><p>Нет. Панель на русском языке: поменять фото, часы, текст и оформление можно самому за пару минут. Программист не нужен ни при запуске, ни потом.</p></div></div>
 
-    <div class="faq-item"><button class="faq-q" type="button">А если у меня нет карточки в Яндекс Картах?<i data-lucide="chevron-down"></i></button>
-      <div class="faq-a"><p>Её можно завести бесплатно в Яндекс Бизнесе, и это полезно само по себе: так вас находят на карте. Когда карточка появится, вернитесь и вставьте ссылку. Если что-то непонятно, напишите на support@uqqi.ru, подскажем порядок действий.</p></div></div>
+      <div class="faq-item"><button class="faq-q" type="button">А если у меня нет карточки в Яндекс Картах?<i data-lucide="chevron-down"></i></button>
+        <div class="faq-a"><p>Её можно завести бесплатно в Яндекс Бизнесе, и это полезно само по себе: так вас находят на карте. Когда карточка появится, вернитесь и вставьте ссылку. Если что-то непонятно, напишите на support@uqqi.ru, подскажем порядок действий.</p></div></div>
 
-    <div class="faq-item"><button class="faq-q" type="button">Чей это сайт и можно ли его удалить?<i data-lucide="chevron-down"></i></button>
-      <div class="faq-a"><p>Сайт ваш: вы им управляете и в любой момент можете его удалить из кабинета или письмом на support@uqqi.ru. Никаких обязательств и договоров подписывать не нужно.</p></div></div>
+      <div class="faq-item"><button class="faq-q" type="button">Чей это сайт и можно ли его удалить?<i data-lucide="chevron-down"></i></button>
+        <div class="faq-a"><p>Сайт ваш: вы им управляете и в любой момент можете его удалить из кабинета или письмом на support@uqqi.ru. Никаких обязательств и договоров подписывать не нужно.</p></div></div>
 
-    <div class="faq-item"><button class="faq-q" type="button">Можно ли поставить свой домен?<i data-lucide="chevron-down"></i></button>
-      <div class="faq-a"><p>Пока сайт живёт на поддомене название.uqqi.ru. Подключение собственного домена в планах. Если он вам нужен уже сейчас, напишите на support@uqqi.ru, обсудим.</p></div></div>
+      <div class="faq-item"><button class="faq-q" type="button">Можно ли поставить свой домен?<i data-lucide="chevron-down"></i></button>
+        <div class="faq-a"><p>Пока сайт живёт на поддомене название.uqqi.ru. Подключение собственного домена в планах. Если он нужен уже сейчас, напишите на support@uqqi.ru, обсудим.</p></div></div>
+    </div>
   </div>
 </section>
 </main>
 
-<!-- ───── ФИНАЛЬНЫЙ БЛОК ───── -->
-<section class="final">
+<!-- ───── ФИНАЛЬНАЯ ПАНЕЛЬ ───── -->
+<section class="final section">
   <div class="wrap">
-    <h2 class="h2">Сайт будет готов раньше, чем остынет кофе</h2>
-    <p>Одна ссылка из Яндекс Карт, минута ожидания, и у вашего дела есть адрес в интернете.</p>
-    <div class="final__cta">
-      <a href="https://lk.uqqi.ru/" class="btn btn--ondark">Создать сайт бесплатно <i data-lucide="arrow-right"></i></a>
-      <a href="#how" class="btn btn--ondark-outline">Сначала посмотреть, как это работает</a>
+    <div class="final__panel">
+      <h2 class="h2">Сайт будет готов раньше, <span class="serif">чем остынет кофе</span></h2>
+      <p>Одна ссылка из Яндекс Карт, минута ожидания, и у вашего дела появляется адрес в интернете.</p>
+      <div class="final__cta">
+        <a href="https://lk.uqqi.ru/" class="btn btn--onmark">Создать сайт бесплатно <i data-lucide="arrow-right"></i></a>
+        <a href="#how" class="btn btn--onmark-outline">Сначала посмотреть, как это работает</a>
+      </div>
+      <p class="final__note">Бесплатно навсегда · без карты · без договора</p>
     </div>
-    <p class="final__note">Бесплатно навсегда · без карты · без договора</p>
   </div>
 </section>
 
@@ -807,9 +854,9 @@ footer{background:var(--paper);border-top:1px solid var(--line);padding-block:3.
       </div>
       <div class="foot__col">
         <h4>Продукт</h4>
-        <a href="#why">Почему нет сайта</a>
-        <a href="#how">Как это работает</a>
         <a href="#included">Что входит</a>
+        <a href="#how">Как это работает</a>
+        <a href="#why">Почему нет сайта</a>
         <a href="#price">Цены</a>
         <a href="https://lk.uqqi.ru/">Личный кабинет</a>
       </div>
@@ -825,8 +872,8 @@ footer{background:var(--paper);border-top:1px solid var(--line);padding-block:3.
       <span>Сделано в России</span>
     </div>
   </div>
+  <div class="watermark" aria-hidden="true">uqqi<span>.</span>ru</div>
 </footer>
-
 <script>
 if(window.lucide) lucide.createIcons();
 
@@ -836,7 +883,7 @@ const io=new IntersectionObserver(function(es){
 },{threshold:.12});
 document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
 
-/* «Показать готовый сайт»: кнопка → спиннер → ссылка */
+/* «Показать готовый сайт»: кнопка -> спиннер -> ссылка */
 function showRandomSite(){
   var slot=document.getElementById('demoSlot');
   var link=document.getElementById('demoLink');
@@ -854,16 +901,16 @@ function showRandomSite(){
         if(window.lucide) window.lucide.createIcons();
       } else {
         slot.classList.remove('loading');
-        if(hint){ hint.textContent='Готовых примеров пока нет'; hint.style.color='var(--mark-ink)'; }
+        if(hint){ hint.textContent='Готовых примеров пока нет'; }
       }
     },wait);
   }).catch(function(){
     slot.classList.remove('loading');
-    if(hint){ hint.textContent='Не удалось загрузить пример'; hint.style.color='var(--mark-ink)'; }
+    if(hint){ hint.textContent='Не удалось загрузить пример'; }
   });
 }
 
-/* сценарий в телефоне: карточка → поделиться → кабинет → сборка → сайт */
+/* сценарий в телефоне: карточка -> поделиться -> кабинет -> сборка -> сайт */
 (function(){
   var root=document.getElementById('demoScreen');
   if(!root) return;

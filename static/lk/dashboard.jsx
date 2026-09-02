@@ -164,82 +164,168 @@ function validYandex(text) {
 }
 
 // ---- галерея дизайнов (пикер при создании + смена оформления в ЛК) ----
-// MP4-лупы владелец кладёт в static/designs/<key>.mp4 (+ <key>.jpg постер).
-// Пока файла нет — карточка показывает плейсхолдер с названием (video.onError).
-function DesignCard({ d, selected, onSelect }) {
-  const [vidBad, setVidBad] = useStateD(false);
+// Превью ЖИВОЕ: витрина клиента рендерится по ?variant=<key>&preview=1 и
+// ужимается в карточку, поэтому человек видит СВОИ фото, услуги и отзывы,
+// а не абстрактную картинку. Пока сайта нет (экран «Добавить сайт»), slug
+// неизвестен — тогда показываем текстовую карточку.
+function designPreviewUrl(slug, key) {
+  return 'https://' + slug + '.uqqi.ru/?variant=' + encodeURIComponent(key) + '&preview=1';
+}
+
+function DesignCard({ d, selected, onSelect, slug, onZoom }) {
+  const [near, setNear] = useStateD(false);   // ленивая подгрузка iframe
+  const [scale, setScale] = useStateD(0.18);  // витрина 1280px, ужатая под карточку
+  const boxRef = useRefD(null);
+  const stageRef = useRefD(null);
+  useEffectD(() => {
+    if (!slug || near) return;
+    const el = boxRef.current;
+    if (!el || !window.IntersectionObserver) { setNear(true); return; }
+    const io = new window.IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) { setNear(true); io.disconnect(); }
+    }, { rootMargin: '300px' });
+    io.observe(el);
+    return function () { io.disconnect(); };
+  }, [slug, near]);
+  useEffectD(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    function fit() { const w = el.clientWidth; if (w) setScale(w / 1280); }
+    fit();
+    if (!window.ResizeObserver) return;
+    const ro = new window.ResizeObserver(fit);
+    ro.observe(el);
+    return function () { ro.disconnect(); };
+  }, []);
+
   const isPro = d.tier === 'pro';
-  const showVideo = isPro && d.preview && !vidBad;
   return (
-    <div onClick={() => onSelect(d.key)}
-      style={{ cursor: 'pointer', borderRadius: 'var(--r-lg)', overflow: 'hidden',
-        border: '2px solid ' + (selected ? 'var(--terracotta)' : 'var(--line)'),
-        background: selected ? 'var(--terracotta-wash)' : 'var(--paper)' }}>
-      <div style={{ position: 'relative', aspectRatio: '16 / 10', overflow: 'hidden',
-        background: 'linear-gradient(135deg, var(--paper-2), color-mix(in srgb, var(--terracotta) 14%, var(--paper-2)))',
-        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {showVideo
-          ? <video muted loop autoPlay playsInline preload="none" poster={d.poster || undefined}
-              onError={() => setVidBad(true)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}>
-              <source src={d.preview} type="video/mp4" />
-            </video>
-          : <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.02rem', color: 'var(--ink-2)' }}>{d.name}</span>}
-        {isPro && <span style={{ position: 'absolute', top: '.5rem', left: '.5rem', background: 'var(--gold-dim)', color: '#fff', fontSize: '.64rem', fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase', padding: '.18rem .5rem', borderRadius: '999px' }}>Pro</span>}
-        {selected && <span style={{ position: 'absolute', top: '.5rem', right: '.5rem', width: 22, height: 22, borderRadius: '50%', background: 'var(--terracotta)', color: '#fff', display: 'grid', placeItems: 'center' }}><i data-lucide="check" style={{ width: 14, height: 14 }}></i></span>}
+    <div className={'dcard' + (selected ? ' on' : '')} ref={boxRef}>
+      <div className="dcard__stage" ref={stageRef}>
+        {slug && near
+          ? <iframe className="dcard__frame" src={designPreviewUrl(slug, d.key)} loading="lazy"
+              tabIndex="-1" aria-hidden="true" title={'Предпросмотр оформления ' + d.name}
+              style={{ transform: 'scale(' + scale + ')' }}></iframe>
+          : <div className="dcard__ph">{d.name}</div>}
       </div>
-      <div style={{ padding: '.55rem .7rem .65rem' }}>
-        <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.9rem' }}>{d.name}</div>
-        {d.vibe && <div className="muted" style={{ fontSize: '.74rem', marginTop: '.15rem', lineHeight: 1.4 }}>{d.vibe}</div>}
-        {d.fit && <div className="muted" style={{ fontSize: '.7rem', marginTop: '.2rem', opacity: .75 }}>Подходит: {d.fit}</div>}
+      <div className="dcard__body">
+        <div className="dcard__name">{d.name}</div>
+        {d.vibe && <div className="dcard__vibe">{d.vibe}</div>}
+        {d.fit && <div className="dcard__fit">{d.fit}</div>}
       </div>
+      <button type="button" className="dcard__pick" aria-pressed={selected ? 'true' : 'false'}
+        onClick={() => onSelect(d.key)} title={'Выбрать оформление ' + d.name}>
+        <span className="sr-only">{'Выбрать оформление ' + d.name}</span>
+      </button>
+      <div className="dcard__tags">
+        {isPro && <span className="dtag dtag--pro">Pro</span>}
+        {selected && <span className="dtag dtag--on">Выбран</span>}
+      </div>
+      {slug && onZoom && (
+        <button type="button" className="dcard__zoom" onClick={() => onZoom(d)}
+          title={'Открыть ' + d.name + ' на весь экран'}>
+          <i data-lucide="maximize-2"></i> Крупнее
+        </button>
+      )}
     </div>
   );
 }
 
-function DesignGallery({ designs, value, onSelect }) {
+function DesignGallery({ designs, value, onSelect, slug, onZoom }) {
   if (!designs || !designs.length) return <div className="spin" style={{ margin: '1rem auto' }}></div>;
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(178px, 1fr))', gap: '.7rem', marginTop: '.5rem' }}>
-      {designs.map(d => <DesignCard key={d.key} d={d} selected={value === d.key} onSelect={onSelect} />)}
+    <div className="dgrid">
+      {designs.map(d => (
+        <DesignCard key={d.key} d={d} selected={value === d.key} onSelect={onSelect}
+          slug={slug} onZoom={onZoom} />
+      ))}
     </div>
   );
 }
 
-// ---- экран «Дизайн сайта» (смена оформления + живой предпросмотр ?variant=) ----
+// Полноэкранный предпросмотр одного дизайна на данных клиента
+function DesignPreview({ d, slug, onClose, onApply, applying }) {
+  const [device, setDevice] = useStateD('desktop');
+  useEffectD(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', onKey);
+    return function () { window.removeEventListener('keydown', onKey); };
+  }, [onClose]);
+  const url = designPreviewUrl(slug, d.key);
+  return (
+    <div className="dpv" role="dialog" aria-modal="true" aria-label={'Предпросмотр оформления ' + d.name}>
+      <div className="dpv__bar">
+        <div className="dpv__title">
+          <b>{d.name}</b>
+          {d.vibe && <span className="muted" style={{ fontSize: '.82rem' }}>{d.vibe}</span>}
+        </div>
+        <div className="dpv__actions">
+          <div className="seg">
+            <button type="button" className={device === 'desktop' ? 'on' : ''} onClick={() => setDevice('desktop')}>
+              <i data-lucide="monitor"></i> Компьютер
+            </button>
+            <button type="button" className={device === 'mobile' ? 'on' : ''} onClick={() => setDevice('mobile')}>
+              <i data-lucide="smartphone"></i> Телефон
+            </button>
+          </div>
+          <a className="btn btn--ghost btn--sm" href={url} target="_blank" rel="noopener">
+            <i data-lucide="external-link"></i> В новой вкладке
+          </a>
+          {onApply && (
+            <button type="button" className="btn btn--primary btn--sm" disabled={applying}
+              onClick={() => onApply(d.key)}>{applying ? 'Применяем…' : 'Выбрать это оформление'}</button>
+          )}
+          <button type="button" className="iconbtn" onClick={onClose} aria-label="Закрыть предпросмотр">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+      <div className="dpv__stage">
+        <iframe className="dpv__frame" data-device={device} src={url}
+          title={'Предпросмотр оформления ' + d.name}></iframe>
+      </div>
+    </div>
+  );
+}
+
+// ---- экран «Дизайн сайта» (смена оформления + живой предпросмотр) ----
 function ScreenDesign({ nav, site, designs, onApply, onPay }) {
   const [design, setDesign] = useStateD((site && site.design) || 'A');
   const [busy, setBusy] = useStateD(false);
+  const [zoom, setZoom] = useStateD(null);
   if (!site) return null;
   const chosen = (designs || []).find(d => d.key === design);
   const isPro = !!(chosen && chosen.tier === 'pro');
   const proActive = !!site.proActive;
   const changed = design !== (site.design || 'A');
-  const liveUrl = 'https://' + site.slug + '.uqqi.ru/?variant=' + encodeURIComponent(design);
-  async function apply() {
+  const liveUrl = designPreviewUrl(site.slug, design);
+  async function apply(key) {
     setBusy(true);
-    try { await onApply(site.id, design); } finally { setBusy(false); }
+    try { await onApply(site.id, key || design); setZoom(null); } finally { setBusy(false); }
   }
   return (
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
-        <span className="eyebrow">Дизайн сайта</span>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 .4rem' }}>{site.name}</h2>
-        <p className="muted" style={{ fontSize: '.86rem', lineHeight: 1.6 }}>Выберите оформление витрины. Премиум-дизайны показываются на сайте, пока активен Pro (в т.ч. пробный период); без Pro сайт остаётся на базовом.</p>
-        <DesignGallery designs={designs} value={design} onSelect={setDesign} />
+        <span className="eyebrow">Оформление сайта</span>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '-.03em', color: 'var(--ink)', margin: '.5rem 0 .4rem' }}>{site.name}</h2>
+        <p className="muted" style={{ fontSize: '.88rem', lineHeight: 1.6 }}>Каждая карточка показывает ваш сайт в этом оформлении: ваши фото, услуги и отзывы. Премиум-оформления работают, пока активен Pro; без Pro сайт показывается в базовом.</p>
+        <DesignGallery designs={designs} value={design} onSelect={setDesign}
+          slug={site.slug} onZoom={setZoom} />
         {isPro && !proActive && (
-          <div className="card" style={{ padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb, var(--warning) 30%, var(--line))' }}>
+          <div className="card" style={{ padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem', background: 'var(--warning-wash)', borderColor: 'rgba(138,90,6,.28)' }}>
             <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
-            <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Это премиум-дизайн. Он сохранится за сайтом, но на витрине покажется базовый, пока не активен Pro.</span>
+            <span style={{ fontSize: '.84rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Это премиум-оформление. Выбор сохранится, но посетители увидят базовое, пока не активен Pro.</span>
           </div>
         )}
         <div style={{ display: 'flex', gap: '.6rem', marginTop: '1.3rem', flexWrap: 'wrap' }}>
-          <a className="btn btn--outline" href={liveUrl} target="_blank" rel="noopener"><i data-lucide="external-link"></i> Посмотреть на сайте</a>
-          <button className="btn btn--primary" disabled={!changed || busy} onClick={apply}>{busy ? 'Применяем…' : 'Применить'}</button>
-          {isPro && !proActive && onPay && <button className="btn btn--ghost" onClick={() => onPay(site)}>Оформить Pro</button>}
+          <button className="btn btn--primary" disabled={!changed || busy} onClick={() => apply()}>{busy ? 'Применяем…' : 'Применить'}</button>
+          <a className="btn btn--ghost" href={liveUrl} target="_blank" rel="noopener"><i data-lucide="external-link"></i> Открыть в новой вкладке</a>
+          {isPro && !proActive && onPay && <button className="btn btn--outline" onClick={() => onPay(site)}>Оформить Pro</button>}
         </div>
       </div>
+      {zoom && <DesignPreview d={zoom} slug={site.slug} onClose={() => setZoom(null)}
+        onApply={apply} applying={busy} />}
     </div>
   );
 }

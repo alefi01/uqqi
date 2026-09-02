@@ -277,7 +277,7 @@ function App() {
         <div className="shell">
           {/* sidebar (desktop) */}
           <aside className="side">
-            <a className="logo side__brand" onClick={() => nav('sites')} style={{ cursor: 'pointer' }}><img src="/static/lk/assets/seal-192.png" alt="" />uqqi<span className="dot">.ru</span></a>
+            <a className="logo side__brand" onClick={() => nav('sites')} style={{ cursor: 'pointer' }}><img src="/static/lk/assets/seal-192.png" alt="" /><b>uqqi<span className="dot">.</span>ru</b></a>
             {NAV.map(n => (
               <a key={n.id} className={'nav-i' + (section === n.id ? ' on' : '')} onClick={() => nav(n.id)}>
                 <i data-lucide={n.ic}></i>{n.label}
@@ -293,7 +293,7 @@ function App() {
           <section className="main">
             {/* mobile topbar */}
             <header className="topbar">
-              <a className="logo" onClick={() => nav('sites')} style={{ cursor: 'pointer' }}><img src="/static/lk/assets/seal-192.png" alt="" />uqqi<span className="dot">.ru</span></a>
+              <a className="logo" onClick={() => nav('sites')} style={{ cursor: 'pointer' }}><img src="/static/lk/assets/seal-192.png" alt="" /><b>uqqi<span className="dot">.</span>ru</b></a>
               <div className="topbar__r">
                 <span className="tag" style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</span>
                 <button className="iconbtn" onClick={logout} title="Выйти"><i data-lucide="log-out"></i></button>

@@ -6,7 +6,7 @@ const { useState } = React;
 function AuthAside() {
   return (
     <div className="auth__aside">
-      <a className="logo" href="#"><img src="/static/lk/assets/seal-192.png" alt="" />uqqi<span className="dot">.ru</span></a>
+      <a className="logo" href="#"><img src="/static/lk/assets/seal-192.png" alt="" /><b>uqqi<span className="dot">.</span>ru</b></a>
       <div className="auth__pitch">
         <h2>Сайт вашего бизнеса <em>уже почти готов.</em></h2>
         <p>Войдите в кабинет — и через минуту у вашей кофейни, кафе или магазина появится аккуратный сайт на собственном адресе.</p>
