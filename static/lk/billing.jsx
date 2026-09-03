@@ -201,7 +201,7 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
         <p className="field__label" style={{ marginBottom: '.7rem' }}>История платежей</p>
         <div className="card" style={{ padding: '.4rem .6rem' }}>
           <table className="ptable">
-            <thead><tr><th>Дата</th><th>Сайт</th><th>Сумма</th><th>Статус</th><th></th></tr></thead>
+            <thead><tr><th>Дата</th><th>Сайт</th><th>Сумма</th><th>Статус</th></tr></thead>
             <tbody>
               {payments.map((p, i) => (
                 <tr key={i}>
@@ -209,7 +209,6 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
                   <td data-l="Сайт">{p.site}</td>
                   <td data-l="Сумма" className="amt">{p.amount}</td>
                   <td data-l="Статус"><span className={'badge ' + (p.ok ? 'badge--active' : 'badge--unpaid')} style={{ fontSize: '.7rem' }}><span className="dot"></span>{p.ok ? 'Оплачен' : 'Отклонён'}</span></td>
-                  <td data-l="Чек">{p.ok ? <a className="linklike" style={{ fontSize: '.8rem', display: 'inline-flex', alignItems: 'center', gap: '.25rem' }} href="#" onClick={e => e.preventDefault()}>чек <i data-lucide="arrow-up-right" style={{ width: 12, height: 12 }}></i></a> : <span className="muted">—</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -343,7 +342,7 @@ function ScreenSettings({ email, onDelete }) {
           <div className="field"><label className="field__label">Новый пароль</label><input className="input" type="password" placeholder="••••••••" value={np} onChange={e => setNp(e.target.value)} /></div>
           <div className="field"><label className="field__label">Повтор нового пароля</label><input className="input" type="password" placeholder="••••••••" value={pw2} onChange={e => setPw2(e.target.value)} /></div>
           {msg && <div className={msg.t === 'ok' ? 'field__hint' : 'field__err'} style={msg.t === 'ok' ? { color: 'var(--success-soft)' } : {}}>{msg.m}</div>}
-          <div><button className="btn btn--dark" onClick={savePassword} disabled={busy}>{busy ? 'Сохраняем…' : 'Сохранить пароль'}</button></div>
+          <div><button className="btn btn--primary" onClick={savePassword} disabled={busy}>{busy ? 'Сохраняем…' : 'Сохранить пароль'}</button></div>
         </div>
       </div>
 

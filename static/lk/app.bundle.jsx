@@ -444,7 +444,7 @@ function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd }) {
       {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onMenu={onMenu} onStats={onStats} />)}
       <div style={{ marginTop: '.3rem' }}>
         {canAdd
-          ? <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
+          ? (sites.length >= 4 && <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>)
           : <div className="card" style={{ padding: '1rem 1.1rem', display: 'flex', gap: '.7rem', alignItems: 'center', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb,var(--warning) 30%,var(--line))' }}>
               <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
               <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>Дождитесь завершения сборки текущего сайта — потом можно добавить ещё.</span>
@@ -477,9 +477,9 @@ function designPreviewUrl(slug, key) {
   return 'https://' + slug + '.uqqi.ru/?variant=' + encodeURIComponent(key) + '&preview=1';
 }
 
-function DesignCard({ d, selected, onSelect, slug, onZoom }) {
+function DesignCard({ d, selected, onSelect, slug, onZoom, lead }) {
   const [near, setNear] = useStateD(false);   // ленивая подгрузка iframe
-  const [scale, setScale] = useStateD(0.18);  // витрина 1280px, ужатая под карточку
+  const [scale, setScale] = useStateD(0.27);  // витрина 1280px, ужатая под карточку
   const boxRef = useRefD(null);
   const stageRef = useRefD(null);
   useEffectD(() => {
@@ -505,7 +505,7 @@ function DesignCard({ d, selected, onSelect, slug, onZoom }) {
 
   const isPro = d.tier === 'pro';
   return (
-    <div className={'dcard' + (selected ? ' on' : '')} ref={boxRef}>
+    <div className={'dcard' + (selected ? ' on' : '') + (lead ? ' dcard--lead' : '')} ref={boxRef}>
       <div className="dcard__stage" ref={stageRef}>
         {slug && near
           ? <iframe className="dcard__frame" src={designPreviewUrl(slug, d.key)} loading="lazy"
@@ -524,7 +524,8 @@ function DesignCard({ d, selected, onSelect, slug, onZoom }) {
       </button>
       <div className="dcard__tags">
         {isPro && <span className="dtag dtag--pro">Pro</span>}
-        {selected && <span className="dtag dtag--on">Выбран</span>}
+        {lead && <span className="dtag dtag--on">Сейчас на сайте</span>}
+        {selected && !lead && <span className="dtag dtag--on">Выбран</span>}
       </div>
       {slug && onZoom && (
         <button type="button" className="dcard__zoom" onClick={() => onZoom(d)}
@@ -536,13 +537,17 @@ function DesignCard({ d, selected, onSelect, slug, onZoom }) {
   );
 }
 
-function DesignGallery({ designs, value, onSelect, slug, onZoom }) {
+function DesignGallery({ designs, value, onSelect, slug, onZoom, applied }) {
   if (!designs || !designs.length) return <div className="spin" style={{ margin: '1rem auto' }}></div>;
+  // Действующее оформление идёт первым и во всю ширину: это ответ на вопрос
+  // «что у меня сейчас», который человек задаёт раньше всех остальных.
+  const lead = applied ? designs.filter(d => d.key === applied) : [];
+  const rest = applied ? designs.filter(d => d.key !== applied) : designs;
   return (
     <div className="dgrid">
-      {designs.map(d => (
+      {lead.concat(rest).map(d => (
         <DesignCard key={d.key} d={d} selected={value === d.key} onSelect={onSelect}
-          slug={slug} onZoom={onZoom} />
+          slug={slug} onZoom={onZoom} lead={applied ? d.key === applied : false} />
       ))}
     </div>
   );
@@ -613,19 +618,22 @@ function ScreenDesign({ nav, site, designs, onApply, onPay }) {
   return (
     <div className="wrap-lg">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
-      <div className="card" style={{ padding: '1.6rem' }}>
+      <div className="card card--lead" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Оформление сайта</span>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.35rem', letterSpacing: '-.03em', color: 'var(--ink)', margin: '.5rem 0 .4rem' }}>{site.name}</h2>
         <p className="muted" style={{ fontSize: '.88rem', lineHeight: 1.6 }}>Каждая карточка показывает ваш сайт в этом оформлении: ваши фото, услуги и отзывы. Премиум-оформления работают, пока активен Pro; без Pro сайт показывается в базовом.</p>
         <DesignGallery designs={designs} value={design} onSelect={setDesign}
-          slug={site.slug} onZoom={setZoom} />
+          slug={site.slug} onZoom={setZoom} applied={site.design || 'A'} />
         {isPro && !proActive && (
           <div className="card" style={{ padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem', background: 'var(--warning-wash)', borderColor: 'rgba(138,90,6,.28)' }}>
             <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
             <span style={{ fontSize: '.84rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Это премиум-оформление. Выбор сохранится, но посетители увидят базовое, пока не активен Pro.</span>
           </div>
         )}
-        <div style={{ display: 'flex', gap: '.6rem', marginTop: '1.3rem', flexWrap: 'wrap' }}>
+        <div className="dactions">
+          <span className="dactions__pick">
+            {changed ? <>Выбрано: <b>{chosen ? chosen.name : design}</b></> : <>Сейчас на сайте: <b>{chosen ? chosen.name : design}</b></>}
+          </span>
           <button className="btn btn--primary" disabled={!changed || busy} onClick={() => apply()}>{busy ? 'Применяем…' : 'Применить'}</button>
           <a className="btn btn--ghost" href={liveUrl} target="_blank" rel="noopener"><i data-lucide="external-link"></i> Открыть в новой вкладке</a>
           {isPro && !proActive && onPay && <button className="btn btn--outline" onClick={() => onPay(site)}>Оформить Pro</button>}
@@ -956,7 +964,7 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
         <p className="field__label" style={{ marginBottom: '.7rem' }}>История платежей</p>
         <div className="card" style={{ padding: '.4rem .6rem' }}>
           <table className="ptable">
-            <thead><tr><th>Дата</th><th>Сайт</th><th>Сумма</th><th>Статус</th><th></th></tr></thead>
+            <thead><tr><th>Дата</th><th>Сайт</th><th>Сумма</th><th>Статус</th></tr></thead>
             <tbody>
               {payments.map((p, i) => (
                 <tr key={i}>
@@ -964,7 +972,6 @@ function ScreenSubscriptions({ nav, sites, payments, onPay }) {
                   <td data-l="Сайт">{p.site}</td>
                   <td data-l="Сумма" className="amt">{p.amount}</td>
                   <td data-l="Статус"><span className={'badge ' + (p.ok ? 'badge--active' : 'badge--unpaid')} style={{ fontSize: '.7rem' }}><span className="dot"></span>{p.ok ? 'Оплачен' : 'Отклонён'}</span></td>
-                  <td data-l="Чек">{p.ok ? <a className="linklike" style={{ fontSize: '.8rem', display: 'inline-flex', alignItems: 'center', gap: '.25rem' }} href="#" onClick={e => e.preventDefault()}>чек <i data-lucide="arrow-up-right" style={{ width: 12, height: 12 }}></i></a> : <span className="muted">—</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -1098,7 +1105,7 @@ function ScreenSettings({ email, onDelete }) {
           <div className="field"><label className="field__label">Новый пароль</label><input className="input" type="password" placeholder="••••••••" value={np} onChange={e => setNp(e.target.value)} /></div>
           <div className="field"><label className="field__label">Повтор нового пароля</label><input className="input" type="password" placeholder="••••••••" value={pw2} onChange={e => setPw2(e.target.value)} /></div>
           {msg && <div className={msg.t === 'ok' ? 'field__hint' : 'field__err'} style={msg.t === 'ok' ? { color: 'var(--success-soft)' } : {}}>{msg.m}</div>}
-          <div><button className="btn btn--dark" onClick={savePassword} disabled={busy}>{busy ? 'Сохраняем…' : 'Сохранить пароль'}</button></div>
+          <div><button className="btn btn--primary" onClick={savePassword} disabled={busy}>{busy ? 'Сохраняем…' : 'Сохранить пароль'}</button></div>
         </div>
       </div>
 
@@ -1129,16 +1136,49 @@ const NAV = [
 ];
 const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
-  sites: ['Мои сайты', 'Сайты вашего бизнеса на uqqi.ru'],
+  sites: ['Мои сайты', null],
   'add-site': ['Новый сайт', null],
   building: ['Создаём сайт', null],
   payment: ['Оплата', null],
   admin: ['Редактор сайта', null],
   design: ['Дизайн сайта', null],
-  subscriptions: ['Подписки и платежи', 'Статусы, продление и история'],
-  support: ['Поддержка', 'Мы на связи и поможем'],
+  subscriptions: ['Подписки и платежи', null],
+  support: ['Поддержка', null],
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
+
+// Вторая строка титула — курсивной антиквой. Пишем в неё ТОЛЬКО состояние
+// аккаунта: сколько сайтов, до какого числа Pro, когда был последний ответ.
+// Пересказ заголовка («Статусы, продление и история») сюда не годится —
+// он занимает место, но ничего не сообщает.
+function plural(n, one, few, many) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+function headState(screen, sites, tickets) {
+  if (screen === 'sites') {
+    if (!sites.length) return null;
+    const building = sites.filter(s => s.build_status === 'queued' || s.build_status === 'building').length;
+    const pro = sites.filter(s => s.proActive).length;
+    const parts = [sites.length + ' ' + plural(sites.length, 'сайт', 'сайта', 'сайтов')];
+    if (building) parts.push(building + ' ' + plural(building, 'собирается', 'собираются', 'собираются'));
+    if (pro) parts.push(pro + ' на Pro');
+    return parts.join(', ');
+  }
+  if (screen === 'subscriptions') {
+    const proSite = sites.find(s => s.proActive && s.proUntil);
+    if (proSite) return 'Pro до ' + proSite.proUntil;
+    return sites.length ? 'все сайты на бесплатном тарифе' : null;
+  }
+  if (screen === 'support') {
+    if (!tickets || !tickets.length) return 'обращений пока не было';
+    return 'последнее обращение — ' + tickets[0].date;
+  }
+  return null;
+}
 
 // ---- Статистика сайта (функциональная версия; визуал — по макету Claude Design) ----
 function ScreenMetrics({ nav, metrics }) {
@@ -1151,7 +1191,7 @@ function ScreenMetrics({ nav, metrics }) {
   return (
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
-      <div className="card" style={{ padding: '1.6rem' }}>
+      <div className="card card--lead" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Статистика</span>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 1.1rem' }}>{m.title}</h2>
 
@@ -1420,6 +1460,7 @@ function App() {
 
   // ---------- CABINET ----------
   const [title, sub] = TITLES[screen] || ['', null];
+  const state = headState(screen, sites, tickets);
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
   if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
@@ -1473,12 +1514,16 @@ function App() {
             </header>
 
             <div className="main__head">
-              <div><div className="h">{title}</div>{sub && <div className="sub">{sub}</div>}</div>
+              <div>
+                <h1 className="h">{title}</h1>
+                {state && <div className="state">{state}</div>}
+                {sub && <div className="sub">{sub}</div>}
+              </div>
               {screen === 'sites' && (
                 canAdd
                   ? <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
                   : <span className="tip-wrap" data-tip={canAddReason || 'Сначала оплатите предыдущий'}>
-                      <button className="btn btn--primary btn--sm" disabled style={{ opacity: .5, cursor: 'not-allowed' }}><i data-lucide="plus"></i> Добавить сайт</button>
+                      <button className="btn btn--primary btn--sm" disabled><i data-lucide="plus"></i> Добавить сайт</button>
                     </span>
               )}
             </div>

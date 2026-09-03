@@ -117,7 +117,7 @@ function ScreenMetrics({ nav, metrics }) {
   return (
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
-      <div className="card" style={{ padding: '1.6rem' }}>
+      <div className="card card--lead" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Статистика</span>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 1.1rem' }}>{m.title}</h2>
 
@@ -173,9 +173,9 @@ function designPreviewUrl(slug, key) {
   return 'https://' + slug + '.uqqi.ru/?variant=' + encodeURIComponent(key) + '&preview=1';
 }
 
-function DesignCard({ d, selected, onSelect, slug, onZoom }) {
+function DesignCard({ d, selected, onSelect, slug, onZoom, lead }) {
   const [near, setNear] = useStateD(false);   // ленивая подгрузка iframe
-  const [scale, setScale] = useStateD(0.18);  // витрина 1280px, ужатая под карточку
+  const [scale, setScale] = useStateD(0.27);  // витрина 1280px, ужатая под карточку
   const boxRef = useRefD(null);
   const stageRef = useRefD(null);
   useEffectD(() => {
@@ -201,7 +201,7 @@ function DesignCard({ d, selected, onSelect, slug, onZoom }) {
 
   const isPro = d.tier === 'pro';
   return (
-    <div className={'dcard' + (selected ? ' on' : '')} ref={boxRef}>
+    <div className={'dcard' + (selected ? ' on' : '') + (lead ? ' dcard--lead' : '')} ref={boxRef}>
       <div className="dcard__stage" ref={stageRef}>
         {slug && near
           ? <iframe className="dcard__frame" src={designPreviewUrl(slug, d.key)} loading="lazy"
@@ -220,7 +220,8 @@ function DesignCard({ d, selected, onSelect, slug, onZoom }) {
       </button>
       <div className="dcard__tags">
         {isPro && <span className="dtag dtag--pro">Pro</span>}
-        {selected && <span className="dtag dtag--on">Выбран</span>}
+        {lead && <span className="dtag dtag--on">Сейчас на сайте</span>}
+        {selected && !lead && <span className="dtag dtag--on">Выбран</span>}
       </div>
       {slug && onZoom && (
         <button type="button" className="dcard__zoom" onClick={() => onZoom(d)}
@@ -232,19 +233,22 @@ function DesignCard({ d, selected, onSelect, slug, onZoom }) {
   );
 }
 
-function DesignGallery({ designs, value, onSelect, slug, onZoom }) {
+function DesignGallery({ designs, value, onSelect, slug, onZoom, applied }) {
   if (!designs || !designs.length) return <div className="spin" style={{ margin: '1rem auto' }}></div>;
+  // Действующее оформление идёт первым и во всю ширину: это ответ на вопрос
+  // «что у меня сейчас», который человек задаёт раньше всех остальных.
+  const lead = applied ? designs.filter(d => d.key === applied) : [];
+  const rest = applied ? designs.filter(d => d.key !== applied) : designs;
   return (
     <div className="dgrid">
-      {designs.map(d => (
+      {lead.concat(rest).map(d => (
         <DesignCard key={d.key} d={d} selected={value === d.key} onSelect={onSelect}
-          slug={slug} onZoom={onZoom} />
+          slug={slug} onZoom={onZoom} lead={applied ? d.key === applied : false} />
       ))}
     </div>
   );
 }
 
-// Полноэкранный предпросмотр одного дизайна на данных клиента
 function DesignPreview({ d, slug, onClose, onApply, applying }) {
   const [device, setDevice] = useStateD('desktop');
   useEffectD(() => {
@@ -309,19 +313,22 @@ function ScreenDesign({ nav, site, designs, onApply, onPay }) {
   return (
     <div className="wrap-lg">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
-      <div className="card" style={{ padding: '1.6rem' }}>
+      <div className="card card--lead" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Оформление сайта</span>
         <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.35rem', letterSpacing: '-.03em', color: 'var(--ink)', margin: '.5rem 0 .4rem' }}>{site.name}</h2>
         <p className="muted" style={{ fontSize: '.88rem', lineHeight: 1.6 }}>Каждая карточка показывает ваш сайт в этом оформлении: ваши фото, услуги и отзывы. Премиум-оформления работают, пока активен Pro; без Pro сайт показывается в базовом.</p>
         <DesignGallery designs={designs} value={design} onSelect={setDesign}
-          slug={site.slug} onZoom={setZoom} />
+          slug={site.slug} onZoom={setZoom} applied={site.design || 'A'} />
         {isPro && !proActive && (
           <div className="card" style={{ padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem', background: 'var(--warning-wash)', borderColor: 'rgba(138,90,6,.28)' }}>
             <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
             <span style={{ fontSize: '.84rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Это премиум-оформление. Выбор сохранится, но посетители увидят базовое, пока не активен Pro.</span>
           </div>
         )}
-        <div style={{ display: 'flex', gap: '.6rem', marginTop: '1.3rem', flexWrap: 'wrap' }}>
+        <div className="dactions">
+          <span className="dactions__pick">
+            {changed ? <>Выбрано: <b>{chosen ? chosen.name : design}</b></> : <>Сейчас на сайте: <b>{chosen ? chosen.name : design}</b></>}
+          </span>
           <button className="btn btn--primary" disabled={!changed || busy} onClick={() => apply()}>{busy ? 'Применяем…' : 'Применить'}</button>
           <a className="btn btn--ghost" href={liveUrl} target="_blank" rel="noopener"><i data-lucide="external-link"></i> Открыть в новой вкладке</a>
           {isPro && !proActive && onPay && <button className="btn btn--outline" onClick={() => onPay(site)}>Оформить Pro</button>}

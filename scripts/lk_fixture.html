@@ -50,8 +50,9 @@ const ROUTES = {
   '/designs': {designs:DESIGNS},
   '/telegram': {connected:false, link:"https://t.me/uqqi_bot?start=abc"},
   '/payments': {payments:[
-    {id:11,date:"18.07.2026",amount:"2490 ₽",status:"Оплачен",site:"Шиномонтаж «Колесо»",plan:"3 месяца"},
-    {id:12,date:"18.04.2026",amount:"990 ₽",status:"Оплачен",site:"Шиномонтаж «Колесо»",plan:"Месяц"},
+    {id:11,date:'18.07.2026',amount:'2490 ₽',site:'Шиномонтаж «Колесо»',plan:'3 месяца',ok:true},
+    {id:12,date:'18.04.2026',amount:'990 ₽',site:'Шиномонтаж «Колесо»',plan:'Месяц',ok:true},
+    {id:13,date:'02.04.2026',amount:'990 ₽',site:'Шиномонтаж «Колесо»',plan:'Месяц',ok:false},
   ]},
   '/tickets': {tickets:[
     {id:5,subj:'Не подтягивается новое фото',date:'29.08.2026',status:'answered',

@@ -12,16 +12,50 @@ const NAV = [
 ];
 const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
-  sites: ['Мои сайты', 'Сайты вашего бизнеса на uqqi.ru'],
+  sites: ['Мои сайты', null],
   'add-site': ['Новый сайт', null],
   building: ['Создаём сайт', null],
   payment: ['Оплата', null],
   admin: ['Редактор сайта', null],
   design: ['Дизайн сайта', null],
-  subscriptions: ['Подписки и платежи', 'Статусы, продление и история'],
-  support: ['Поддержка', 'Мы на связи и поможем'],
+  subscriptions: ['Подписки и платежи', null],
+  support: ['Поддержка', null],
   settings: ['Настройки', 'Аккаунт и безопасность'],
 };
+
+// Вторая строка титула — курсивной антиквой. Пишем в неё ТОЛЬКО состояние
+// аккаунта: сколько сайтов, до какого числа Pro, когда был последний ответ.
+// Пересказ заголовка («Статусы, продление и история») сюда не годится —
+// он занимает место, но ничего не сообщает.
+function plural(n, one, few, many) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+function headState(screen, sites, tickets) {
+  if (screen === 'sites') {
+    if (!sites.length) return null;
+    const building = sites.filter(s => s.build_status === 'queued' || s.build_status === 'building').length;
+    const pro = sites.filter(s => s.proActive).length;
+    const parts = [sites.length + ' ' + plural(sites.length, 'сайт', 'сайта', 'сайтов')];
+    if (building) parts.push(building + ' ' + plural(building, 'собирается', 'собираются', 'собираются'));
+    if (pro) parts.push(pro + ' на Pro');
+    return parts.join(', ');
+  }
+  if (screen === 'subscriptions') {
+    const proSite = sites.find(s => s.proActive && s.proUntil);
+    if (proSite) return 'Pro до ' + proSite.proUntil;
+    return sites.length ? 'все сайты на бесплатном тарифе' : null;
+  }
+  if (screen === 'support') {
+    if (!tickets || !tickets.length) return 'обращений пока не было';
+    return 'последнее обращение — ' + tickets[0].date;
+  }
+  return null;
+}
+
 
 const CABINET = new Set(['sites', 'add-site', 'building', 'payment', 'admin', 'design', 'subscriptions', 'support', 'settings', 'metrics']);
 
@@ -259,6 +293,7 @@ function App() {
 
   // ---------- CABINET ----------
   const [title, sub] = TITLES[screen] || ['', null];
+  const state = headState(screen, sites, tickets);
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
   if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
@@ -312,12 +347,16 @@ function App() {
             </header>
 
             <div className="main__head">
-              <div><div className="h">{title}</div>{sub && <div className="sub">{sub}</div>}</div>
+              <div>
+                <h1 className="h">{title}</h1>
+                {state && <div className="state">{state}</div>}
+                {sub && <div className="sub">{sub}</div>}
+              </div>
               {screen === 'sites' && (
                 canAdd
                   ? <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
                   : <span className="tip-wrap" data-tip={canAddReason || 'Сначала оплатите предыдущий'}>
-                      <button className="btn btn--primary btn--sm" disabled style={{ opacity: .5, cursor: 'not-allowed' }}><i data-lucide="plus"></i> Добавить сайт</button>
+                      <button className="btn btn--primary btn--sm" disabled><i data-lucide="plus"></i> Добавить сайт</button>
                     </span>
               )}
             </div>
