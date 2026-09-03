@@ -170,7 +170,7 @@ function ScreenRegisterSent({ nav, ctx }) {
             <p>Мы отправили письмо на <b>{ctx.email || 'you@example.ru'}</b>. Перейдите по ссылке из письма, чтобы активировать аккаунт.</p>
             {ctx.pendingClaim && (
               <p style={{ background: 'var(--surface2, #f5f0e8)', borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.86rem', marginTop: '.6rem' }}>
-                🎁 После подтверждения ваш готовый сайт появится в кабинете — первые 7 дней бесплатно.
+                После подтверждения ваш готовый сайт появится в кабинете — первые 7 дней бесплатно.
               </p>
             )}
             <div className="row" style={{ gap: '.7rem', marginTop: '.4rem' }}>
@@ -178,7 +178,7 @@ function ScreenRegisterSent({ nav, ctx }) {
             </div>
             <p className="legal" style={{ marginTop: '.4rem' }}>
               Не пришло письмо? Проверьте папку «Спам» или {sent
-                ? <span style={{ color: 'var(--success-soft)' }}>письмо отправлено повторно ✓</span>
+                ? <span style={{ color: 'var(--success-soft)' }}>письмо отправлено повторно</span>
                 : <a className="linklike" href="#" onClick={resend}>отправьте ещё раз</a>}.
             </p>
           </div>
@@ -221,7 +221,7 @@ function ScreenConfirmEmail({ nav, ctx }) {
           ) : claimed ? (
             <>
               <div className="notice__ic ok"><i data-lucide="check"></i></div>
-              <h2>Готово! Сайт ваш 🎉</h2>
+              <h2>Готово! Сайт ваш</h2>
               <p>«{claimed.title}» добавлен в ваш кабинет.<br />Первые 7 дней — бесплатно.</p>
               <div className="spin" style={{ marginTop: '.4rem' }}></div>
             </>
@@ -356,7 +356,7 @@ function StatusBadge({ site }) {
   const map = {
     building: { cls: 'badge--building', ic: 'loader', txt: 'Создаётся…' },
     error:    { cls: 'badge--error', ic: 'alert-triangle', txt: 'Ошибка сборки' },
-    free:     { cls: 'badge--active', ic: null, txt: 'Бесплатный' },
+    free:     { cls: 'badge--free', ic: null, txt: 'Бесплатный' },
     protrial: { cls: 'badge--trial', ic: null, txt: `Pro-триал — осталось ${site.proDays} дн.` },
     pro:      { cls: 'badge--active', ic: null, txt: `Pro до ${site.proUntil}` },
     claim:    { cls: 'badge--unpaid', ic: null, txt: 'Демо — оплатите, чтобы забрать' },
@@ -378,7 +378,7 @@ function SiteCard({ site, nav, onPay, onMenu, onStats }) {
     <div className="card sitecard">
       <div className="sitecard__top">
         <div className="row" style={{ alignItems: 'flex-start' }}>
-          <div className="sitecard__thumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--terracotta)', background: 'var(--terracotta-wash)' }}>
+          <div className="sitecard__thumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--terracotta-deep)', background: 'var(--sand)', borderColor: 'var(--sand-line)' }}>
             <i data-lucide={site.icon || 'store'} style={{ width: 24, height: 24 }}></i>
           </div>
           <div>
@@ -408,7 +408,7 @@ function SiteCard({ site, nav, onPay, onMenu, onStats }) {
       {!isBuilding && !isError && (
         <div className="sitecard__meta">
           <span><b>{site.city}</b></span>
-          <span>Pro: <b>от 990 ₽ / мес</b></span>
+          {site.status !== 'pro' && site.status !== 'protrial' && <span>Pro: <b>от 990 ₽ / мес</b></span>}
           <span>Создан: <b>{site.created}</b></span>
         </div>
       )}
@@ -611,11 +611,11 @@ function ScreenDesign({ nav, site, designs, onApply, onPay }) {
     try { await onApply(site.id, key || design); setZoom(null); } finally { setBusy(false); }
   }
   return (
-    <div className="wrap-md">
+    <div className="wrap-lg">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Оформление сайта</span>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.35rem', letterSpacing: '-.03em', color: 'var(--ink)', margin: '.5rem 0 .4rem' }}>{site.name}</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.35rem', letterSpacing: '-.03em', color: 'var(--ink)', margin: '.5rem 0 .4rem' }}>{site.name}</h2>
         <p className="muted" style={{ fontSize: '.88rem', lineHeight: 1.6 }}>Каждая карточка показывает ваш сайт в этом оформлении: ваши фото, услуги и отзывы. Премиум-оформления работают, пока активен Pro; без Pro сайт показывается в базовом.</p>
         <DesignGallery designs={designs} value={design} onSelect={setDesign}
           slug={site.slug} onZoom={setZoom} />
@@ -648,17 +648,17 @@ function ScreenAddSite({ nav, onStartBuild, designs }) {
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Новый сайт</span>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 .4rem' }}>Ссылка на Яндекс Карты</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 .4rem' }}>Ссылка на Яндекс Карты</h2>
         <p className="muted" style={{ fontSize: '.88rem', lineHeight: 1.6 }}>Вставьте ссылку на карточку вашей организации — мы возьмём оттуда название, адрес, фото, часы работы и отзывы.</p>
         <div className="field" style={{ marginTop: '1.3rem' }}>
           <label className="field__label">Ссылка на карточку организации</label>
           <input className={'input' + (valid === true ? ' is-valid' : valid === false ? ' is-error' : '')} placeholder="https://yandex.ru/maps/org/… или /maps/-/…" value={url} onChange={e => setUrl(e.target.value)} />
           {valid === false && <span className="field__err">Похоже, это не ссылка на карточку организации в Яндекс Картах. Проверьте формат.</span>}
-          {valid === true && <span className="field__hint" style={{ color: 'var(--success-soft)' }}>Ссылка распознана ✓</span>}
+          {valid === true && <span className="field__hint" style={{ color: 'var(--success-soft)' }}><i data-lucide="check" style={{ width: 14, height: 14, display: 'inline-block', verticalAlign: '-2px' }}></i> Ссылка распознана</span>}
         </div>
-        <div className="card" style={{ background: 'var(--paper-2)', border: 'none', boxShadow: 'none', padding: '.9rem 1rem', marginTop: '1rem', display: 'flex', gap: '.7rem' }}>
-          <i data-lucide="lightbulb" style={{ width: 18, height: 18, color: 'var(--gold-dim)', flex: 'none' }}></i>
-          <span style={{ fontSize: '.82rem', color: 'var(--ink-2)', lineHeight: 1.6 }}>Где взять ссылку: откройте карточку компании в Яндекс Картах, нажмите кнопку <b>«Поделиться»</b> и скопируйте ссылку. Можно вставить скопированное целиком — вместе с названием и адресом.</span>
+        <div className="tip" style={{ marginTop: '1rem' }}>
+          <i data-lucide="lightbulb"></i>
+          <span>Где взять ссылку: откройте карточку компании в Яндекс Картах, нажмите кнопку <b>«Поделиться»</b> и скопируйте ссылку. Можно вставить скопированное целиком — вместе с названием и адресом.</span>
         </div>
         <div className="field" style={{ marginTop: '1.3rem' }}>
           <label className="field__label">Дизайн сайта</label>
@@ -718,7 +718,7 @@ function ScreenBuilding({ onDone, buildId }) {
       <div className="wrap-md" style={{ paddingTop: '1rem' }}>
         <div className="card" style={{ padding: '2rem 1.8rem', textAlign: 'center' }}>
           <div className="empty__ic" style={{ margin: '0 auto 1rem', color: 'var(--danger)' }}><i data-lucide="alert-triangle"></i></div>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)' }}>Не удалось собрать сайт</h2>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.3rem', color: 'var(--ink)' }}>Не удалось собрать сайт</h2>
           <p className="muted" style={{ fontSize: '.88rem', marginTop: '.5rem', lineHeight: 1.6 }}>
             Не получилось обработать ссылку. Проверьте, что это короткая ссылка на карточку организации в Яндекс Картах, или напишите в поддержку.
           </p>
@@ -735,7 +735,7 @@ function ScreenBuilding({ onDone, buildId }) {
     <div className="wrap-md" style={{ paddingTop: '1rem' }}>
       <div className="card" style={{ padding: '2rem 1.8rem', textAlign: 'center' }}>
         <div className="spin" style={{ margin: '0 auto .4rem' }}></div>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', letterSpacing: '-.02em', color: 'var(--ink)', marginTop: '.8rem' }}>Собираем ваш сайт</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.3rem', letterSpacing: '-.02em', color: 'var(--ink)', marginTop: '.8rem' }}>Собираем ваш сайт</h2>
         <p className="muted" style={{ fontSize: '.86rem', marginTop: '.4rem' }}>Обычно это занимает меньше минуты. Можно не закрывать страницу — мы сохраним прогресс.</p>
         <div className="pbar" style={{ margin: '1.4rem 0 1.2rem' }}><div className="pbar__fill" style={{ width: pct + '%' }}></div></div>
         <div style={{ textAlign: 'left', maxWidth: 300, margin: '0 auto' }}>
@@ -802,7 +802,7 @@ function ScreenPayment({ nav, site, onProceed }) {
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Оформление Pro</span>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 1.2rem' }}>{s.name || 'Ваш сайт'}</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 1.2rem' }}>{s.name || 'Ваш сайт'}</h2>
 
         <div className="row" style={{ padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
           <div className="sitecard__thumb" style={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--terracotta)', background: 'var(--terracotta-wash)' }}><i data-lucide={s.icon || 'store'} style={{ width: 20, height: 20 }}></i></div>
@@ -821,13 +821,13 @@ function ScreenPayment({ nav, site, onProceed }) {
                 borderRadius: 'var(--r-lg)', cursor: 'pointer',
                 background: plan === p.id ? 'var(--terracotta-wash)' : 'transparent' }}>
               <div>
-                <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.95rem' }}>
+                <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '.95rem' }}>
                   {p.label}
                   {p.save && <span style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginLeft: '.5rem' }}>{p.save}</span>}
                 </div>
                 <div className="muted" style={{ fontSize: '.78rem', marginTop: '.1rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
               </div>
-              <div style={{ fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{fmtRub(p.amount)} ₽</div>
+              <div style={{ fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{fmtRub(p.amount)} ₽</div>
             </div>
           ))}
         </div>
@@ -863,7 +863,7 @@ function ScreenYukassa({ nav }) {
           <div className="yk__body">
             <div className="between" style={{ marginBottom: '.2rem' }}>
               <span style={{ color: '#666', fontSize: '.86rem' }}>К оплате</span>
-              <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#1d1d1b' }}>990,00 ₽</span>
+              <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#1d1d1b' }}>990,00 ₽</span>
             </div>
             <div>
               <div className="yk__lbl">Номер карты</div>
@@ -1036,12 +1036,12 @@ function TelegramCard() {
   }
   return (
     <div className="card" style={{ padding: '1.4rem 1.5rem' }}>
-      <p className="field__label" style={{ marginBottom: '.6rem' }}>Чат на сайте → Telegram <span style={{ fontSize: '.68rem', fontWeight: 700, color: 'var(--terracotta)', border: '1px solid var(--terracotta)', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>PRO</span></p>
+      <p className="field__label" style={{ marginBottom: '.6rem' }}>Чат на сайте → Telegram <span style={{ fontSize: '.68rem', fontWeight: 600, color: 'var(--terracotta-deep)', border: '1px solid var(--terracotta-deep)', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>PRO</span></p>
       <p className="muted" style={{ fontSize: '.84rem', lineHeight: 1.6 }}>Сообщения посетителей с ваших Pro-сайтов приходят вам в Telegram. Отвечайте прямо из Telegram (кнопка «Ответить») — ответ появится в чате на сайте.</p>
       {!st && <p className="muted" style={{ marginTop: '.8rem', fontSize: '.84rem' }}>Загрузка…</p>}
       {st && st.connected && (
         <div className="between" style={{ marginTop: '.9rem', gap: '1rem' }}>
-          <span className="field__hint" style={{ color: 'var(--success-soft)' }}>✓ Telegram подключён</span>
+          <span className="field__hint" style={{ color: 'var(--success-soft)' }}><i data-lucide="check" style={{ width: 14, height: 14, display: 'inline-block', verticalAlign: '-2px' }}></i> Telegram подключён</span>
           <button className="btn btn--ghost btn--sm" onClick={disconnect} disabled={busy}>Отключить</button>
         </div>
       )}
@@ -1153,26 +1153,27 @@ function ScreenMetrics({ nav, metrics }) {
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Статистика</span>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 1.1rem' }}>{m.title}</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.3rem', color: 'var(--ink)', margin: '.4rem 0 1.1rem' }}>{m.title}</h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '.6rem' }}>
+        <div className="statgrid">
           {[['7 дней', 'd7'], ['30 дней', 'd30'], ['90 дней', 'd90']].map(([lbl, k]) => (
-            <div key={k} style={{ padding: '.9rem', textAlign: 'center', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--ink)' }}>{m.unique[k]}</div>
-              <div className="muted" style={{ fontSize: '.72rem' }}>уник. / {lbl}</div>
+            <div key={k} className="stat">
+              <div className="stat__n">{m.unique[k]}</div>
+              <div className="stat__k">уник. / {lbl}</div>
             </div>
           ))}
         </div>
         <p className="muted" style={{ fontSize: '.82rem', marginTop: '.8rem' }}>Просмотров за 30 дней: <b style={{ color: 'var(--ink)' }}>{m.views.d30}</b></p>
 
         <p className="field__label" style={{ margin: '1.3rem 0 .5rem' }}>Посетители по дням (30 дней)</p>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '80px' }}>
+        <div className="chart">
           {m.daily.map((d, i) => (
-            <div key={i} title={d.day + ': ' + d.unique} style={{ flex: 1, background: 'var(--terracotta)', opacity: d.unique ? .85 : .15, height: Math.max(3, d.unique / maxD * 80) + 'px', borderRadius: '2px' }}></div>
+            <i key={i} title={d.day + ': ' + d.unique}
+               style={{ opacity: d.unique ? .85 : .15, height: Math.max(3, d.unique / maxD * 80) + 'px' }}></i>
           ))}
         </div>
 
-        <div style={{ marginTop: '1.3rem', padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)', fontSize: '.86rem', color: 'var(--ink-2)' }}>
+        <div className="subline">
           {sub.status === 'pro' && <span>Pro активен до <b style={{ color: 'var(--ink)' }}>{sub.until}</b></span>}
           {sub.status === 'protrial' && <span>Pro-триал — осталось <b style={{ color: 'var(--ink)' }}>{sub.proDays} дн.</b></span>}
           {sub.status === 'free' && <span>Бесплатный сайт · <b style={{ color: 'var(--ink)' }}>Pro</b> откроет премиум-дизайн и чат</span>}
@@ -1455,7 +1456,7 @@ function App() {
                   <button type="button" className="btn btn--primary btn--sm btn--block" onClick={() => nav('subscriptions')}>Посмотреть Pro</button>
                 </div>
               )}
-              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.06em', color: 'var(--terracotta)' }}>PRO</div>}<div className="em">{email}</div></div></div>
+              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 600, letterSpacing: '.06em', color: 'var(--terracotta-deep)' }}>PRO</div>}<div className="em">{email}</div></div></div>
               <a className="nav-i" onClick={logout} style={{ marginTop: '.2rem' }}><i data-lucide="log-out"></i>Выйти</a>
             </div>
           </aside>
@@ -1560,7 +1561,7 @@ function AdminStub({ nav }) {
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '2.2rem 1.8rem', textAlign: 'center' }}>
         <div className="empty__ic" style={{ margin: '0 auto 1rem' }}><i data-lucide="pencil-ruler"></i></div>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', letterSpacing: '-.02em', color: 'var(--ink)' }}>Редактор контента сайта</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.3rem', letterSpacing: '-.02em', color: 'var(--ink)' }}>Редактор контента сайта</h2>
         <p className="muted" style={{ fontSize: '.9rem', lineHeight: 1.65, marginTop: '.5rem', maxWidth: 380, marginInline: 'auto' }}>Здесь владелец меняет тексты, фото, часы работы и услуги — без программиста. Отдельная админка контента.</p>
       </div>
     </div>

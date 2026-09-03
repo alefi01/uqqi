@@ -295,7 +295,7 @@ function App() {
                   <button type="button" className="btn btn--primary btn--sm btn--block" onClick={() => nav('subscriptions')}>Посмотреть Pro</button>
                 </div>
               )}
-              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.06em', color: 'var(--terracotta)' }}>PRO</div>}<div className="em">{email}</div></div></div>
+              <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 600, letterSpacing: '.06em', color: 'var(--terracotta-deep)' }}>PRO</div>}<div className="em">{email}</div></div></div>
               <a className="nav-i" onClick={logout} style={{ marginTop: '.2rem' }}><i data-lucide="log-out"></i>Выйти</a>
             </div>
           </aside>
@@ -400,7 +400,7 @@ function AdminStub({ nav }) {
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '2.2rem 1.8rem', textAlign: 'center' }}>
         <div className="empty__ic" style={{ margin: '0 auto 1rem' }}><i data-lucide="pencil-ruler"></i></div>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.3rem', letterSpacing: '-.02em', color: 'var(--ink)' }}>Редактор контента сайта</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.3rem', letterSpacing: '-.02em', color: 'var(--ink)' }}>Редактор контента сайта</h2>
         <p className="muted" style={{ fontSize: '.9rem', lineHeight: 1.65, marginTop: '.5rem', maxWidth: 380, marginInline: 'auto' }}>Здесь владелец меняет тексты, фото, часы работы и услуги — без программиста. Отдельная админка контента.</p>
       </div>
     </div>

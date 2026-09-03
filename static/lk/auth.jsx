@@ -166,7 +166,7 @@ function ScreenRegisterSent({ nav, ctx }) {
             <p>Мы отправили письмо на <b>{ctx.email || 'you@example.ru'}</b>. Перейдите по ссылке из письма, чтобы активировать аккаунт.</p>
             {ctx.pendingClaim && (
               <p style={{ background: 'var(--surface2, #f5f0e8)', borderRadius: '10px', padding: '.7rem .9rem', fontSize: '.86rem', marginTop: '.6rem' }}>
-                🎁 После подтверждения ваш готовый сайт появится в кабинете — первые 7 дней бесплатно.
+                После подтверждения ваш готовый сайт появится в кабинете — первые 7 дней бесплатно.
               </p>
             )}
             <div className="row" style={{ gap: '.7rem', marginTop: '.4rem' }}>
@@ -174,7 +174,7 @@ function ScreenRegisterSent({ nav, ctx }) {
             </div>
             <p className="legal" style={{ marginTop: '.4rem' }}>
               Не пришло письмо? Проверьте папку «Спам» или {sent
-                ? <span style={{ color: 'var(--success-soft)' }}>письмо отправлено повторно ✓</span>
+                ? <span style={{ color: 'var(--success-soft)' }}>письмо отправлено повторно</span>
                 : <a className="linklike" href="#" onClick={resend}>отправьте ещё раз</a>}.
             </p>
           </div>
@@ -217,7 +217,7 @@ function ScreenConfirmEmail({ nav, ctx }) {
           ) : claimed ? (
             <>
               <div className="notice__ic ok"><i data-lucide="check"></i></div>
-              <h2>Готово! Сайт ваш 🎉</h2>
+              <h2>Готово! Сайт ваш</h2>
               <p>«{claimed.title}» добавлен в ваш кабинет.<br />Первые 7 дней — бесплатно.</p>
               <div className="spin" style={{ marginTop: '.4rem' }}></div>
             </>

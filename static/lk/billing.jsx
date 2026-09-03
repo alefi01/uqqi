@@ -47,7 +47,7 @@ function ScreenPayment({ nav, site, onProceed }) {
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
       <div className="card" style={{ padding: '1.6rem' }}>
         <span className="eyebrow">Оформление Pro</span>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 1.2rem' }}>{s.name || 'Ваш сайт'}</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.4rem', letterSpacing: '-.02em', color: 'var(--ink)', margin: '.5rem 0 1.2rem' }}>{s.name || 'Ваш сайт'}</h2>
 
         <div className="row" style={{ padding: '.9rem 1rem', background: 'var(--paper-2)', borderRadius: 'var(--r-lg)' }}>
           <div className="sitecard__thumb" style={{ width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--terracotta)', background: 'var(--terracotta-wash)' }}><i data-lucide={s.icon || 'store'} style={{ width: 20, height: 20 }}></i></div>
@@ -66,13 +66,13 @@ function ScreenPayment({ nav, site, onProceed }) {
                 borderRadius: 'var(--r-lg)', cursor: 'pointer',
                 background: plan === p.id ? 'var(--terracotta-wash)' : 'transparent' }}>
               <div>
-                <div style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '.95rem' }}>
+                <div style={{ fontWeight: 600, color: 'var(--ink)', fontSize: '.95rem' }}>
                   {p.label}
                   {p.save && <span style={{ fontSize: '.72rem', color: 'var(--terracotta)', fontWeight: 600, marginLeft: '.5rem' }}>{p.save}</span>}
                 </div>
                 <div className="muted" style={{ fontSize: '.78rem', marginTop: '.1rem' }}>{fmtRub(p.perMonth)} ₽ / мес · {p.period}</div>
               </div>
-              <div style={{ fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{fmtRub(p.amount)} ₽</div>
+              <div style={{ fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap' }}>{fmtRub(p.amount)} ₽</div>
             </div>
           ))}
         </div>
@@ -108,7 +108,7 @@ function ScreenYukassa({ nav }) {
           <div className="yk__body">
             <div className="between" style={{ marginBottom: '.2rem' }}>
               <span style={{ color: '#666', fontSize: '.86rem' }}>К оплате</span>
-              <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#1d1d1b' }}>990,00 ₽</span>
+              <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#1d1d1b' }}>990,00 ₽</span>
             </div>
             <div>
               <div className="yk__lbl">Номер карты</div>
@@ -281,12 +281,12 @@ function TelegramCard() {
   }
   return (
     <div className="card" style={{ padding: '1.4rem 1.5rem' }}>
-      <p className="field__label" style={{ marginBottom: '.6rem' }}>Чат на сайте → Telegram <span style={{ fontSize: '.68rem', fontWeight: 700, color: 'var(--terracotta)', border: '1px solid var(--terracotta)', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>PRO</span></p>
+      <p className="field__label" style={{ marginBottom: '.6rem' }}>Чат на сайте → Telegram <span style={{ fontSize: '.68rem', fontWeight: 600, color: 'var(--terracotta-deep)', border: '1px solid var(--terracotta-deep)', borderRadius: 6, padding: '1px 6px', marginLeft: 6 }}>PRO</span></p>
       <p className="muted" style={{ fontSize: '.84rem', lineHeight: 1.6 }}>Сообщения посетителей с ваших Pro-сайтов приходят вам в Telegram. Отвечайте прямо из Telegram (кнопка «Ответить») — ответ появится в чате на сайте.</p>
       {!st && <p className="muted" style={{ marginTop: '.8rem', fontSize: '.84rem' }}>Загрузка…</p>}
       {st && st.connected && (
         <div className="between" style={{ marginTop: '.9rem', gap: '1rem' }}>
-          <span className="field__hint" style={{ color: 'var(--success-soft)' }}>✓ Telegram подключён</span>
+          <span className="field__hint" style={{ color: 'var(--success-soft)' }}><i data-lucide="check" style={{ width: 14, height: 14, display: 'inline-block', verticalAlign: '-2px' }}></i> Telegram подключён</span>
           <button className="btn btn--ghost btn--sm" onClick={disconnect} disabled={busy}>Отключить</button>
         </div>
       )}

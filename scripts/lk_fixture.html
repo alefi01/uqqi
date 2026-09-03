@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!--
+  Стенд личного кабинета для дизайн-гейтов и просмотра глазами.
+  Кабинет — SPA на React: без бэкенда он показывает экран входа, поэтому
+  здесь подставлены ответы /lk/api (те же поля, что отдаёт app/cabinet.py).
+  Запуск:  python3 -m http.server 8899  →  /scripts/lk_fixture.html
+  Ключи:   ?empty=1 — ни одного сайта, ?anon=1 — гость (экран входа).
+  Снимки для гейтов: node scripts/snapshot_lk.mjs
+-->
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кабинет — стенд для гейтов</title>
+<link rel="stylesheet" href="/static/lk/styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,300;1,400&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@0.456.0/dist/umd/lucide.min.js"></script>
+<script>
+// Стенд: тот же кабинет, но ответы API подставлены локально.
+const SITES = [
+  {id:1,name:"Шиномонтаж и автосервис «Колесо»",slug:"koleso",city:"Москва",status:"pro",
+   proActive:true,isLegit:true,isClaim:false,proUntil:"18.10.2026",proDays:45,created:"02.06.2026",
+   icon:"store",build_status:"ready",canDelete:true,design:"garage"},
+  {id:2,name:"Пекарня «Тёплый хлеб»",slug:"tepliy-hleb",city:"Ростов-на-Дону",status:"free",
+   proActive:false,isLegit:true,isClaim:false,proUntil:"",proDays:0,created:"14.07.2026",
+   icon:"store",build_status:"ready",canDelete:true,design:"A"},
+  {id:3,name:"Барбершоп «Ножницы»",slug:"nozhnitsy",city:"Казань",status:"building",
+   proActive:false,isLegit:false,isClaim:true,proUntil:"",proDays:0,created:"03.09.2026",
+   icon:"store",build_status:"building",canDelete:false,design:"barber"},
+];
+const DESIGNS = [
+  {key:"A",name:"Базовый",tier:"free",vibe:"Светлый универсальный",fit:"подходит любому делу",preview:"",poster:""},
+  {key:"B",name:"Базовый+",tier:"free",vibe:"Светлый с крупным фото",fit:"подходит любому делу",preview:"",poster:""},
+  {key:"garage",name:"Garage",tier:"pro",vibe:"Тёмный технический, крупный прайс",fit:"автосервисы, шиномонтажи, автомойки",preview:"/static/designs/garage.mp4",poster:"/static/designs/garage.jpg"},
+  {key:"craft",name:"Craft",tier:"pro",vibe:"Деловой светлый, синий акцент",fit:"бригады, мастер на час, окна",preview:"",poster:""},
+  {key:"atelier",name:"Atelier",tier:"pro",vibe:"Светлая мастерская, нумерованный прайс",fit:"ремонт обуви, ключи, ателье",preview:"",poster:""},
+  {key:"barber",name:"Barber",tier:"pro",vibe:"Тёмный кинематографичный, латунь",fit:"барбершопы, парикмахерские",preview:"",poster:""},
+  {key:"bloom",name:"Bloom",tier:"pro",vibe:"Мягкий светлый, скруглённые карточки",fit:"маникюр, косметологи, массаж",preview:"",poster:""},
+  {key:"bouquet",name:"Bouquet",tier:"pro",vibe:"Журнальный, крупные фото и антиква",fit:"цветочные, декор, подарки",preview:"",poster:""},
+];
+const ROUTES = {
+  '/me': {email:"maksim@example.ru"},
+  '/sites': {sites:SITES, canAdd:true, canAddReason:""},
+  '/designs': {designs:DESIGNS},
+  '/telegram': {connected:false, link:"https://t.me/uqqi_bot?start=abc"},
+  '/payments': {payments:[
+    {id:11,date:"18.07.2026",amount:"2490 ₽",status:"Оплачен",site:"Шиномонтаж «Колесо»",plan:"3 месяца"},
+    {id:12,date:"18.04.2026",amount:"990 ₽",status:"Оплачен",site:"Шиномонтаж «Колесо»",plan:"Месяц"},
+  ]},
+  '/tickets': {tickets:[
+    {id:5,subj:'Не подтягивается новое фото',date:'29.08.2026',status:'answered',
+     body:'Добавил фото в Яндекс Картах, на сайте старое. Ответ: данные обновляются раз в сутки, к утру подтянется.'},
+    {id:6,subj:'Как поменять оформление на премиум',date:'21.08.2026',status:'closed',
+     body:'Кнопка «Дизайн» в меню сайта, премиум работает при активном Pro.'},
+  ]},
+  '/sites/1/metrics': {slug:'koleso',title:'Шиномонтаж и автосервис «Колесо»',
+    unique:{d7:38,d30:164,d90:401}, views:{d7:71,d30:298,d90:722},
+    daily:[{"day": "2026-08-05", "unique": 4}, {"day": "2026-08-06", "unique": 14}, {"day": "2026-08-07", "unique": 3}, {"day": "2026-08-08", "unique": 14}, {"day": "2026-08-09", "unique": 6}, {"day": "2026-08-10", "unique": 5}, {"day": "2026-08-11", "unique": 11}, {"day": "2026-08-12", "unique": 6}, {"day": "2026-08-13", "unique": 2}, {"day": "2026-08-14", "unique": 14}, {"day": "2026-08-15", "unique": 11}, {"day": "2026-08-16", "unique": 5}, {"day": "2026-08-17", "unique": 5}, {"day": "2026-08-18", "unique": 6}, {"day": "2026-08-19", "unique": 9}, {"day": "2026-08-20", "unique": 11}, {"day": "2026-08-21", "unique": 10}, {"day": "2026-08-22", "unique": 14}, {"day": "2026-08-23", "unique": 3}, {"day": "2026-08-24", "unique": 14}, {"day": "2026-08-25", "unique": 3}, {"day": "2026-08-26", "unique": 11}, {"day": "2026-08-27", "unique": 8}, {"day": "2026-08-28", "unique": 7}, {"day": "2026-08-29", "unique": 6}, {"day": "2026-08-30", "unique": 6}, {"day": "2026-09-01", "unique": 15}, {"day": "2026-09-02", "unique": 12}, {"day": "2026-09-03", "unique": 6}, {"day": "2026-09-04", "unique": 12}],
+    subscription:{status:'pro',proActive:true,until:'18.10.2026',proDays:45}},
+};
+const Q = new URLSearchParams(location.search);
+if (Q.has('empty')) ROUTES['/sites'] = {sites:[], canAdd:true, canAddReason:""};
+window.fetch = function(url, opts){
+  const path = String(url).replace('/lk/api','');
+  if (Q.has('anon') && path === '/me')
+    return Promise.resolve({ok:false, status:401, json:()=>Promise.resolve({detail:'no'})});
+  const body = ROUTES[path] || {};
+  return Promise.resolve({ok:true, status:200, json:()=>Promise.resolve(body)});
+};
+</script>
+<script src="/static/lk/api.js"></script>
+<script type="text/babel" src="/static/lk/app.bundle.jsx"></script>
+</body>
+</html>
