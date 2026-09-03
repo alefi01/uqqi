@@ -769,6 +769,33 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
 
 # ── ЗАЯВКИ С ЛЕНДИНГА ────────────────────────────────────────────────────────
 
+@app.get("/api/showcase-site")
+async def public_showcase_site(db: Session = Depends(get_db)):
+    """
+    Сайт для витрины на главной («вот что получается»). Главная показывает
+    живой сайт в iframe, поэтому отдаём только такой, который не стыдно
+    показать всем: собран, включён, с фотографиями и легитимный —
+    обезличенные claim-сайты сюда не попадают, это чужой бизнес без его ведома.
+
+    Адрес отдаём с ?variant=<его дизайн>: этот режим рендерит витрину без учёта
+    визита, без чата и с заголовком X-Uqqi-Embeddable — иначе встроить в iframe
+    не выйдет (X-Frame-Options). Ничего подходящего нет → пустой ответ, блок на
+    главной прячется.
+    """
+    from sqlalchemy import func as _func
+    rows = db.query(Company).filter(
+        Company.is_active == True,  # noqa: E712
+        Company.build_status == "ready",
+    ).order_by(_func.random()).limit(25).all()
+    for c in rows:
+        if is_legit(c) and c.gallery_photos:
+            variant = (c.template_variant or "A").strip() or "A"
+            base = f"https://{c.slug}.{settings.BASE_DOMAIN}/"
+            return {"url": base, "embed": f"{base}?variant={variant}",
+                    "title": c.title, "slug": c.slug}
+    return {"url": "", "embed": "", "title": "", "slug": ""}
+
+
 @app.get("/api/random-site")
 async def public_random_site(db: Session = Depends(get_db)):
     """Случайный активный сайт для кнопки 'Показать готовый сайт' на лендинге."""
