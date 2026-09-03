@@ -1120,11 +1120,12 @@ function ScreenSettings({ email, onDelete }) {
 // app.jsx — оболочка, роутер, состояние, навигация
 // ============================================================
 
+// group — заголовок раздела в боковом меню (показывается один раз перед первым пунктом группы)
 const NAV = [
-  { id: 'sites', label: 'Мои сайты', ic: 'layout-grid' },
-  { id: 'subscriptions', label: 'Подписки и платежи', ic: 'credit-card' },
-  { id: 'support', label: 'Поддержка', ic: 'life-buoy' },
-  { id: 'settings', label: 'Настройки', ic: 'settings' },
+  { id: 'sites', label: 'Мои сайты', ic: 'layout-grid', group: 'Сайт' },
+  { id: 'subscriptions', label: 'Подписки и платежи', ic: 'credit-card', group: 'Аккаунт' },
+  { id: 'settings', label: 'Настройки', ic: 'settings', group: 'Аккаунт' },
+  { id: 'support', label: 'Поддержка', ic: 'life-buoy', group: 'Помощь' },
 ];
 const SECTION_OF = { sites: 'sites', 'add-site': 'sites', building: 'sites', payment: 'sites', admin: 'sites', design: 'sites', subscriptions: 'subscriptions', support: 'support', settings: 'settings' };
 const TITLES = {
@@ -1438,12 +1439,22 @@ function App() {
           {/* sidebar (desktop) */}
           <aside className="side">
             <a className="logo side__brand" onClick={() => nav('sites')} style={{ cursor: 'pointer' }}><img src="/static/lk/assets/seal-192.png" alt="" /><b>uqqi<span className="dot">.</span>ru</b></a>
-            {NAV.map(n => (
-              <a key={n.id} className={'nav-i' + (section === n.id ? ' on' : '')} onClick={() => nav(n.id)}>
-                <i data-lucide={n.ic}></i>{n.label}
-              </a>
+            {NAV.map((n, i) => (
+              <React.Fragment key={n.id}>
+                {(i === 0 || NAV[i - 1].group !== n.group) && <div className="side__group">{n.group}</div>}
+                <a className={'nav-i' + (section === n.id ? ' on' : '')} onClick={() => nav(n.id)}>
+                  <i data-lucide={n.ic}></i>{n.label}
+                </a>
+              </React.Fragment>
             ))}
             <div className="side__foot">
+              {!sites.some(s => s.proActive) && (
+                <div className="side__promo">
+                  <b>Сейчас базовый тариф</b>
+                  <span>Pro добавляет премиум-оформления и чат с клиентами в Telegram. От 990 ₽ в месяц.</span>
+                  <button type="button" className="btn btn--primary btn--sm btn--block" onClick={() => nav('subscriptions')}>Посмотреть Pro</button>
+                </div>
+              )}
               <div className="usercard"><div className="av">{(email || 'U')[0].toUpperCase()}</div><div style={{ minWidth: 0 }}>{sites.some(s => s.proActive) && <div style={{ fontSize: '.62rem', fontWeight: 800, letterSpacing: '.06em', color: 'var(--terracotta)' }}>PRO</div>}<div className="em">{email}</div></div></div>
               <a className="nav-i" onClick={logout} style={{ marginTop: '.2rem' }}><i data-lucide="log-out"></i>Выйти</a>
             </div>
