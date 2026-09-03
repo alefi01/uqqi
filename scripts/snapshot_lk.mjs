@@ -51,7 +51,13 @@ for (const [name, query, act] of SCREENS) {
   await page.waitForTimeout(2500);
   await act(page);
   await page.waitForTimeout(1200);
-  const body = await page.evaluate(() => document.body.innerHTML);
+  // Скрипты стенда в снимок не переносим: они тянут unpkg и подставляют API,
+  // а гейты открывают файл офлайн и просто виснут на этих запросах.
+  const body = await page.evaluate(() => {
+    const clone = document.body.cloneNode(true);
+    clone.querySelectorAll('script,iframe').forEach(el => el.remove());
+    return clone.innerHTML;
+  });
   writeFileSync(`${OUT}/${name}.html`,
     `<!DOCTYPE html>\n<html lang="ru"><head><meta charset="utf-8">\n` +
     `<meta name="viewport" content="width=device-width, initial-scale=1.0">\n` +
