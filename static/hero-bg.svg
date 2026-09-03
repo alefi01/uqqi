@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Рассветный луг">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5FA6DA"/>
+      <stop offset="42%" stop-color="#9CC8E6"/>
+      <stop offset="72%" stop-color="#D6E4E7"/>
+      <stop offset="100%" stop-color="#E8EEE4"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="12%" cy="46%" r="42%">
+      <stop offset="0%" stop-color="#FFF6DC" stop-opacity=".85"/>
+      <stop offset="100%" stop-color="#FFF6DC" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ridgeFar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6E97BE"/><stop offset="100%" stop-color="#A3C1D6"/>
+    </linearGradient>
+    <linearGradient id="ridgeMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4A749F"/><stop offset="100%" stop-color="#87A9C4"/>
+    </linearGradient>
+    <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EAF1F2" stop-opacity="0"/>
+      <stop offset="60%" stop-color="#EAF1F2" stop-opacity=".92"/>
+      <stop offset="100%" stop-color="#E4ECE6" stop-opacity=".7"/>
+    </linearGradient>
+    <linearGradient id="meadow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A9BE8E"/>
+      <stop offset="35%" stop-color="#7FA372"/>
+      <stop offset="100%" stop-color="#3F6A4C"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="5"/></filter>
+    <filter id="softer"><feGaussianBlur stdDeviation="10"/></filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <rect width="1600" height="900" fill="url(#sun)"/>
+
+  <!-- дальняя гряда -->
+  <path filter="url(#softer)" fill="url(#ridgeFar)" opacity=".9"
+        d="M0 520 C 160 470 250 500 360 486 C 470 472 560 430 700 452 C 840 474 900 512 1010 500 C 1140 486 1240 452 1360 470 C 1470 486 1540 508 1600 500 L1600 900 L0 900 Z"/>
+  <!-- средняя гряда -->
+  <path filter="url(#soft)" fill="url(#ridgeMid)" opacity=".92"
+        d="M0 566 C 120 548 210 566 320 552 C 430 538 520 500 640 520 C 760 540 830 578 950 566 C 1080 552 1180 520 1300 536 C 1420 552 1520 574 1600 566 L1600 900 L0 900 Z"/>
+
+  <!-- утренняя дымка над лугом -->
+  <rect y="470" width="1600" height="220" fill="url(#haze)"/>
+
+  <!-- луг -->
+  <path fill="url(#meadow)" d="M0 620 C 220 600 420 626 640 620 C 860 614 1040 596 1260 610 C 1420 620 1520 628 1600 620 L1600 900 L0 900 Z"/>
+  <!-- полосы травы -->
+  <g opacity=".28" fill="#2F5A3E" filter="url(#soft)">
+    <path d="M0 700 C 260 676 520 712 780 700 C 1040 688 1320 714 1600 700 L1600 760 C 1320 774 1040 748 780 760 C 520 772 260 736 0 760 Z"/>
+    <path d="M0 812 C 300 790 600 826 900 812 C 1160 800 1380 824 1600 812 L1600 900 L0 900 Z"/>
+  </g>
+  <!-- размытые соцветия по краям, как в поле -->
+  <g fill="#F4F7F0" opacity=".85" filter="url(#soft)">
+    <circle cx="70" cy="742" r="11"/><circle cx="128" cy="800" r="9"/><circle cx="44" cy="850" r="13"/>
+    <circle cx="196" cy="866" r="8"/><circle cx="1512" cy="726" r="12"/><circle cx="1452" cy="792" r="10"/>
+    <circle cx="1560" cy="838" r="14"/><circle cx="1392" cy="864" r="9"/><circle cx="1290" cy="890" r="11"/>
+  </g>
+  <!-- лёгкое зерно, чтобы не выглядело «пластиковым» -->
+  <rect width="1600" height="900" filter="url(#grain)" opacity=".07"/>
+</svg>
