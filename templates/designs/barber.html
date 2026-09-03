@@ -1,0 +1,224 @@
+{# Дизайн «Barber» — барбершопы, парикмахерские, тату- и бровные студии.
+   Тёмный кинематографичный: полноэкранное фото, латунный акцент,
+   прайс строками с отточием, отзывы крупными цитатами. #}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% include "_seo_meta.html" %}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E0D0C; --bg2:#15130F; --card:#1A1815; --line:#2C2822;
+  --tx:#F3EFE7; --tx-soft:#A79E90; --brass:#C9A227; --brass-2:#E0BC46;
+  --serif:'Cormorant Infant',Georgia,serif; --ui:'Inter',system-ui,-apple-system,sans-serif;
+  --wrap:1100px; --pad:clamp(1.1rem,4vw,2.2rem);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:var(--ui);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+ul{list-style:none}
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:var(--pad)}
+section{padding-block:clamp(3rem,6vw,5rem)}
+h1,h2{font-family:var(--serif);font-weight:700;line-height:1.05;letter-spacing:-.01em;overflow-wrap:break-word}
+h2{font-size:clamp(1.9rem,4vw,3rem)}
+h3{font-family:var(--ui);font-weight:600;font-size:1.02rem}
+p{color:var(--tx-soft)}
+.kick{font-size:.72rem;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--brass)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-weight:600;font-size:.94rem;min-height:48px;
+  padding:.8rem 1.6rem;border:1px solid transparent;border-radius:0;transition:background .15s,color .15s,border-color .15s}
+.btn--brass{background:var(--brass);color:#14120E}
+.btn--brass:hover{background:var(--brass-2)}
+.btn--ghost{border-color:rgba(243,239,231,.35);color:var(--tx)}
+.btn--ghost:hover{border-color:var(--brass);color:var(--brass)}
+.hero{position:relative;min-height:min(88svh,760px);display:flex;align-items:flex-end;overflow:hidden;background:var(--bg2)}
+.hero__img{position:absolute;inset:0}
+.hero__img img{width:100%;height:100%;object-fit:cover;opacity:.55}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,13,12,.55) 0%,rgba(14,13,12,.2) 40%,rgba(14,13,12,.96) 100%)}
+.hero__in{position:relative;z-index:2;width:100%;padding-block:clamp(2.4rem,6vw,4rem)}
+.hero h1{font-size:clamp(2.4rem,7vw,5rem);margin-top:.8rem}
+.hero__sub{margin-top:1.1rem;max-width:52ch;color:var(--tx)}
+.meta{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem}
+.pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.83rem;border:1px solid var(--line);background:rgba(26,24,21,.8);
+  border-radius:99px;padding:.4rem .85rem;color:var(--tx)}
+.pill--open{color:var(--brass);border-color:rgba(201,162,39,.45)}
+.hero__cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.8rem}
+.feats{border-block:1px solid var(--line);background:var(--bg2)}
+.feats ul{display:flex;flex-wrap:wrap;gap:.6rem 2rem;padding-block:1rem}
+.feats li{font-size:.87rem;color:var(--tx-soft)}
+.feats li::before{content:"—";color:var(--brass);margin-right:.5rem}
+.about p{font-family:var(--serif);font-size:clamp(1.3rem,2.4vw,1.9rem);line-height:1.35;color:var(--tx);max-width:34ch}
+.menu{margin-top:2rem}
+.mrow{display:flex;align-items:baseline;gap:.8rem;padding:.9rem 0;border-bottom:1px solid var(--line)}
+.mrow__n{font-weight:600;color:var(--tx);font-size:1.02rem}
+.mrow__d{display:block;font-size:.86rem;color:var(--tx-soft);margin-top:.15rem;max-width:52ch}
+.mrow__dots{flex:1;border-bottom:1px dotted var(--line);transform:translateY(-.25rem);min-width:1.5rem}
+.mrow__p{font-family:var(--serif);font-size:1.4rem;color:var(--brass);white-space:nowrap}
+.mrow__p.none{font-family:var(--ui);font-size:.88rem;color:var(--tx-soft)}
+
+@media(max-width:560px){.mrow{flex-wrap:wrap;row-gap:.25rem}.mrow__dots{display:none}.mrow__p{white-space:normal}}
+.pg-nav{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.4rem}
+.pg-btn{min-height:38px;min-width:38px;padding:.4rem .8rem;background:transparent;border:1px solid var(--line);color:var(--tx);
+  font-family:var(--ui);font-size:.86rem;font-weight:600;cursor:pointer}
+.pg-btn:hover:not(:disabled){border-color:var(--brass);color:var(--brass)}
+.pg-btn.is-active{background:var(--brass);color:#14120E;border-color:var(--brass)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.reel{display:flex;gap:2px;overflow-x:auto;scroll-snap-type:x mandatory;margin-top:2rem;padding-bottom:.5rem}
+.reel figure{flex:0 0 clamp(240px,32vw,380px);aspect-ratio:3/4;scroll-snap-align:start;background:var(--card);overflow:hidden}
+.reel img{width:100%;height:100%;object-fit:cover}
+.quotes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem;margin-top:2rem}
+@media(max-width:760px){.quotes{grid-template-columns:minmax(0,1fr)}}
+.q{border-left:1px solid var(--brass);padding-left:1.4rem}
+.q p{font-family:var(--serif);font-size:1.3rem;line-height:1.4;color:var(--tx)}
+.q__w{margin-top:.7rem;font-size:.82rem;color:var(--tx-soft)}
+.q__w b{color:var(--brass);font-weight:600}
+.link-more{display:inline-block;margin-top:1.6rem;color:var(--brass);font-weight:600;border-bottom:1px solid rgba(201,162,39,.5)}
+.con{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(1.6rem,4vw,3rem);margin-top:2rem}
+@media(max-width:860px){.con{grid-template-columns:minmax(0,1fr)}}
+.con__line{margin-bottom:1rem}
+.con__line b{display:block;font-size:1.05rem;color:var(--tx)}
+.con__line span{font-size:.87rem;color:var(--tx-soft)}
+.con__tel{font-family:var(--serif);font-size:clamp(1.3rem,6vw,1.9rem);color:var(--brass);overflow-wrap:anywhere}
+.hours{margin-top:1.2rem;border-top:1px solid var(--line)}
+.hr{display:flex;justify-content:space-between;gap:1rem;padding:.55rem 0;border-bottom:1px solid var(--line);font-size:.9rem;color:var(--tx-soft)}
+.hr.today{color:var(--brass);font-weight:600}
+.socs{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.2rem}
+.soc{border:1px solid var(--line);border-radius:99px;padding:.4rem .85rem;font-size:.85rem;color:var(--tx-soft)}
+.soc:hover{border-color:var(--brass);color:var(--brass)}
+.map{border:1px solid var(--line);min-height:320px}
+.map iframe{width:100%;height:100%;min-height:320px;border:0;display:block}
+footer{border-top:1px solid var(--line);padding-block:2rem;font-size:.85rem;color:var(--tx-soft)}
+footer a{color:var(--brass)}
+.legal-slot{margin-top:1rem}
+.fab{position:fixed;right:16px;bottom:16px;z-index:50;display:none;align-items:center;gap:.5rem;background:var(--brass);color:#14120E;
+  font-weight:700;padding:.85rem 1.2rem;border-radius:99px;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.fab svg{width:17px;height:17px;fill:currentColor}
+@media(max-width:640px){.fab{display:inline-flex}}
+.rv{opacity:0;transform:translateY(14px);transition:opacity .55s ease-out,transform .55s ease-out}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+{% set tel = company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') if company.phone else '' %}
+
+<main>
+<section class="hero">
+  {% if company.gallery_photos %}<div class="hero__img"><img src="{{ company.gallery_photos[0] }}" alt="{{ company.title }}" fetchpriority="high"></div>{% endif %}
+  <div class="wrap hero__in">
+    {% if company.category %}<p class="kick">{{ company.category }}</p>{% endif %}
+    <h1>{{ company.title }}</h1>
+    {% if company.about_text %}<p class="hero__sub">{{ company.about_text }}</p>{% endif %}
+    <div class="meta">
+      {% if status %}<span class="pill pill--open">{{ status }}</span>{% endif %}
+      {% if company.rating %}<span class="pill">{{ company.rating }} · {{ company.reviews_count }} отзывов</span>{% endif %}
+      {% if company.avg_bill %}<span class="pill">{{ company.avg_bill }}</span>{% endif %}
+      {% if company.address %}<span class="pill">{{ company.address }}</span>{% endif %}
+    </div>
+    <div class="hero__cta">
+      {% if company.book_url %}<a class="btn btn--brass" href="{{ company.book_url }}" target="_blank" rel="nofollow noopener">Записаться онлайн</a>{% endif %}
+      {% if company.phone %}<a class="btn {{ 'btn--ghost' if company.book_url else 'btn--brass' }}" href="tel:{{ tel }}">{{ company.phone }}</a>{% endif %}
+    </div>
+  </div>
+</section>
+
+{% if company.features %}
+<div class="feats"><div class="wrap"><ul>{% for f in company.features %}<li>{{ f }}</li>{% endfor %}</ul></div></div>
+{% endif %}
+
+{% if company.menu_items %}
+<section id="menu">
+  <div class="wrap">
+    <p class="kick">Прайс</p>
+    <h2 style="margin-top:.6rem">{{ company.catalog_title or 'Услуги' }}</h2>
+    <div class="menu rv" data-paginate="8">
+      {% for item in company.menu_items %}
+      <div class="mrow">
+        <div><span class="mrow__n">{{ item.name }}</span>{% if item.description %}<span class="mrow__d">{{ item.description }}</span>{% endif %}</div>
+        <span class="mrow__dots" aria-hidden="true"></span>
+        {% if item.price %}<span class="mrow__p">{{ item.price }}</span>{% else %}<span class="mrow__p none">по записи</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.gallery_photos|length > 1 %}
+<section id="gallery" style="padding-top:0">
+  <div class="wrap"><p class="kick">Работы</p><h2 style="margin-top:.6rem">Наши работы</h2></div>
+  <div class="wrap"><div class="reel rv">
+    {% for photo in company.gallery_photos[1:] %}<figure><img src="{{ photo }}" alt="Работа мастера" loading="lazy"></figure>{% endfor %}
+  </div></div>
+</section>
+{% endif %}
+
+{% if company.reviews %}
+<section id="reviews" style="padding-top:0">
+  <div class="wrap">
+    <p class="kick">Отзывы</p>
+    <h2 style="margin-top:.6rem">Что говорят гости</h2>
+    <div class="quotes">
+      {% for r in company.reviews[:6] %}
+      <blockquote class="q rv"><p>{{ r.text }}</p><div class="q__w">{% if r.author %}<b>{{ r.author }}</b> · {% endif %}{{ r.date }} · оценка {{ r.rating|int if r.rating else 5 }} из 5</div></blockquote>
+      {% endfor %}
+    </div>
+    {% if company.yandex_url %}<a class="link-more" href="{{ company.yandex_url }}" target="_blank" rel="noopener">Все отзывы на Яндекс Картах</a>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+<section id="contacts" style="background:var(--bg2);border-top:1px solid var(--line)">
+  <div class="wrap">
+    <p class="kick">Контакты</p>
+    <h2 style="margin-top:.6rem">Как нас найти</h2>
+    <div class="con">
+      <div class="rv">
+        {% if company.address %}
+        <p class="con__line"><b>{{ company.address }}</b>
+          {% if company.transit_stop and company.transit_stop.name %}<span>{{ company.transit_stop.distance }} до остановки «{{ company.transit_stop.name }}»</span>{% endif %}
+        </p>
+        {% endif %}
+        {% if company.phone %}<p class="con__line"><a class="con__tel" href="tel:{{ tel }}">{{ company.phone }}</a></p>{% endif %}
+        {% if company.hours %}
+        {% set daymap = {'Mo':'1','Tu':'2','We':'3','Th':'4','Fr':'5','Sa':'6','Su':'0'} %}
+        {% set fulldays = {'Mo':'Понедельник','Tu':'Вторник','We':'Среда','Th':'Четверг','Fr':'Пятница','Sa':'Суббота','Su':'Воскресенье'} %}
+        <div class="hours">
+          {% for e in company.hours %}
+          <div class="hr" data-d="{{ daymap.get(e.day, '') }}"><span>{{ fulldays.get(e.day, e.day_ru) }}</span><span>{{ 'Выходной' if e.closed else e.time }}</span></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if company.social_links %}
+        {% from "_social_icons.html" import social_name %}
+        <div class="socs">{% for s in company.social_links %}<a class="soc" href="{{ s.url }}" target="_blank" rel="noopener">{{ social_name(s.platform) }}</a>{% endfor %}</div>
+        {% endif %}
+        {% if route_url %}<p style="margin-top:1.4rem"><a class="btn btn--ghost" href="{{ route_url }}" target="_blank" rel="nofollow noopener">Построить маршрут</a></p>{% endif %}
+      </div>
+      {% if yandex_map_url %}<div class="map rv"><iframe src="{{ yandex_map_url }}" loading="lazy" title="Карта проезда"></iframe></div>{% endif %}
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>{{ company.title }} · данные из Яндекс Карт · сайт собран на <a href="https://uqqi.ru">uqqi.ru</a></p>
+    <div class="legal-slot">{% include "_claim_disclaimer.html" %}</div>
+  </div>
+</footer>
+
+{% if company.phone %}
+<a class="fab" href="tel:{{ tel }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.24c1.1.37 2.3.57 3.6.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.3.2 2.5.57 3.6a1 1 0 01-.25 1z"/></svg> Позвонить</a>
+{% endif %}
+
+{% include "_chat_widget.html" %}
+{% include "_design_js.html" %}
+</body>
+</html>

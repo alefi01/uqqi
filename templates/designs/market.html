@@ -1,0 +1,206 @@
+{# Дизайн «Market» — овощи и фрукты, фермерские продукты, зоомагазины, лавки.
+   Свежий светлый: белая бумага, зелёная полоса статуса, товары карточками
+   с крупным ценником, часы работы на видном месте. #}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% include "_seo_meta.html" %}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFFFFF;--bg2:#F3F7F3;--card:#FFF;--line:#E3E8E1;--ink:#16211A;--ink-2:#3D4A41;--muted:#5E6B62;
+ --green:#157347;--green-d:#0F5735;--green-soft:#E3F0E7;--sun:#F2B705;
+ --ui:'Rubik',system-ui,-apple-system,sans-serif;--wrap:1140px;--pad:clamp(1.1rem,4vw,2.2rem)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:16.5px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none} img{display:block;max-width:100%} ul{list-style:none}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:var(--pad)}
+section{padding-block:clamp(2.6rem,5vw,4rem)}
+h1,h2{font-weight:700;letter-spacing:-.02em;line-height:1.12;overflow-wrap:break-word}
+h2{font-size:clamp(1.6rem,3.2vw,2.3rem)} h3{font-weight:600;font-size:1.02rem}
+p{color:var(--ink-2)}
+.kick{font-size:.74rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-weight:600;font-size:.95rem;min-height:48px;
+ padding:.8rem 1.5rem;border:1.5px solid transparent;border-radius:10px;transition:background .15s,color .15s,border-color .15s}
+.btn--green{background:var(--green);color:#fff}.btn--green:hover{background:var(--green-d)}
+.btn--ghost{background:var(--card);border-color:var(--line);color:var(--ink)}.btn--ghost:hover{border-color:var(--green);color:var(--green)}
+.top{background:var(--green);color:#fff;font-size:.88rem}
+.top__in{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem 1rem;padding-block:.6rem}
+.top a{font-weight:600}
+.hero{padding-block:clamp(2rem,4vw,3.2rem)}
+.hero__grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(1.4rem,4vw,2.6rem);align-items:center}
+@media(max-width:860px){.hero__grid{grid-template-columns:minmax(0,1fr)}}
+.hero h1{font-size:clamp(1.9rem,4.6vw,3.1rem);margin-top:.6rem}
+.hero__sub{margin-top:.9rem;max-width:50ch}
+.pills{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.2rem}
+.pill{font-size:.84rem;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:.4rem .85rem;color:var(--ink-2)}
+.pill--open{color:var(--green);background:var(--green-soft);border-color:rgba(21,115,71,.3);font-weight:600}
+.hero__cta{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.4rem}
+.hero__ph{border-radius:16px;overflow:hidden;aspect-ratio:4/3;background:var(--bg2)}
+.hero__ph img{width:100%;height:100%;object-fit:cover}
+.feats{background:var(--bg2);border-block:1px solid var(--line)}
+.feats ul{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;padding-block:1rem}
+.feats li{font-size:.88rem;color:var(--ink-2);display:flex;align-items:center;gap:.45rem}
+.feats li::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--sun)}
+.goods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-top:1.8rem}
+@media(max-width:1000px){.goods{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.goods{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:460px){.goods{grid-template-columns:minmax(0,1fr)}}
+.good{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;
+ transition:transform .2s ease-out,box-shadow .2s}
+.good:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(22,33,26,.08)}
+.good__ph{aspect-ratio:1;overflow:hidden;background:var(--bg2)}
+.good__ph img{width:100%;height:100%;object-fit:cover}
+.good__b{padding:.9rem 1rem 1rem;display:flex;flex-direction:column;gap:.25rem;flex:1}
+.good__d{font-size:.85rem;color:var(--muted)}
+.good__p{margin-top:auto;padding-top:.6rem;font-size:1.25rem;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums}
+.good__p.none{font-size:.9rem;font-weight:500;color:var(--muted)}
+.pg-nav{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.4rem}
+.pg-btn{min-height:40px;min-width:40px;padding:.4rem .9rem;background:var(--card);border:1px solid var(--line);color:var(--ink);
+ font-family:var(--ui);font-weight:600;font-size:.86rem;cursor:pointer;border-radius:10px}
+.pg-btn:hover:not(:disabled){border-color:var(--green);color:var(--green)}
+.pg-btn.is-active{background:var(--green);color:#fff;border-color:var(--green)}
+.pg-btn:disabled{opacity:.45;cursor:not-allowed}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin-top:1.8rem}
+@media(max-width:760px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.strip figure{aspect-ratio:1;overflow:hidden;border-radius:12px;background:var(--bg2)}
+.strip img{width:100%;height:100%;object-fit:cover}
+.revs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1.8rem}
+@media(max-width:760px){.revs{grid-template-columns:minmax(0,1fr)}}
+.rev{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:1.2rem 1.3rem}
+.rev__st{display:flex;gap:.15rem;color:var(--sun);margin-bottom:.5rem}
+.rev__st svg{width:14px;height:14px;fill:currentColor}
+.rev p{color:var(--ink);font-size:.95rem}
+.rev__w{margin-top:.7rem;font-size:.82rem;color:var(--muted)}.rev__w b{color:var(--ink);font-weight:600}
+.link-more{display:inline-block;margin-top:1.3rem;color:var(--green);font-weight:600;border-bottom:1.5px solid rgba(21,115,71,.35)}
+.con{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.4rem,3vw,2.4rem);margin-top:1.8rem}
+@media(max-width:800px){.con{grid-template-columns:minmax(0,1fr)}}
+.con__line{margin-bottom:1rem}.con__line b{display:block;font-size:1.03rem}.con__line span{font-size:.87rem;color:var(--muted)}
+.con__tel{font-size:clamp(1.15rem,5.5vw,1.5rem);font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.hours{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:1rem}
+.hr{display:flex;justify-content:space-between;gap:1rem;padding:.6rem 1rem;border-bottom:1px solid var(--line);font-size:.9rem;color:var(--muted)}
+.hr:last-child{border-bottom:0}.hr.today{background:var(--green-soft);color:var(--ink);font-weight:600}
+.socs{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.soc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.4rem .85rem;font-size:.85rem;color:var(--ink-2)}
+.soc:hover{border-color:var(--green);color:var(--green)}
+.map{border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:300px}
+.map iframe{width:100%;height:100%;min-height:300px;border:0;display:block}
+footer{border-top:1px solid var(--line);padding-block:1.8rem;font-size:.85rem;color:var(--muted)}
+footer a{color:var(--green)}.legal-slot{margin-top:.9rem}
+.fab{position:fixed;right:16px;bottom:16px;z-index:50;display:none;align-items:center;gap:.5rem;background:var(--green);color:#fff;
+ font-weight:600;padding:.85rem 1.2rem;border-radius:12px;box-shadow:0 12px 26px rgba(22,33,26,.24)}
+.fab svg{width:17px;height:17px;fill:currentColor}
+@media(max-width:640px){.fab{display:inline-flex}}
+.rv{opacity:0;transform:translateY(12px);transition:opacity .5s ease-out,transform .5s ease-out}.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}
+ *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+{% set tel = company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') if company.phone else '' %}
+<div class="top"><div class="wrap top__in">
+  <span>{% if status %}{{ status }}{% endif %}{% if company.address %} · {{ company.address }}{% endif %}</span>
+  {% if company.phone %}<a href="tel:{{ tel }}">{{ company.phone }}</a>{% endif %}
+</div></div>
+
+<main>
+<section class="hero">
+  <div class="wrap hero__grid">
+    <div>
+      {% if company.category %}<p class="kick">{{ company.category }}</p>{% endif %}
+      <h1>{{ company.title }}</h1>
+      {% if company.about_text %}<p class="hero__sub">{{ company.about_text }}</p>{% endif %}
+      <div class="pills">
+        {% if status %}<span class="pill pill--open">{{ status }}</span>{% endif %}
+        {% if company.rating %}<span class="pill">{{ company.rating }} · {{ company.reviews_count }} отзывов</span>{% endif %}
+        {% if company.avg_bill %}<span class="pill">{{ company.avg_bill }}</span>{% endif %}
+      </div>
+      <div class="hero__cta">
+        {% if company.phone %}<a class="btn btn--green" href="tel:{{ tel }}">Позвонить</a>{% endif %}
+        {% if route_url %}<a class="btn btn--ghost" href="{{ route_url }}" target="_blank" rel="nofollow noopener">Как добраться</a>{% endif %}
+      </div>
+    </div>
+    {% if company.gallery_photos %}<div class="hero__ph"><img src="{{ company.gallery_photos[0] }}" alt="{{ company.title }}" fetchpriority="high"></div>{% endif %}
+  </div>
+</section>
+
+{% if company.features %}<div class="feats"><div class="wrap"><ul>{% for f in company.features %}<li>{{ f }}</li>{% endfor %}</ul></div></div>{% endif %}
+
+{% if company.menu_items %}
+<section id="goods">
+  <div class="wrap">
+    <p class="kick">Витрина</p>
+    <h2 style="margin-top:.4rem">{{ company.catalog_title or 'Что есть сегодня' }}</h2>
+    <div class="goods rv" data-paginate="8">
+      {% for item in company.menu_items %}
+      <article class="good">
+        {% if item.image_url %}<div class="good__ph"><img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy"></div>{% endif %}
+        <div class="good__b">
+          <h3>{{ item.name }}</h3>
+          {% if item.description %}<p class="good__d">{{ item.description }}</p>{% endif %}
+          {% if item.price %}<p class="good__p">{{ item.price }}</p>{% else %}<p class="good__p none">уточняйте цену</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.gallery_photos|length > 1 %}
+<section id="gallery" style="padding-top:0">
+  <div class="wrap"><p class="kick">Фото</p><h2 style="margin-top:.4rem">Как у нас</h2>
+    <div class="strip rv">{% for photo in company.gallery_photos[1:9] %}<figure><img src="{{ photo }}" alt="Фото" loading="lazy"></figure>{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.reviews %}
+<section id="reviews" style="padding-top:0">
+  <div class="wrap"><p class="kick">Отзывы</p><h2 style="margin-top:.4rem">Что говорят покупатели</h2>
+    <div class="revs">
+      {% for r in company.reviews[:6] %}
+      <blockquote class="rev rv">
+        <div class="rev__st" aria-label="Оценка {{ r.rating|int }} из 5">{% for _ in range(r.rating|int if r.rating else 5) %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.6 7 .8-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.8z"/></svg>{% endfor %}</div>
+        <p>{{ r.text }}</p>
+        <div class="rev__w">{% if r.author %}<b>{{ r.author }}</b> · {% endif %}{{ r.date }}</div>
+      </blockquote>
+      {% endfor %}
+    </div>
+    {% if company.yandex_url %}<a class="link-more" href="{{ company.yandex_url }}" target="_blank" rel="noopener">Все отзывы на Яндекс Картах</a>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+<section id="contacts" style="background:var(--bg2);border-top:1px solid var(--line)">
+  <div class="wrap"><p class="kick">Контакты</p><h2 style="margin-top:.4rem">Где нас найти</h2>
+    <div class="con">
+      <div class="rv">
+        {% if company.address %}<p class="con__line"><b>{{ company.address }}</b>{% if company.transit_stop and company.transit_stop.name %}<span>{{ company.transit_stop.distance }} до остановки «{{ company.transit_stop.name }}»</span>{% endif %}</p>{% endif %}
+        {% if company.phone %}<p class="con__line"><a class="con__tel" href="tel:{{ tel }}">{{ company.phone }}</a></p>{% endif %}
+        {% if company.hours %}
+        {% set daymap = {'Mo':'1','Tu':'2','We':'3','Th':'4','Fr':'5','Sa':'6','Su':'0'} %}
+        {% set fulldays = {'Mo':'Понедельник','Tu':'Вторник','We':'Среда','Th':'Четверг','Fr':'Пятница','Sa':'Суббота','Su':'Воскресенье'} %}
+        <div class="hours">{% for e in company.hours %}<div class="hr" data-d="{{ daymap.get(e.day, '') }}"><span>{{ fulldays.get(e.day, e.day_ru) }}</span><span>{{ 'Выходной' if e.closed else e.time }}</span></div>{% endfor %}</div>
+        {% endif %}
+        {% if company.social_links %}{% from "_social_icons.html" import social_name %}
+        <div class="socs">{% for s in company.social_links %}<a class="soc" href="{{ s.url }}" target="_blank" rel="noopener">{{ social_name(s.platform) }}</a>{% endfor %}</div>{% endif %}
+      </div>
+      {% if yandex_map_url %}<div class="map rv"><iframe src="{{ yandex_map_url }}" loading="lazy" title="Карта проезда"></iframe></div>{% endif %}
+    </div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">
+  <p>{{ company.title }} · данные из Яндекс Карт · сайт собран на <a href="https://uqqi.ru">uqqi.ru</a></p>
+  <div class="legal-slot">{% include "_claim_disclaimer.html" %}</div>
+</div></footer>
+{% if company.phone %}<a class="fab" href="tel:{{ tel }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.24c1.1.37 2.3.57 3.6.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.3.2 2.5.57 3.6a1 1 0 01-.25 1z"/></svg> Позвонить</a>{% endif %}
+{% include "_chat_widget.html" %}
+{% include "_design_js.html" %}
+</body>
+</html>

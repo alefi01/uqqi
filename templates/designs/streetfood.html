@@ -1,0 +1,201 @@
+{# Дизайн «Streetfood» — шаурма, бургеры, стрит-фуд, пивные магазины.
+   Контрастный уличный: чёрный фон, кислотный лайм, узкий гротеск,
+   позиции крупными карточками с ценой, всё кричит «бери и ешь». #}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{% include "_seo_meta.html" %}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0C0C0C;--bg2:#151515;--card:#191919;--line:#2B2B2B;--ink:#F7F7F5;--ink-2:#C4C4C0;--muted:#94948F;
+ --lime:#D8FF3E;--lime-d:#B9E01F;--ok:#7BC49A;
+ --disp:'Oswald',system-ui,sans-serif;--ui:'Inter',system-ui,-apple-system,sans-serif;--wrap:1140px;--pad:clamp(1.1rem,4vw,2.2rem)}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none} img{display:block;max-width:100%} ul{list-style:none}
+:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:var(--pad)}
+section{padding-block:clamp(2.6rem,5vw,4rem)}
+h1,h2{font-family:var(--disp);font-weight:700;text-transform:uppercase;line-height:.98;letter-spacing:.01em;overflow-wrap:break-word}
+h2{font-size:clamp(1.9rem,4.4vw,3.2rem)} h3{font-family:var(--disp);font-weight:600;font-size:1.15rem;text-transform:uppercase}
+p{color:var(--ink-2)}
+.kick{font-family:var(--disp);font-size:.85rem;letter-spacing:.24em;text-transform:uppercase;color:var(--lime)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;font-family:var(--disp);font-weight:600;font-size:1rem;
+ text-transform:uppercase;letter-spacing:.04em;min-height:50px;padding:.8rem 1.6rem;border:2px solid transparent;border-radius:0;
+ transition:background .15s,color .15s,border-color .15s}
+.btn--lime{background:var(--lime);color:#0C0C0C}.btn--lime:hover{background:var(--lime-d)}
+.btn--ghost{border-color:var(--line);color:var(--ink)}.btn--ghost:hover{border-color:var(--lime);color:var(--lime)}
+.hero{border-bottom:2px solid var(--lime);background:var(--bg2)}
+.hero__grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:clamp(1.4rem,4vw,2.6rem);align-items:end;padding-block:clamp(2.4rem,5vw,4rem)}
+@media(max-width:860px){.hero__grid{grid-template-columns:minmax(0,1fr)}}
+.hero h1{font-size:clamp(2.4rem,8vw,5.4rem);margin-top:.6rem}
+.hero h1 em{font-style:normal;color:var(--lime)}
+.hero__sub{margin-top:1rem;max-width:46ch;color:var(--ink)}
+.pills{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.3rem}
+.pill{font-family:var(--disp);font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);
+ padding:.35rem .8rem;color:var(--ink)}
+.pill--open{color:var(--ok);border-color:rgba(123,196,154,.45)}
+.pill--rate{color:var(--lime);border-color:rgba(216,255,62,.45)}
+.hero__cta{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:1.6rem}
+.hero__ph{aspect-ratio:1;overflow:hidden;border:2px solid var(--lime)}
+.hero__ph img{width:100%;height:100%;object-fit:cover}
+.feats{background:var(--lime);color:#0C0C0C}
+.feats ul{display:flex;flex-wrap:wrap;gap:.5rem 2rem;padding-block:.9rem}
+.feats li{font-family:var(--disp);font-size:.9rem;letter-spacing:.06em;text-transform:uppercase}
+.about p{font-family:var(--disp);font-size:clamp(1.3rem,2.6vw,2rem);line-height:1.25;color:var(--ink);text-transform:uppercase;max-width:24ch}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:1.8rem}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.cards{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;transition:border-color .15s}
+.card:hover{border-color:var(--lime)}
+.card__ph{aspect-ratio:4/3;overflow:hidden;background:var(--bg2)}
+.card__ph img{width:100%;height:100%;object-fit:cover}
+.card__b{padding:1rem 1.1rem 1.2rem;display:flex;flex-direction:column;gap:.3rem;flex:1}
+.card__d{font-size:.86rem;color:var(--muted)}
+.card__p{margin-top:auto;padding-top:.7rem;font-family:var(--disp);font-size:1.7rem;color:var(--lime);font-variant-numeric:tabular-nums}
+.card__p.none{font-size:.9rem;font-family:var(--ui);color:var(--muted)}
+.pg-nav{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.4rem}
+.pg-btn{min-height:42px;min-width:42px;padding:.4rem .9rem;background:transparent;border:1px solid var(--line);color:var(--ink);
+ font-family:var(--disp);font-size:.95rem;cursor:pointer}
+.pg-btn:hover:not(:disabled){border-color:var(--lime);color:var(--lime)}
+.pg-btn.is-active{background:var(--lime);color:#0C0C0C;border-color:var(--lime)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;margin-top:1.8rem}
+@media(max-width:760px){.strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.strip figure{aspect-ratio:1;overflow:hidden;background:var(--card)}
+.strip img{width:100%;height:100%;object-fit:cover}
+.revs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:1.8rem}
+@media(max-width:900px){.revs{grid-template-columns:minmax(0,1fr)}}
+.rev{border:1px solid var(--line);padding:1.2rem}
+.rev__st{display:flex;gap:.15rem;color:var(--lime);margin-bottom:.5rem}
+.rev__st svg{width:14px;height:14px;fill:currentColor}
+.rev p{color:var(--ink);font-size:.95rem}
+.rev__w{margin-top:.7rem;font-size:.82rem;color:var(--muted)}.rev__w b{color:var(--lime);font-weight:600}
+.link-more{display:inline-block;margin-top:1.3rem;color:var(--lime);font-weight:600;border-bottom:1px solid rgba(216,255,62,.5)}
+.con{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.4rem,3vw,2.4rem);margin-top:1.8rem}
+@media(max-width:800px){.con{grid-template-columns:minmax(0,1fr)}}
+.con__line{margin-bottom:1rem}.con__line b{display:block;font-size:1.05rem;color:var(--ink)}.con__line span{font-size:.87rem;color:var(--muted)}
+.con__tel{font-family:var(--disp);font-size:clamp(1.2rem,6vw,2rem);color:var(--lime);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.hours{border:1px solid var(--line);margin-top:1rem}
+.hr{display:flex;justify-content:space-between;gap:1rem;padding:.6rem 1rem;border-bottom:1px solid var(--line);font-size:.9rem;color:var(--muted)}
+.hr:last-child{border-bottom:0}.hr.today{background:var(--card);color:var(--lime);font-weight:600}
+.socs{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.soc{border:1px solid var(--line);padding:.4rem .85rem;font-size:.85rem;color:var(--ink-2)}
+.soc:hover{border-color:var(--lime);color:var(--lime)}
+.map{border:1px solid var(--line);min-height:300px}
+.map iframe{width:100%;height:100%;min-height:300px;border:0;display:block}
+footer{border-top:1px solid var(--line);padding-block:1.8rem;font-size:.85rem;color:var(--muted)}
+footer a{color:var(--lime)}.legal-slot{margin-top:.9rem}
+.fab{position:fixed;right:16px;bottom:16px;z-index:50;display:none;align-items:center;gap:.5rem;background:var(--lime);color:#0C0C0C;
+ font-family:var(--disp);font-size:1rem;text-transform:uppercase;padding:.85rem 1.2rem;box-shadow:0 12px 30px rgba(0,0,0,.6)}
+.fab svg{width:17px;height:17px;fill:currentColor}
+@media(max-width:640px){.fab{display:inline-flex}}
+.rv{opacity:0;transform:translateY(12px);transition:opacity .45s ease-out,transform .45s ease-out}.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}
+ *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+{% set tel = company.phone|replace(' ','')|replace('(','')|replace(')','')|replace('-','') if company.phone else '' %}
+<main>
+<section class="hero">
+  <div class="wrap hero__grid">
+    <div>
+      {% if company.category %}<p class="kick">{{ company.category }}</p>{% endif %}
+      <h1>{{ company.title }}</h1>
+      {% if company.about_text %}<p class="hero__sub">{{ company.about_text }}</p>{% endif %}
+      <div class="pills">
+        {% if status %}<span class="pill pill--open">{{ status }}</span>{% endif %}
+        {% if company.rating %}<span class="pill pill--rate">{{ company.rating }} · {{ company.reviews_count }} отзывов</span>{% endif %}
+        {% if company.avg_bill %}<span class="pill">{{ company.avg_bill }}</span>{% endif %}
+        {% if company.address %}<span class="pill">{{ company.address }}</span>{% endif %}
+      </div>
+      <div class="hero__cta">
+        {% if company.phone %}<a class="btn btn--lime" href="tel:{{ tel }}">Заказать по телефону</a>{% endif %}
+        {% if route_url %}<a class="btn btn--ghost" href="{{ route_url }}" target="_blank" rel="nofollow noopener">Маршрут</a>{% endif %}
+      </div>
+    </div>
+    {% if company.gallery_photos %}<div class="hero__ph"><img src="{{ company.gallery_photos[0] }}" alt="{{ company.title }}" fetchpriority="high"></div>{% endif %}
+  </div>
+</section>
+
+{% if company.features %}<div class="feats"><div class="wrap"><ul>{% for f in company.features %}<li>{{ f }}</li>{% endfor %}</ul></div></div>{% endif %}
+
+{% if company.menu_items %}
+<section id="menu">
+  <div class="wrap">
+    <p class="kick">Меню</p>
+    <h2 style="margin-top:.4rem">{{ company.catalog_title or 'Что берут чаще всего' }}</h2>
+    <div class="cards rv" data-paginate="6">
+      {% for item in company.menu_items %}
+      <article class="card">
+        {% if item.image_url %}<div class="card__ph"><img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy"></div>{% endif %}
+        <div class="card__b">
+          <h3>{{ item.name }}</h3>
+          {% if item.description %}<p class="card__d">{{ item.description }}</p>{% endif %}
+          {% if item.price %}<p class="card__p">{{ item.price }}</p>{% else %}<p class="card__p none">цена на кассе</p>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.gallery_photos|length > 1 %}
+<section id="gallery" style="padding-top:0">
+  <div class="wrap"><p class="kick">Фото</p><h2 style="margin-top:.4rem">Как это выглядит</h2>
+    <div class="strip rv">{% for photo in company.gallery_photos[1:9] %}<figure><img src="{{ photo }}" alt="Фото" loading="lazy"></figure>{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if company.reviews %}
+<section id="reviews" style="padding-top:0">
+  <div class="wrap"><p class="kick">Отзывы</p><h2 style="margin-top:.4rem">Что говорят</h2>
+    <div class="revs">
+      {% for r in company.reviews[:6] %}
+      <blockquote class="rev rv">
+        <div class="rev__st" aria-label="Оценка {{ r.rating|int }} из 5">{% for _ in range(r.rating|int if r.rating else 5) %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.6 7 .8-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.8z"/></svg>{% endfor %}</div>
+        <p>{{ r.text }}</p>
+        <div class="rev__w">{% if r.author %}<b>{{ r.author }}</b> · {% endif %}{{ r.date }}</div>
+      </blockquote>
+      {% endfor %}
+    </div>
+    {% if company.yandex_url %}<a class="link-more" href="{{ company.yandex_url }}" target="_blank" rel="noopener">Все отзывы на Яндекс Картах</a>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+<section id="contacts" style="background:var(--bg2);border-top:1px solid var(--line)">
+  <div class="wrap"><p class="kick">Контакты</p><h2 style="margin-top:.4rem">Где нас найти</h2>
+    <div class="con">
+      <div class="rv">
+        {% if company.address %}<p class="con__line"><b>{{ company.address }}</b>{% if company.transit_stop and company.transit_stop.name %}<span>{{ company.transit_stop.distance }} до остановки «{{ company.transit_stop.name }}»</span>{% endif %}</p>{% endif %}
+        {% if company.phone %}<p class="con__line"><a class="con__tel" href="tel:{{ tel }}">{{ company.phone }}</a></p>{% endif %}
+        {% if company.hours %}
+        {% set daymap = {'Mo':'1','Tu':'2','We':'3','Th':'4','Fr':'5','Sa':'6','Su':'0'} %}
+        {% set fulldays = {'Mo':'Понедельник','Tu':'Вторник','We':'Среда','Th':'Четверг','Fr':'Пятница','Sa':'Суббота','Su':'Воскресенье'} %}
+        <div class="hours">{% for e in company.hours %}<div class="hr" data-d="{{ daymap.get(e.day, '') }}"><span>{{ fulldays.get(e.day, e.day_ru) }}</span><span>{{ 'Выходной' if e.closed else e.time }}</span></div>{% endfor %}</div>
+        {% endif %}
+        {% if company.social_links %}{% from "_social_icons.html" import social_name %}
+        <div class="socs">{% for s in company.social_links %}<a class="soc" href="{{ s.url }}" target="_blank" rel="noopener">{{ social_name(s.platform) }}</a>{% endfor %}</div>{% endif %}
+      </div>
+      {% if yandex_map_url %}<div class="map rv"><iframe src="{{ yandex_map_url }}" loading="lazy" title="Карта проезда"></iframe></div>{% endif %}
+    </div>
+  </div>
+</section>
+</main>
+<footer><div class="wrap">
+  <p>{{ company.title }} · данные из Яндекс Карт · сайт собран на <a href="https://uqqi.ru">uqqi.ru</a></p>
+  <div class="legal-slot">{% include "_claim_disclaimer.html" %}</div>
+</div></footer>
+{% if company.phone %}<a class="fab" href="tel:{{ tel }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.24c1.1.37 2.3.57 3.6.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.3.2 2.5.57 3.6a1 1 0 01-.25 1z"/></svg> Позвонить</a>{% endif %}
+{% include "_chat_widget.html" %}
+{% include "_design_js.html" %}
+</body>
+</html>
