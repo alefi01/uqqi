@@ -65,7 +65,7 @@ ul,ol{list-style:none;}
 .logo{display:inline-flex;align-items:center;gap:0;font-family:var(--font-display);font-weight:800;font-size:1.05rem;color:var(--ink);letter-spacing:-.03em;}
 .logo img{width:26px;height:26px;margin-right:.5rem;}
 .logo b{font-weight:800;}
-.logo .dot{color:var(--terracotta-deep);}
+.logo .dot{color:inherit;}
 
 /* ---- кнопки ---- */
 .btn{
