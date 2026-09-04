@@ -57,7 +57,9 @@ async def security_headers(request: Request, call_next):
     # lk.uqqi.ru — это другой origin, SAMEORIGIN его бы запретил. Такие ответы
     # помечаются заголовком X-Uqqi-Embeddable и получают CSP frame-ancestors,
     # разрешающий вложение только внутрь нашего домена.
-    if response.headers.pop("X-Uqqi-Embeddable", None) == "1":
+    # У starlette.MutableHeaders нет .pop() — только get/__delitem__.
+    if response.headers.get("X-Uqqi-Embeddable") == "1":
+        del response.headers["X-Uqqi-Embeddable"]
         response.headers["Content-Security-Policy"] = (
             "frame-ancestors 'self' https://uqqi.ru https://*.uqqi.ru"
         )
