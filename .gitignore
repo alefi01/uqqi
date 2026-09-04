@@ -51,3 +51,4 @@ static/uploads/
 
 # Бэкапы БД (создаются backup_db.sh, вывозятся в Telegram)
 backups/
+static/showcase/*.jpg

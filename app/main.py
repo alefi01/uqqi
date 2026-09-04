@@ -257,17 +257,12 @@ def user_owns_site(slug: str, user_id: int | None, db: Session) -> bool:
 
 def _can_edit_site(company) -> bool:
     """
-    Редактирование контента доступно ТОЛЬКО на оплаченной подписке.
-    Триал и неоплата — только просмотр (сайт живёт, но менять нельзя, пока
-    клиент не оплатил). Гейт на бэкенде — не полагаемся на скрытие кнопок.
+    Редактирование контента — Pro-функция (наряду с премиум-оформлениями и
+    чатом). Гейт тот же, что у остальных Pro: активный `pro_until`, включая
+    Pro-триал. Старые sub_status/paid_until вестигиальны и здесь не участвуют.
+    Гейт живёт на бэкенде — на скрытие кнопки в кабинете не полагаемся.
     """
-    from datetime import datetime as _dt
-    return bool(
-        company
-        and company.sub_status == "active"
-        and company.paid_until
-        and company.paid_until > _dt.utcnow()
-    )
+    return pro_active(company)
 
 
 def _require_editable(slug: str, user_id: int | None, db: Session):
@@ -280,7 +275,7 @@ def _require_editable(slug: str, user_id: int | None, db: Session):
     if not _can_edit_site(company):
         raise HTTPException(
             status_code=403,
-            detail="Редактирование доступно после оплаты подписки.",
+            detail="Редактирование контента входит в Pro.",
         )
     return company
 
@@ -680,6 +675,94 @@ async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
     return Response(content="\n".join(xml), media_type="application/xml")
 
 
+# ── Данные для главной ───────────────────────────────────────────────────────
+# Числа на главной — настоящие, из базы: выдуманных цифр на лендинге нет.
+# Запрос не бесплатный, поэтому держим результат 5 минут в памяти процесса.
+
+_LANDING_STATS: dict = {"at": 0.0, "data": {}}
+_LANDING_STATS_TTL = 300          # секунд
+
+
+def _landing_stats(db: Session) -> dict:
+    """Сколько сайтов собрано, в скольких городах, за сколько минут в среднем."""
+    import time as _time
+    now = _time.time()
+    if _LANDING_STATS["data"] and now - _LANDING_STATS["at"] < _LANDING_STATS_TTL:
+        return _LANDING_STATS["data"]
+
+    rows = db.query(Company.address, Company.created_at, Company.last_parsed_at).filter(
+        Company.build_status == "ready",
+    ).all()
+
+    cities, minutes = set(), []
+    for address, created_at, parsed_at in rows:
+        city = _city_from_address(address or "")
+        if city:
+            cities.add(city.lower())
+        if created_at and parsed_at and parsed_at > created_at:
+            delta = (parsed_at - created_at).total_seconds() / 60
+            if 0 < delta < 30:        # длинные хвосты — это ретраи, не сборка
+                minutes.append(delta)
+
+    avg = round(sum(minutes) / len(minutes), 1) if minutes else 4.0
+    data = {
+        "sites":  len(rows),
+        "cities": len(cities),
+        "minutes": (f"{avg:.1f}".rstrip("0").rstrip(".")).replace(".", ","),
+    }
+    _LANDING_STATS.update(at=now, data=data)
+    return data
+
+
+_LANDING_JSON: dict = {}          # путь -> (mtime, распарсенные данные)
+
+
+def _read_json_file(path: str, default):
+    """Читает JSON-файл с кешем по mtime. Нет файла или битый — default."""
+    import json as _json
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        return default
+    cached = _LANDING_JSON.get(path)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = _json.load(fh)
+    except (OSError, ValueError):
+        return default
+    _LANDING_JSON[path] = (mtime, data)
+    return data
+
+
+def _landing_works() -> list:
+    """
+    Работы для ленты на главной. Манифест готовит scripts/make_showcase_shots.py
+    (он же следит, чтобы туда попадали только легитимные сайты с фотографиями).
+    Нет манифеста — секция на главной не рендерится.
+    """
+    data = _read_json_file("static/showcase/manifest.json", [])
+    return data if isinstance(data, list) else []
+
+
+def _landing_reviews() -> list:
+    """Отзывы владельцев. Только реальные — файл ведём руками."""
+    data = _read_json_file("content/reviews.json", [])
+    return data if isinstance(data, list) else []
+
+
+def _landing_context(request: Request, db: Session) -> dict:
+    from app.cabinet import PLANS
+    return {
+        "request": request,
+        "stats":   _landing_stats(db),
+        "works":   _landing_works(),
+        "reviews": _landing_reviews(),
+        "plans":   PLANS,
+    }
+
+
 @app.get("/demo")
 async def demo_view(request: Request):
     """
@@ -700,7 +783,7 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
 
     if not company:
         _track_visit(request, "__landing__", db)
-        return templates.TemplateResponse("landing.html", {"request": request})
+        return templates.TemplateResponse("landing.html", _landing_context(request, db))
 
     # Деактивированный вручную сайт — дружелюбная заглушка
     if not company.is_active:
@@ -876,7 +959,7 @@ async def cabinet_site_editor(
     company = db.query(Company).filter(Company.slug == slug).first()
     if not company or company.user_id != user_id:
         return RedirectResponse(f"https://lk.{settings.BASE_DOMAIN}/", status_code=302)
-    # Редактор доступен только на оплаченной подписке (триал/неоплата — просмотр).
+    # Редактор — Pro-функция (гейт _can_edit_site → pro_active).
     # Бэкенд-эндпоинты сохранения защищены отдельно (_require_editable).
     if not _can_edit_site(company):
         return RedirectResponse(

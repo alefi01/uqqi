@@ -1549,7 +1549,14 @@ function App() {
               <p>{menuSite.slug}.uqqi.ru</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
                 {/* «Статистика» вынесена отдельной кнопкой на карточку сайта. */}
-                {/* Кнопка «Редактировать контент» временно скрыта: нет модерации загружаемого контента. */}
+                {/* Редактирование содержимого — Pro-функция: бэкенд гейтит тем же
+                    pro_active (_can_edit_site), кнопка лишь не ведёт в тупик. */}
+                {menuSite.proActive
+                  ? <a className="btn btn--ghost btn--block" href={`/site/${menuSite.slug}/edit`}><i data-lucide="pencil"></i> Редактировать контент</a>
+                  : <span className="tip-wrap" data-tip="Редактирование содержимого входит в Pro" style={{ display: 'block' }}>
+                      <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="pencil"></i> Редактировать контент</button>
+                    </span>
+                }
                 <button className="btn btn--ghost btn--block" onClick={() => openDesign(menuSite)}><i data-lucide="palette"></i> Дизайн</button>
                 {menuSite.canDelete === false
                   ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
