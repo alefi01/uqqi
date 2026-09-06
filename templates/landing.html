@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>uqqi — бесплатный сайт для вашего дела из карточки Яндекс Карт</title>
+<title>UQQI.RU — сайт за минуту бесплатно и навсегда</title>
 <meta name="description" content="Вставьте ссылку на карточку Яндекс Карт — за минуту получите работающий сайт с фото, часами, услугами и отзывами. Базовый сайт бесплатный навсегда. Pro — премиум-оформления и чат с клиентами, 990 ₽ в месяц.">
 <link rel="canonical" href="https://uqqi.ru/">
 <meta name="robots" content="index, follow">
@@ -42,7 +42,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Unbounded:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -72,7 +72,7 @@
   /* Одна лестница скруглений: мелочь 8 — панели 12 — карточки 18 —
      крупные блоки 28; пилюля только у кнопок и чипов. */
   --r-sm:8px; --r-md:12px; --r-lg:18px; --r-xl:28px; --r-pill:99px;
-  --maxw:1200px; --gutter:clamp(1.1rem,4vw,2.5rem);
+  --maxw:1680px; --gutter:clamp(1.1rem,4vw,2.5rem);
   --section:clamp(4rem,7.5vw,6.5rem);
   --sh-card:0 1px 2px rgba(20,23,31,.04),0 8px 24px rgba(20,23,31,.05);
   --sh-raised:0 2px 6px rgba(20,23,31,.06),0 18px 40px rgba(20,23,31,.09);
@@ -107,6 +107,8 @@ ul,ol{list-style:none;}
 .num{font-family:var(--display);font-weight:600;line-height:1;letter-spacing:-.03em;
   font-size:clamp(2.6rem,6vw,4.4rem);font-variant-numeric:tabular-nums;}
 .lead{font-size:clamp(1rem,1.2vw,1.12rem);color:var(--muted);max-width:56ch;}
+.lead__mail{color:var(--mark-ink);border-bottom:1px solid var(--mark-soft);}
+.lead__mail:hover{border-color:var(--mark-ink);}
 .kicker{font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
 .small{font-size:.86rem;} .muted{color:var(--muted);}
 .dot{color:inherit;}
@@ -181,21 +183,19 @@ ul,ol{list-style:none;}
 .hero__bg{position:absolute;inset:-6%;z-index:0;background-color:#EFE3D8;
   background-image:url('/static/hero.jpg'),url('/static/hero-bg.svg');
   background-size:cover,cover;background-position:center,center;background-repeat:no-repeat;
-  filter:blur(38px) saturate(1.02);transform:scale(1.08);}
+  filter:blur(26px) saturate(1.04);transform:scale(1.08);}
 .hero__scrim{position:absolute;inset:0;z-index:1;background:rgba(255,255,255,.36);}
 .hero__in{position:relative;z-index:2;width:100%;max-width:var(--maxw);margin-inline:auto;
   padding:clamp(7rem,13vw,9rem) var(--gutter) clamp(3rem,7vw,5rem);}
-.badge{display:inline-flex;align-items:center;gap:.55rem;min-height:34px;padding:.4rem 1rem;
-  background:var(--sand);border:1px solid var(--sand-line);border-radius:var(--r-pill);
-  font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);}
-.badge i{width:7px;height:7px;border-radius:50%;background:var(--open);flex:none;}
-.js .badge i{animation:pulse 2.4s var(--ease) infinite;}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.45);opacity:.55}}
-.hero__head{margin-top:clamp(1.4rem,3vw,2rem);display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;}
+.hero__head{margin-top:0;display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;}
 /* Кегль подобран так, чтобы строка «Сайт вашего дела» помещалась в колонку
    целиком: перенос внутри строки ломает лесенку масок. Межстрочное .98 —
    запас под широкую дисплейную гарнитуру, .86 у неё склеивает строки. */
-.hero h1{max-width:none;font-size:clamp(2.1rem,5.4vw,4.3rem);line-height:.98;text-wrap:normal;}
+/* Заголовок — главный графический объект: тяжёлый дисплейный вес, плотный
+   трекинг, строки почти вплотную. Кегль подобран так, чтобы самая длинная
+   строка помещалась в колонку целиком. */
+.hero h1{max-width:none;font-weight:800;letter-spacing:-.05em;
+  font-size:clamp(2.4rem,7.4vw,6.4rem);line-height:.9;text-wrap:normal;}
 /* Окно маски обязано быть выше строки, иначе оно срезает выносные элементы:
    добавляем воздух паддингом и снимаем его отрицательным полем. */
 .hero h1 .ln{display:block;overflow:hidden;padding-block:.08em;margin-block:-.08em;}
@@ -218,15 +218,20 @@ ul,ol{list-style:none;}
 .hero .btn--outline:hover{background:rgba(255,255,255,.72);border-color:rgba(255,255,255,.95);transform:translateY(-1px);}
 .hero .btn:hover svg{transform:none;}
 .hero__note{margin-top:1rem;font-size:.85rem;color:var(--ink-2);font-weight:500;min-height:1.2em;max-width:46ch;}
-/* вращающееся кольцо у главного действия — тонкая кайма, не свечение */
-.btn--ring{position:relative;isolation:isolate;}
-.btn--ring::before{content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-2;
-  background:conic-gradient(from 0deg,var(--mark),var(--mark-soft),var(--mark-deep),var(--mark));}
-.js .btn--ring::before{animation:ringspin 4.5s linear infinite;}
-.btn--ring::after{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--ink);z-index:-1;}
-.btn--ring:hover::after{background:#242933;}
-@keyframes ringspin{to{transform:rotate(360deg)}}
-.scrollhint{display:inline-flex;align-items:center;gap:.6rem;margin-top:clamp(2rem,5vw,3.4rem);
+/* Магнитная кнопка: вокруг главного действия медленно дрейфуют точки,
+   при наведении слетаются к кнопке и гаснут. Дрейф и притяжение разнесены по
+   двум слоям — иначе анимация и переход дерутся за один transform. */
+.magnet{position:relative;display:inline-flex;}
+.magnet__p{position:absolute;left:50%;top:50%;width:7px;height:7px;pointer-events:none;
+  transform:translate(var(--x),var(--y));opacity:.5;
+  transition:transform 760ms var(--ease-out),opacity 460ms linear;}
+.magnet__p i{display:block;width:100%;height:100%;border-radius:50%;background:var(--mark);}
+.js .magnet__p i{animation:drift var(--dur,7s) ease-in-out var(--del,0s) infinite alternate;}
+.magnet.pull .magnet__p{transform:translate(0,0) scale(.35);opacity:0;}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(var(--dx),var(--dy))}}
+@media(max-width:640px){.magnet__p{display:none;}}
+.hero__hint{display:flex;justify-content:center;margin-top:clamp(2rem,5vw,3.4rem);}
+.scrollhint{display:inline-flex;align-items:center;gap:.6rem;
   font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);}
 .scrollhint__m{width:20px;height:32px;border:1.5px solid var(--ink-2);border-radius:var(--r-pill);
   position:relative;flex:none;}
@@ -289,31 +294,40 @@ ul,ol{list-style:none;}
 @media(max-width:720px){.spec__rows{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:420px){.spec__rows{grid-template-columns:minmax(0,1fr);}}
 
-/* ── три карточки-моста ────────────────────────────────────────────────── */
-.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem;}
-@media(max-width:900px){.trio{grid-template-columns:minmax(0,1fr);}}
-.tcard{background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:1px solid var(--glass-line);border-radius:var(--r-lg);padding:1.75rem;min-width:0;
-  transition:transform var(--t-base) var(--ease-out),box-shadow var(--t-base) linear;}
-.tcard:hover,.tcard:focus-within{transform:translateY(-4px);box-shadow:var(--sh-lift);}
-.tcard__ic{width:48px;height:48px;border-radius:var(--r-sm);background:var(--mark-soft);
-  display:flex;align-items:center;justify-content:center;margin-bottom:1.1rem;}
-.tcard__ic svg{width:22px;height:22px;color:var(--mark-ink);}
-.tcard h3{font-size:1.06rem;font-weight:600;letter-spacing:-.015em;margin-bottom:.5rem;}
-.tcard p{font-size:.92rem;color:var(--muted);}
+/* ── три карточки-моста ───────────────────────────────────────────────
+   Каждая — крупная квадратная плитка: под иконкой оживает сетка «пикселей»
+   (canvas, рисует скрипт внизу файла), рамка окрашивается в акцент. */
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(1.2rem,3vw,2rem);}
+@media(max-width:900px){.trio{grid-template-columns:minmax(0,1fr);max-width:420px;margin-inline:auto;}}
+.tcard{min-width:0;}
+.tile{position:relative;display:block;width:100%;max-width:340px;aspect-ratio:1;overflow:hidden;
+  background:var(--page);border:1px solid var(--line);border-radius:var(--r-xl);
+  transition:border-color var(--t-base) linear,box-shadow var(--t-base) linear;}
+.tcard:hover .tile,.tcard:focus-within .tile{border-color:var(--mark);box-shadow:var(--sh-lift);}
+.tile canvas{position:absolute;inset:0;width:100%;height:100%;}
+.tile__ic{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.tile__ic svg{width:clamp(56px,9vw,86px);height:clamp(56px,9vw,86px);color:var(--ink-2);
+  transition:transform var(--t-base) var(--ease-out),color var(--t-base) linear;}
+.tcard:hover .tile__ic svg,.tcard:focus-within .tile__ic svg{transform:scale(1.08);color:var(--mark-ink);}
+.tcard h3{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:-.03em;
+  font-size:clamp(1.1rem,2vw,1.5rem);line-height:1;margin:1.2rem 0 .6rem;overflow-wrap:anywhere;}
+.tcard p{font-size:.95rem;color:var(--muted);}
 
-/* ── статистика ────────────────────────────────────────────────────────── */
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
-.stat{padding:1.4rem clamp(1rem,3vw,2rem);border-left:1px solid var(--line);min-width:0;}
-.stat:first-child{border-left:0;padding-left:0;}
-.stat__n{display:flex;align-items:flex-start;gap:.25rem;}
-.stat__n svg{width:20px;height:20px;color:var(--open);margin-top:.35rem;flex:none;}
-.stat__l{display:block;margin-top:.6rem;font-size:.76rem;font-weight:600;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--muted);}
-@media(max-width:760px){
-  .stats{grid-template-columns:minmax(0,1fr);}
-  .stat{border-left:0;border-top:1px solid var(--line);padding-left:0;}
-  .stat:first-child{border-top:0;}
+/* ── статистика ────────────────────────────────────────────────────────
+   Композиция как в образце: три крупных числа в ряд по центру, зелёная
+   стрелка верхним индексом, подпись под числом в две короткие строки. */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:clamp(1.5rem,5vw,4rem);max-width:900px;margin-inline:auto;text-align:center;}
+.stat{min-width:0;}
+.stat__n{display:inline-flex;align-items:flex-start;gap:.1rem;}
+.stat__n .num{font-size:clamp(2.8rem,7vw,5rem);letter-spacing:-.04em;}
+.stat__n svg{width:clamp(18px,2vw,26px);height:clamp(18px,2vw,26px);color:var(--open);
+  margin-top:.45rem;flex:none;}
+.stat__l{display:block;margin-top:.7rem;font-size:.9rem;font-weight:500;color:var(--muted);
+  max-width:12ch;margin-inline:auto;line-height:1.35;}
+@media(max-width:640px){
+  .stats{grid-template-columns:minmax(0,1fr);gap:2.2rem;}
+  .stat__l{max-width:none;}
 }
 
 /* ── работы: горизонтальная лента ──────────────────────────────────────── */
@@ -365,7 +379,6 @@ ul,ol{list-style:none;}
 .svc__art{justify-self:start;width:100%;min-width:0;max-width:calc(var(--maxw) / 2);}
 .svc__art img,.svc__art video{width:100%;height:min(70svh,560px);object-fit:cover;border-radius:var(--r-xl);
   background:var(--cool);}
-.svc__n{font-family:var(--display);font-weight:600;font-size:1rem;letter-spacing:.02em;color:var(--mark-ink);}
 .svc h2{margin:.9rem 0 1rem;}
 .svc p{font-size:1rem;color:var(--muted);max-width:46ch;}
 .svc .btn{margin-top:1.8rem;}
@@ -386,67 +399,81 @@ ul,ol{list-style:none;}
 .svc--mark h2,.svc--dark h2{color:var(--on-dark);}
 .svc--mark p,.svc--dark p{color:#F0E7E2;}
 .svc--dark p{color:var(--on-dark-muted);}
-.svc--mark .svc__n{color:#FBD9C9;}
-.svc--dark .svc__n{color:var(--mark);}
 @media(max-width:900px){
   .svc{position:static;min-height:0;grid-template-columns:minmax(0,1fr);border-radius:0;box-shadow:none;
     padding-block:clamp(2.6rem,8vw,4rem);}
-  .svc__in,.svc__art{max-width:none;justify-self:stretch;}
+  /* Специфичность должна перебить .svc--flip .svc__in, иначе на телефоне
+     колонка сжимается по содержимому и кнопка вылезает за экран. */
+  .svc__in,.svc__art,.svc--flip .svc__in,.svc--flip .svc__art{
+    max-width:none;justify-self:stretch;order:0;}
   .svc__art img,.svc__art video{height:auto;aspect-ratio:4/3;}
 }
 
-/* ── таймлайн: шаги прилипают, линия с градиентом ──────────────────────── */
-.tl{padding-block:var(--section);}
-.tl__list{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 2px minmax(0,1fr);
-  column-gap:clamp(1.5rem,5vw,4rem);max-width:var(--maxw);margin-inline:auto;padding-inline:var(--gutter);}
-/* Сегменты: от точки шага вниз линия яркая, к следующему шагу растворяется. */
-.tl__list::before{content:"";grid-column:2;grid-row:1 / -1;width:2px;justify-self:center;
-  background-image:linear-gradient(180deg,var(--mark) 0,var(--mark) 4%,var(--mark-soft) 24%,rgba(225,84,31,0) 42%);
-  background-size:100% 78svh;background-repeat:repeat-y;}
-.tl__step{grid-column:1 / 2;min-height:78svh;position:relative;}
-/* Последний шаг короче: после него страница идёт дальше, держать под ним
-   целый экран пустоты незачем (и четыре одинаковых блока читаются шаблоном). */
-.tl__step:last-child{min-height:42svh;}
-.tl__step[data-side="r"]{grid-column:3 / 4;}
-.tl__card{position:sticky;top:clamp(96px,18vh,180px);max-width:44ch;}
+/* ── таймлайн: шаги складываются стопкой ───────────────────────────────
+   Все шаги — sticky в ОДНОМ родителе и с одинаковым top, поэтому следующий
+   наезжает на предыдущий и занимает его место (именно это поведение и просили).
+   Фон у шага обязан быть непрозрачным, иначе сквозь него видно нижний. */
+.tl{padding-block:var(--section) 0;}
+.tl__list{position:relative;padding-bottom:var(--section);}
+.tl__step{position:sticky;top:clamp(84px,13vh,132px);min-height:58svh;
+  background:var(--cream);border-top:1px solid var(--line);
+  padding-block:clamp(2.2rem,5vh,3.6rem);}
+.tl__row{position:relative;max-width:var(--maxw);margin-inline:auto;padding-inline:var(--gutter);
+  display:grid;grid-template-columns:minmax(0,1fr) 2px minmax(0,1fr);
+  column-gap:clamp(1.5rem,5vw,4rem);align-items:start;}
+.tl__line{grid-column:2;justify-self:center;width:2px;align-self:stretch;min-height:9rem;
+  background:linear-gradient(180deg,var(--mark) 0,var(--mark-soft) 45%,rgba(225,84,31,0) 100%);}
+.tl__dot{position:absolute;top:6px;left:50%;transform:translateX(-50%);
+  width:14px;height:14px;border-radius:50%;background:var(--mark);
+  box-shadow:0 0 0 6px var(--mark-soft);}
+.tl__card{grid-column:1;max-width:46ch;}
+.tl__step[data-side="r"] .tl__card{grid-column:3;}
 .tl__chip{display:inline-flex;align-items:center;min-height:30px;padding:.3rem .85rem;border-radius:var(--r-sm);
   background:var(--mark-soft);color:var(--mark-ink);font-size:.79rem;font-weight:600;}
 .tl__h{font-family:var(--display);font-weight:600;text-transform:uppercase;letter-spacing:-.03em;
   line-height:.95;font-size:clamp(1.5rem,3vw,2.3rem);margin:1rem 0 .7rem;overflow-wrap:anywhere;}
 .tl__card p{color:var(--muted);}
-.tl__dot{position:absolute;top:clamp(96px,18vh,180px);width:14px;height:14px;border-radius:50%;
-  background:var(--page);border:2px solid var(--mark);}
-.tl__step[data-side="l"] .tl__dot{right:calc(-1 * clamp(1.5rem,5vw,4rem) / 2 - 7px);}
-.tl__step[data-side="r"] .tl__dot{left:calc(-1 * clamp(1.5rem,5vw,4rem) / 2 - 7px);}
-.tl__step.on .tl__dot{background:var(--mark);box-shadow:0 0 0 6px var(--mark-soft);
-  transition:background var(--t-base) linear,box-shadow var(--t-base) linear;}
 @media(max-width:900px){
-  .tl__list{grid-template-columns:2px minmax(0,1fr);column-gap:1.4rem;}
-  .tl__list::before{grid-column:1;background-size:100% 220px;}
-  .tl__step,.tl__step[data-side="r"]{grid-column:2 / 3;min-height:0;margin-bottom:2.6rem;}
-  .tl__card{position:static;max-width:none;}
-  .tl__step .tl__dot,.tl__step[data-side="r"] .tl__dot{top:6px;left:-1.4rem;right:auto;
-    margin-left:calc(-7px + 1px);}
+  .tl__step{position:static;min-height:0;padding-block:2rem;}
+  .tl__row{grid-template-columns:2px minmax(0,1fr);column-gap:1.4rem;}
+  .tl__line{grid-column:1;min-height:100%;}
+  .tl__card,.tl__step[data-side="r"] .tl__card{grid-column:2;}
+  .tl__dot{left:1px;}
 }
 
-/* ── возражения ────────────────────────────────────────────────────────── */
+/* ── возражения ───────────────────────────────────────────────────────
+   Первая карточка ведёт: она шире, набрана крупнее и разложена в две колонки.
+   Четыре одинаковых прямоугольника читаются как шаблон — глазу негде сесть. */
 .obj{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem;}
 @media(max-width:860px){.obj{grid-template-columns:minmax(0,1fr);}}
-.obj__card{background:var(--page);border:1px solid var(--line);border-radius:var(--r-lg);
-  box-shadow:var(--sh-card);padding:clamp(1.4rem,3vw,2rem);min-width:0;
-  transition:transform var(--t-base) var(--ease-out),box-shadow var(--t-base) linear;}
-.obj__card:hover{transform:translateY(-2px);box-shadow:var(--sh-lift);}
-.obj__q{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.9rem;align-items:start;}
-.obj__q .n{font-family:var(--display);font-weight:600;font-size:.95rem;color:var(--mark-ink);}
-.obj__q p{font-weight:600;font-size:1.05rem;letter-spacing:-.015em;}
-.obj__a{margin-top:1rem;color:var(--muted);font-size:.94rem;}
+.obj__card{position:relative;background:var(--page);border:1px solid var(--line);
+  border-radius:var(--r-lg);box-shadow:var(--sh-card);padding:clamp(1.5rem,3vw,2.2rem);min-width:0;
+  transition:transform var(--t-base) var(--ease-out),box-shadow var(--t-base) linear,
+             border-color var(--t-fast) linear;}
+.obj__card:hover{transform:translateY(-3px);box-shadow:var(--sh-lift);border-color:var(--line-2);}
+.obj__card::before{content:"";position:absolute;left:0;top:clamp(1.5rem,3vw,2.2rem);
+  width:3px;height:2.2rem;border-radius:0 3px 3px 0;background:var(--mark);}
+.obj__q p{font-weight:600;font-size:1.06rem;letter-spacing:-.015em;max-width:34ch;}
+.obj__a{margin-top:.9rem;color:var(--muted);font-size:.95rem;}
 /* Длинное неразрывное слово («администрировать») задаёт min-content блока и
    на 280px вылезает за экран — ловится verify_responsive --scale=1.25. */
 .obj__q p,.obj__a,.tcard p,.spec__row span,.svc p,.plan__list li,.faq-a p,
 .faq-q,.rev__biz,.work p,.tl__card p{overflow-wrap:anywhere;}
-.obj__fact{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.2rem;}
-.obj__fact span{display:inline-flex;align-items:center;min-height:30px;padding:.25rem .8rem;
-  border-radius:var(--r-pill);background:var(--sand);color:var(--ink-2);font-size:.79rem;font-weight:500;}
+.obj__fact{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.3rem;}
+.obj__fact span{display:inline-flex;align-items:center;min-height:30px;padding:.25rem .85rem;
+  border-radius:var(--r-pill);background:var(--page);border:1px solid var(--line-2);
+  color:var(--ink-2);font-size:.79rem;font-weight:500;}
+/* Ведущая карточка */
+.obj__card--lead{grid-column:1 / -1;background:var(--sand);border-color:var(--sand-line);}
+.obj__card--lead .obj__fact span{background:var(--page);border-color:var(--sand-line);}
+.obj__card--lead .obj__q p{font-family:var(--display);font-weight:600;text-transform:uppercase;
+  letter-spacing:-.03em;line-height:1.04;font-size:clamp(1.3rem,2.6vw,2rem);max-width:20ch;}
+@media(min-width:900px){
+  .obj__card--lead{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+    column-gap:clamp(2rem,4vw,3.5rem);align-items:start;}
+  .obj__card--lead .obj__a{margin-top:0;font-size:1rem;}
+  .obj__card--lead .obj__fact{grid-column:1;margin-top:1.5rem;}
+}
 
 /* ── тарифы ────────────────────────────────────────────────────────────── */
 .plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem;max-width:920px;margin-inline:auto;}
@@ -599,14 +626,14 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
 @keyframes rise{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
 @keyframes drop{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:none;}}
 @keyframes maskup{from{transform:translateY(102%);}to{transform:none;}}
-.js .hero .badge,.js .hero__sub,.js .hero__cta,.js .scrollhint{animation:rise .8s var(--ease) both;}
+.js .hero__sub,.js .hero__cta,.js .hero__hint{animation:rise .8s var(--ease) both;}
 .js .hero h1 .ln > span{animation:maskup .85s var(--ease) both;}
-.js .hero .badge{animation-delay:.02s;}
 .js .hero h1 .ln:nth-of-type(1) > span{animation-delay:.10s;}
-.js .hero h1 .ln:nth-of-type(2) > span{animation-delay:.19s;}
+.js .hero h1 .ln:nth-of-type(2) > span{animation-delay:.17s;}
+.js .hero h1 .ln:nth-of-type(3) > span{animation-delay:.24s;}
 .js .hero__sub{animation-delay:.34s;}
 .js .hero__cta{animation-delay:.44s;}
-.js .scrollhint{animation-delay:.56s;}
+.js .hero__hint{animation-delay:.56s;}
 .js .nav__in{animation:drop .7s var(--ease) both;}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
@@ -614,7 +641,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
   /* .js .reveal — селектор из двух классов, здесь нужна та же специфичность,
      иначе блоки останутся невидимыми. */
   .js .reveal,.js .reveal--zoom{opacity:1;transform:none;}
-  .js .hero .badge,.js .hero__sub,.js .hero__cta,.js .scrollhint,.js .nav__in{animation:none;opacity:1;transform:none;}
+  .js .hero__sub,.js .hero__cta,.js .hero__hint,.js .nav__in{animation:none;opacity:1;transform:none;}
   .js .hero h1 .ln > span{animation:none;transform:none;}
   /* Панели не наезжают, шаги не прилипают, лента листается мгновенно. */
   .svc{position:static;min-height:0;box-shadow:none;}
@@ -663,16 +690,16 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
   <div class="hero__bg"></div>
   <div class="hero__scrim"></div>
   <div class="hero__in">
-    <span class="badge"><i aria-hidden="true"></i>Бесплатно навсегда</span>
     <div class="hero__head">
       <h1 class="display">
-        <span class="ln"><span>Сайт вашего дела</span></span>
-        <span class="ln"><span>за одну минуту</span></span>
+        <span class="ln"><span>Сайт вашего</span></span>
+        <span class="ln"><span>бизнеса</span></span>
+        <span class="ln"><span>за минуту</span></span>
       </h1>
-      <p class="hero__sub">Вставьте ссылку на карточку Яндекс Карт — фото, часы, услуги, цены и отзывы перенесём сами. Базовый сайт бесплатный навсегда.</p>
+      <p class="hero__sub">Собираем сайт из карточки Яндекс Карт. Бесплатно, со своим адресом и индексацией.</p>
     </div>
     <div class="hero__cta">
-      <a href="https://lk.uqqi.ru/" class="btn btn--primary btn--ring">Создать сайт бесплатно</a>
+      <span class="magnet" id="magnetCta"><a href="https://lk.uqqi.ru/" class="btn btn--primary">Создать сайт бесплатно</a></span>
       <div class="demo-slot" id="demoSlot">
         <button type="button" class="btn btn--outline" id="demoBtn" onclick="showRandomSite()">Показать готовый сайт</button>
         <div class="demo-spin" id="demoSpin"><span class="demo-spin__ring"></span></div>
@@ -680,7 +707,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       </div>
     </div>
     <p class="hero__note" id="bHint" role="status" aria-live="polite"></p>
-    <span class="scrollhint" aria-hidden="true"><span class="scrollhint__m"></span>Листайте</span>
+    <div class="hero__hint"><span class="scrollhint" aria-hidden="true"><span class="scrollhint__m"></span>Листайте</span></div>
   </div>
 </section>
 
@@ -723,21 +750,21 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
   <div class="wrap">
     <div class="trio">
       <div class="tcard">
-        <div class="tcard__ic"><i data-lucide="gift"></i></div>
+        <div class="tile"><canvas class="pixel" aria-hidden="true"></canvas><span class="tile__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></span></div>
         <h3>Бесплатно навсегда</h3>
         <p>Базовый сайт не стоит ничего — ни сейчас, ни через год. Без карты и без договора.</p>
       </div>
       <div class="tcard">
-        <div class="tcard__ic"><i data-lucide="zap"></i></div>
+        <div class="tile"><canvas class="pixel" aria-hidden="true"></canvas><span class="tile__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4.1 12.6a1 1 0 0 0 .8 1.6H11l-1 8 8.9-10.6a1 1 0 0 0-.8-1.6H12z"/></svg></span></div>
         <h3>Собирается сам</h3>
         <p>Вставили ссылку на Яндекс Карты — примерно через минуту сайт открывается по своему адресу.</p>
       </div>
       <div class="tcard">
-        <div class="tcard__ic"><i data-lucide="search"></i></div>
+        <div class="tile"><canvas class="pixel" aria-hidden="true"></canvas><span class="tile__ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span></div>
         <h3>Виден в поиске</h3>
         <p>Отдельный адрес, разметка и карта сайта. Вас находят в Яндексе и Google, а не только на карте.</p>
       </div>
-    </div>
+</div>
   </div>
 </section>
 
@@ -747,15 +774,15 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
     <div class="stats">
       <div class="stat">
         <span class="stat__n"><span class="num" data-count="{{ st.sites|default(0) }}">{{ st.sites|default(0) }}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
-        <span class="stat__l">сайтов собрано</span>
+        <span class="stat__l">Сайтов<br>собрано</span>
       </div>
       <div class="stat">
         <span class="stat__n"><span class="num" data-count="{{ st.cities|default(0) }}">{{ st.cities|default(0) }}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
-        <span class="stat__l">городов</span>
+        <span class="stat__l">Городов<br>на карте</span>
       </div>
       <div class="stat">
         <span class="stat__n"><span class="num">{{ st.minutes|default('4') }}</span></span>
-        <span class="stat__l">минуты — средняя сборка</span>
+        <span class="stat__l">Минуты<br>на сборку</span>
       </div>
     </div>
   </div>
@@ -798,7 +825,6 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
 <section aria-label="Что делает uqqi">
   <div class="svc svc--paper">
     <div class="svc__in">
-      <span class="svc__n">01</span>
       <h2 class="h2">Забираем данные с Яндекс Карт</h2>
       <p>Открываем вашу карточку по прямой ссылке и переносим всё, что вы уже заполнили: описание, фотографии, часы работы, услуги с ценами, отзывы, телефон и адрес. Ничего вводить заново не нужно.</p>
       <a href="https://lk.uqqi.ru/" class="btn btn--primary">Создать сайт <i data-lucide="arrow-right"></i></a>
@@ -808,7 +834,6 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
 
   <div class="svc svc--sand svc--flip">
     <div class="svc__in">
-      <span class="svc__n">02</span>
       <h2 class="h2">Собираем сайт</h2>
       <p>Робот раскладывает данные по готовой витрине: первый экран с фото, каталог услуг, часы со статусом «открыто до 20:00», отзывы, карта и кнопки звонка. Отдельная вёрстка под телефон — там сайт открывает большинство ваших клиентов.</p>
       <a href="#how" class="btn btn--outline">Посмотреть по шагам <i data-lucide="arrow-right"></i></a>
@@ -818,7 +843,6 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
 
   <div class="svc svc--mark">
     <div class="svc__in">
-      <span class="svc__n">03</span>
       <h2 class="h2">Публикуем и индексируем</h2>
       <p>Сайт открывается по адресу название.uqqi.ru: защищённое соединение, разметка для поисковиков, карта сайта. Ссылку можно давать в рекламе, на визитке и в переписке. Данные с карточки обновляются сами.</p>
       <a href="https://lk.uqqi.ru/" class="btn btn--ondark">Занять адрес <i data-lucide="arrow-right"></i></a>
@@ -828,7 +852,6 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
 
   <div class="svc svc--dark svc--flip">
     <div class="svc__in">
-      <span class="svc__n">04</span>
       <h2 class="h2">Pro: витрина и чат</h2>
       <p>Десять премиум-оформлений под ниши, чат прямо на сайте с сообщениями в ваш Telegram и редактор содержимого: фото, тексты, часы и цены меняются в кабинете. Семь дней бесплатно, чтобы посмотреть на своих данных.</p>
       <a href="#price" class="btn btn--ondark">Что входит в Pro <i data-lucide="arrow-right"></i></a>
@@ -847,65 +870,77 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
   </div>
   <ol class="tl__list">
     <li class="tl__step" data-side="l">
-      <span class="tl__dot" aria-hidden="true"></span>
-      <div class="tl__card">
-        <span class="tl__chip">Шаг 01</span>
-        <h3 class="tl__h">Открываете карточку</h3>
-        <p>Найдите свою компанию в Яндекс Картах и нажмите «Поделиться» — стрелку в карточке организации.</p>
+      <div class="tl__row">
+        <span class="tl__dot" aria-hidden="true"></span>
+        <div class="tl__card">
+          <span class="tl__chip">Первый шаг</span>
+          <h3 class="tl__h">Открываете карточку</h3>
+          <p>Найдите свою компанию в Яндекс Картах и нажмите «Поделиться» — стрелку в карточке организации.</p>
+        </div>
+        <span class="tl__line" aria-hidden="true"></span>
       </div>
     </li>
     <li class="tl__step" data-side="r">
-      <span class="tl__dot" aria-hidden="true"></span>
-      <div class="tl__card">
-        <span class="tl__chip">Шаг 02</span>
-        <h3 class="tl__h">Копируете ссылку</h3>
-        <p>Выберите «Скопировать ссылку». Больше из Яндекса ничего не нужно — ни выгрузок, ни доступов.</p>
+      <div class="tl__row">
+        <span class="tl__dot" aria-hidden="true"></span>
+        <div class="tl__card">
+          <span class="tl__chip">Второй шаг</span>
+          <h3 class="tl__h">Копируете ссылку</h3>
+          <p>Выберите «Скопировать ссылку». Больше из Яндекса ничего не нужно — ни выгрузок, ни доступов.</p>
+        </div>
+        <span class="tl__line" aria-hidden="true"></span>
       </div>
     </li>
     <li class="tl__step" data-side="l">
-      <span class="tl__dot" aria-hidden="true"></span>
-      <div class="tl__card">
-        <span class="tl__chip">Шаг 03</span>
-        <h3 class="tl__h">Вставляете в кабинет</h3>
-        <p>Откройте lk.uqqi.ru, вставьте ссылку и нажмите «Создать сайт». Регистрация — почта и пароль.</p>
+      <div class="tl__row">
+        <span class="tl__dot" aria-hidden="true"></span>
+        <div class="tl__card">
+          <span class="tl__chip">Третий шаг</span>
+          <h3 class="tl__h">Вставляете в кабинет</h3>
+          <p>Откройте lk.uqqi.ru, вставьте ссылку и нажмите «Создать сайт». Регистрация — почта и пароль.</p>
+        </div>
+        <span class="tl__line" aria-hidden="true"></span>
       </div>
     </li>
     <li class="tl__step" data-side="r">
-      <span class="tl__dot" aria-hidden="true"></span>
-      <div class="tl__card">
-        <span class="tl__chip">Шаг 04</span>
-        <h3 class="tl__h">Сайт опубликован</h3>
-        <p>Примерно через минуту адрес название.uqqi.ru открывается у всех. Дальше можно ничего не делать.</p>
+      <div class="tl__row">
+        <span class="tl__dot" aria-hidden="true"></span>
+        <div class="tl__card">
+          <span class="tl__chip">Последний шаг</span>
+          <h3 class="tl__h">Сайт опубликован</h3>
+          <p>Примерно через минуту адрес название.uqqi.ru открывается у всех. Дальше можно ничего не делать.</p>
+        </div>
+        <span class="tl__line" aria-hidden="true"></span>
       </div>
     </li>
   </ol>
 </section>
 
 <!-- ───── ПОЧЕМУ САЙТА ДО СИХ ПОР НЕТ ───── -->
-<section id="why" class="section">
+<section id="why" class="section section--sand">
   <div class="wrap">
     <div class="sec-head">
       <h2 class="h2">Почему у вас до сих пор нет сайта</h2>
       <p class="lead">Четыре причины, которые мы слышим чаще всего.</p>
     </div>
     <div class="obj">
-      <div class="obj__card">
-        <div class="obj__q"><span class="n">01</span><p>«Это дорого. От 50 тысяч, и ещё техзадание писать»</p></div>
+      <div class="obj__card obj__card--lead">
+        <div class="obj__q"><p>«Это дорого. От 50 тысяч, и ещё техзадание писать»</p></div>
         <p class="obj__a">Столько стоит сайт, который делают руками с нуля. Здесь его собирает робот из данных, которые вы уже заполнили в Яндекс Картах, поэтому базовый сайт стоит ноль рублей и остаётся бесплатным. Техзадание не нужно: описание, фото, услуги и часы берём из карточки.</p>
         <div class="obj__fact"><span>0 ₽ базовый</span><span>990 ₽ Pro в месяц</span><span>без техзадания</span></div>
       </div>
       <div class="obj__card">
-        <div class="obj__q"><span class="n">02</span><p>«Нет времени. Смены, поставщики, сезон»</p></div>
+        <div class="obj__q"><p>«Нет времени. Смены, поставщики, сезон»</p></div>
         <p class="obj__a">Ваше участие занимает две минуты: скопировать ссылку в Яндекс Картах и вставить её в кабинет. Дальше без вас: сборка идёт автоматически, сайт публикуется сам. Ни встреч, ни согласования макетов, ни переписки с фрилансером.</p>
         <div class="obj__fact"><span>2 действия</span><span>около минуты</span><span>0 созвонов</span></div>
       </div>
       <div class="obj__card">
-        <div class="obj__q"><span class="n">03</span><p>«Не умею администрировать. Придётся кого-то нанимать»</p></div>
+        <div class="obj__q"><p>«Не умею администрировать. Придётся кого-то нанимать»</p></div>
         <p class="obj__a">Кабинет выглядит как обычное приложение на русском: поменять фото, часы, тексты, выбрать оформление. Ничего не сломается от нажатия не туда. Данные с карточки подтягиваются сами, так что сайт не устареет, даже если вы не заходите месяцами.</p>
         <div class="obj__fact"><span>панель на русском</span><span>без кода</span><span>обновление автоматом</span></div>
       </div>
       <div class="obj__card">
-        <div class="obj__q"><span class="n">04</span><p>«У меня есть карточка в Картах. Зачем ещё сайт?»</p></div>
+        <div class="obj__q"><p>«У меня есть карточка в Картах. Зачем ещё сайт?»</p></div>
         <p class="obj__a">Карточка показывает вас в общем списке, где сразу под вами конкуренты, а правила показа устанавливает Яндекс. Сайт работает иначе: отдельный адрес для рекламы и визитки, полное меню и цены без модерации, и вас находят в поиске Яндекса и Google, а не только на карте.</p>
         <div class="obj__fact"><span>свой адрес</span><span>поиск Яндекс и Google</span><span>без соседей в списке</span></div>
       </div>
@@ -969,7 +1004,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       <div class="rev__slides">
         {% for r in reviews %}
         <article class="rev__slide{% if loop.first %} on{% endif %}" aria-roledescription="слайд" aria-label="{{ loop.index }} из {{ reviews|length }}">
-          <img class="rev__photo" src="{{ r.photo }}" alt="{{ r.alt|default(r.business) }}" loading="lazy" decoding="async">
+          <img class="rev__photo" src="{{ r.photo }}" data-fallback="{{ r.fallback|default('') }}" alt="{{ r.alt|default(r.business) }}" loading="lazy" decoding="async">
           <div>
             <p class="rev__name">{{ r.name }}</p>
             <p class="rev__biz">{{ r.business }}</p>
@@ -1002,7 +1037,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
   <div class="wrap">
     <div class="sec-head">
       <h2 class="h2">Частые вопросы</h2>
-      <p class="lead">Если чего-то не хватает, напишите на support@uqqi.ru.</p>
+      <p class="lead">Если чего-то не хватает, напишите на <a class="lead__mail" href="mailto:support@uqqi.ru">support@uqqi.ru</a>.</p>
     </div>
     <div class="faq" id="faqList">
       <div class="faq-item open"><button class="faq-q" type="button" aria-expanded="true" aria-controls="fa1">Сколько это стоит?<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 3v12"/><path d="M3 9h12"/></svg></button>
@@ -1079,7 +1114,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       </div>
     </div>
     <div class="foot__bottom">
-      <span>© 2026 uqqi.ru · Самозанятый Запорожченко М. Р. · ИНН 610210547699</span>
+      <span>© 2026 uqqi.ru · ИП Запорожченко Е. Е. · ИНН 610204028543</span>
       <span id="mskClock">Москва</span>
     </div>
   </div>
@@ -1205,6 +1240,98 @@ function showRandomSite(){
   });
 }
 
+/* Плитки трио: сетка «пикселей» на canvas. По наведению квадратики
+   загораются волной от центра, при уходе гаснут в обратном порядке.
+   Под prefers-reduced-motion холст не анимируется — плитка остаётся ровным
+   тихим фоном, содержимое от этого не теряется. */
+(function(){
+  var tiles=[].slice.call(document.querySelectorAll('.tile canvas.pixel'));
+  if(!tiles.length) return;
+  var COLORS=['#FBEAE2','#F3B393','#E1541F'], GAP=10, SIZE=4;
+  tiles.forEach(function(cv){
+    var box=cv.parentElement, ctx=cv.getContext('2d'), dots=[], raf=0, dir=0;
+    function build(){
+      var r=box.getBoundingClientRect(), dpr=Math.min(devicePixelRatio||1,2);
+      if(!r.width) return;
+      cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      dots=[];
+      var cx=r.width/2, cy=r.height/2, max=Math.hypot(cx,cy);
+      for(var x=GAP/2;x<r.width;x+=GAP){
+        for(var y=GAP/2;y<r.height;y+=GAP){
+          dots.push({x:x,y:y,a:0,
+            d:Math.hypot(x-cx,y-cy)/max,
+            c:COLORS[(Math.random()*COLORS.length)|0]});
+        }
+      }
+      draw();
+    }
+    function draw(){
+      ctx.clearRect(0,0,cv.width,cv.height);
+      for(var i=0;i<dots.length;i++){
+        var p=dots[i];
+        if(p.a<=0.01) continue;
+        ctx.globalAlpha=p.a; ctx.fillStyle=p.c;
+        ctx.fillRect(p.x-SIZE/2,p.y-SIZE/2,SIZE,SIZE);
+      }
+      ctx.globalAlpha=1;
+    }
+    function step(){
+      var busy=false, t=performance.now()/900;
+      for(var i=0;i<dots.length;i++){
+        var p=dots[i], want=dir>0 ? Math.max(0,1-Math.abs(p.d-(t%1.6)*1.1)*2.2) : 0;
+        if(dir>0) want=Math.max(want, .12);
+        var diff=want-p.a;
+        if(Math.abs(diff)>0.01){ p.a+=diff*0.14; busy=true; } else { p.a=want; }
+      }
+      draw();
+      raf = (busy||dir>0) ? requestAnimationFrame(step) : 0;
+    }
+    function on(){ if(REDUCE) return; dir=1; if(!raf) raf=requestAnimationFrame(step); }
+    function off(){ if(REDUCE) return; dir=0; if(!raf) raf=requestAnimationFrame(step); }
+    var card=box.closest('.tcard');
+    card.addEventListener('mouseenter', on);
+    card.addEventListener('mouseleave', off);
+    build();
+    addEventListener('resize', build, {passive:true});
+  });
+})();
+
+/* Магнитная кнопка: точки вокруг главного действия. Раскладываем по кольцу
+   с разбросом, каждой — свой медленный дрейф; на наведении класс .pull
+   стягивает их к центру кнопки и гасит. Точки декоративные и вне потока,
+   поэтому на клавиатуру и скринридер не влияют. */
+(function(){
+  var wrap=document.getElementById('magnetCta');
+  if(!wrap) return;
+  if(matchMedia('(pointer:coarse)').matches) return;   // на телефоне ни к чему
+  var N=22, R0=86, R1=196, frag=document.createDocumentFragment();
+  for(var i=0;i<N;i++){
+    var a=(i/N)*Math.PI*2 + (Math.random()-.5)*.42;
+    var r=R0+Math.random()*(R1-R0);
+    var p=document.createElement('span');
+    p.className='magnet__p';
+    p.setAttribute('aria-hidden','true');
+    p.style.setProperty('--x', Math.round(Math.cos(a)*r*1.55)+'px');
+    p.style.setProperty('--y', Math.round(Math.sin(a)*r*.62)+'px');
+    p.style.setProperty('--dx', (Math.random()*14-7).toFixed(1)+'px');
+    p.style.setProperty('--dy', (Math.random()*12-6).toFixed(1)+'px');
+    p.style.setProperty('--dur', (6+Math.random()*5).toFixed(1)+'s');
+    p.style.setProperty('--del', (-Math.random()*6).toFixed(1)+'s');
+    p.style.opacity=(.28+Math.random()*.34).toFixed(2);
+    p.appendChild(document.createElement('i'));
+    frag.appendChild(p);
+  }
+  wrap.appendChild(frag);
+  var btn=wrap.querySelector('.btn');
+  function on(){ wrap.classList.add('pull'); }
+  function off(){ wrap.classList.remove('pull'); }
+  btn.addEventListener('mouseenter', on);
+  btn.addEventListener('mouseleave', off);
+  btn.addEventListener('focus', on);
+  btn.addEventListener('blur', off);
+})();
+
 /* Счётчик у цифр. В разметке уже стоит финальное число: без JS и под reduce
    пользователь видит правильное значение, скрипт только доводит его. */
 (function(){
@@ -1294,6 +1421,17 @@ function showRandomSite(){
     es.forEach(function(e){ e.target.classList.toggle('on', e.isIntersecting); });
   },{rootMargin:'-45% 0px -45% 0px'});
   steps.forEach(function(s){ o.observe(s); });
+})();
+
+/* Фото заведений в отзывах: если владелец ещё не положил файл, вместо
+   битой картинки показываем заглушку того же формата. */
+(function(){
+  document.querySelectorAll('.rev__photo[data-fallback]').forEach(function(img){
+    img.addEventListener('error', function(){
+      var fb=img.getAttribute('data-fallback');
+      if(fb && img.src.indexOf(fb)===-1) img.src=fb;
+    }, {once:true});
+  });
 })();
 
 /* Слайдер отзывов. Под reduce он не нужен: там все отзывы показаны подряд. */

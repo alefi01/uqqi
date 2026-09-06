@@ -553,3 +553,10 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.55;}
   .spin-ic{animation:none;transform:rotate(32deg);}
   .spin{animation:none;}
 }
+
+/* Подсказки при подтверждении пароля: правило загорается, когда выполнено. */
+.pwrules{list-style:none;margin:.55rem 0 0;padding:0;display:flex;flex-direction:column;gap:.3rem;}
+.pwrule{display:flex;align-items:center;gap:.45rem;font-size:.82rem;color:var(--ink-muted);}
+.pwrule svg{width:14px;height:14px;flex:none;color:var(--line);}
+.pwrule.is-ok{color:var(--ink);}
+.pwrule.is-ok svg{color:#0F6540;}

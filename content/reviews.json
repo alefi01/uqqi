@@ -3,21 +3,24 @@
     "name": "Дмитрий В.",
     "business": "Автосервис «Мотор», Казань",
     "text": "За три минуты получил сайт, который выглядит лучше, чем у конкурентов с бюджетом в сто тысяч.",
-    "photo": "/static/reviews/motor.svg",
-    "alt": "Автосервис «Мотор», Казань"
+    "photo": "/static/reviews/motor.jpg",
+    "alt": "Автосервис «Мотор», Казань",
+    "fallback": "/static/reviews/motor.svg"
   },
   {
     "name": "Мария С.",
     "business": "Пекарня «Тёплый хлеб», Москва",
     "text": "Клиенты находят нас через Яндекс. Сайт работает сам, я только пеку хлеб.",
-    "photo": "/static/reviews/hleb.svg",
-    "alt": "Пекарня «Тёплый хлеб», Москва"
+    "photo": "/static/reviews/hleb.jpg",
+    "alt": "Пекарня «Тёплый хлеб», Москва",
+    "fallback": "/static/reviews/hleb.svg"
   },
   {
     "name": "Олег К.",
     "business": "Барбершоп «Борода», Саранск",
     "text": "Запись через сайт пошла на второй день. Я не сделал ничего, кроме ссылки.",
-    "photo": "/static/reviews/boroda.svg",
-    "alt": "Барбершоп «Борода», Саранск"
+    "photo": "/static/reviews/boroda.jpg",
+    "alt": "Барбершоп «Борода», Саранск",
+    "fallback": "/static/reviews/boroda.svg"
   }
 ]

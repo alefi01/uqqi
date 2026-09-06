@@ -42,6 +42,40 @@ function PasswordField({ label = 'Пароль', name, placeholder = '•••�
   );
 }
 
+// Подтверждение пароля с подсказками: правила загораются по мере ввода,
+// последняя строка — совпадение. Гейт на кнопке остаётся прежним (ok),
+// подсказка только объясняет, чего не хватает.
+function PasswordConfirm({ pw, value, onChange, label = 'Повтор пароля' }) {
+  const [show, setShow] = useState(false);
+  const rules = [
+    { id: 'len',   ok: (value || '').length >= 8,                       text: 'Не короче 8 символов' },
+    { id: 'mix',   ok: /[a-zA-Zа-яА-Я]/.test(value) && /\d/.test(value), text: 'Есть буквы и цифры' },
+    { id: 'match', ok: !!value && value === pw,                          text: 'Совпадает с паролем' },
+  ];
+  const bad = value && rules.some(r => !r.ok);
+  return (
+    <div className="field">
+      <label className="field__label">{label}</label>
+      <div style={{ position: 'relative' }}>
+        <input className={'input' + (bad ? ' is-error' : (value && !bad ? ' is-valid' : ''))}
+          type={show ? 'text' : 'password'} placeholder="••••••••"
+          style={{ paddingRight: '2.6rem' }} value={value} onChange={onChange} />
+        <button type="button" onClick={() => setShow(s => !s)} aria-label={show ? 'Скрыть пароль' : 'Показать пароль'}
+          style={{ position: 'absolute', right: '.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-muted)', display: 'flex' }}>
+          <i data-lucide={show ? 'eye-off' : 'eye'} style={{ width: 17, height: 17 }}></i>
+        </button>
+      </div>
+      <ul className="pwrules" aria-live="polite">
+        {rules.map(r => (
+          <li key={r.id} className={'pwrule' + (r.ok ? ' is-ok' : '')}>
+            <i data-lucide={r.ok ? 'check' : 'circle'}></i>{r.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ---------- Вход ----------
 function ScreenLogin({ nav, ctx }) {
   const [email, setEmail] = useState(ctx.email || '');
@@ -132,11 +166,7 @@ function ScreenRegister({ nav, ctx }) {
                 <input className="input" type="email" placeholder="you@example.ru" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               <PasswordField label="Пароль" value={pw} onChange={e => setPw(e.target.value)} />
-              <div className="field">
-                <label className="field__label">Повтор пароля</label>
-                <input className={'input' + (mismatch ? ' is-error' : (pw2 && !mismatch ? ' is-valid' : ''))} type="password" placeholder="••••••••" value={pw2} onChange={e => setPw2(e.target.value)} />
-                {mismatch && <span className="field__err">Пароли не совпадают</span>}
-              </div>
+              <PasswordConfirm pw={pw} value={pw2} onChange={e => setPw2(e.target.value)} />
               <label className="check">
                 <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} />
                 <span>Я принимаю <a className="linklike" href="/oferta" target="_blank">оферту</a> и <a className="linklike" href="/privacy" target="_blank">политику конфиденциальности</a>.</span>
@@ -331,11 +361,7 @@ function ScreenReset({ nav, ctx }) {
             <p className="auth__sub">Придумайте новый пароль для входа в кабинет.</p>
             <form className="auth__form" onSubmit={submit}>
               <PasswordField label="Новый пароль" value={pw} onChange={e => setPw(e.target.value)} />
-              <div className="field">
-                <label className="field__label">Повтор пароля</label>
-                <input className={'input' + (mismatch ? ' is-error' : (pw2 && !mismatch ? ' is-valid' : ''))} type="password" placeholder="••••••••" value={pw2} onChange={e => setPw2(e.target.value)} />
-                {mismatch && <span className="field__err">Пароли не совпадают</span>}
-              </div>
+              <PasswordConfirm pw={pw} value={pw2} onChange={e => setPw2(e.target.value)} />
               {err && <div className="field__err">{err}</div>}
               <button className="btn btn--primary btn--block btn--lg" type="submit" disabled={!ok || busy}>{busy ? 'Сохраняем…' : 'Сохранить пароль'}</button>
             </form>
