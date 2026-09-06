@@ -66,6 +66,11 @@ async def security_headers(request: Request, call_next):
     else:
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
 
+    # Витрина отдаёт мобильный шаблон по User-Agent на том же адресе
+    # (dynamic serving). Без Vary поисковики и кеши считают ответ одним и тем
+    # же для всех устройств и могут показать десктопную версию на телефоне.
+    response.headers["Vary"] = "User-Agent"
+
     # Access-лог: только метаданные, без тел запросов (не пишем пароли/токены)
     log_access(ip, method, path, response.status_code, ua, elapsed_ms)
     return response
@@ -633,8 +638,13 @@ async def robots_txt(request: Request, db: Session = Depends(get_db)):
         # Нелегитимный (серый непроплаченный) или демо — запрещаем индексацию
         if company and not _indexable(company):
             return "User-agent: *\nDisallow: /\n"
+        # Clean-param — директива Яндекса: параметры предпросмотра не создают
+        # дублей карточки в индексе (Google их и так игнорирует по noindex).
         return (
-            "User-agent: *\nAllow: /\n"
+            "User-agent: *\n"
+            "Allow: /\n"
+            "Disallow: /api/\n"
+            "Clean-param: variant&preview\n"
             f"Sitemap: https://{host}/sitemap.xml\n"
         )
     # Кабинет — не индексируем
@@ -642,7 +652,10 @@ async def robots_txt(request: Request, db: Session = Depends(get_db)):
         return "User-agent: *\nDisallow: /\n"
     # Главный домен
     return (
-        "User-agent: *\nAllow: /\n"
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /api/\n"
+        "Disallow: /health\n"
         f"Sitemap: https://{settings.BASE_DOMAIN}/sitemap.xml\n"
     )
 
@@ -651,10 +664,15 @@ async def robots_txt(request: Request, db: Session = Depends(get_db)):
 async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
     """sitemap.xml. На главном домене — список всех активных сайтов; на поддомене — сам сайт."""
     host = request.headers.get("host", settings.BASE_DOMAIN).split(":")[0]
-    urls = []
+    # (url, lastmod|None, priority)
+    urls: list[tuple[str, object, str]] = []
     if host == settings.BASE_DOMAIN or host == f"www.{settings.BASE_DOMAIN}":
-        # Главный: лендинг + все активные оплаченные сайты
-        urls.append(f"https://{settings.BASE_DOMAIN}/")
+        base = f"https://{settings.BASE_DOMAIN}"
+        urls.append((f"{base}/", None, "1.0"))
+        # Юр-страницы: для поисковиков это сигнал доверия у сервиса, который
+        # принимает платежи, — раньше они в карту сайта не попадали.
+        for path in ("/oferta", "/privacy", "/contacts"):
+            urls.append((f"{base}{path}", None, "0.3"))
         companies = db.query(Company).filter(
             Company.is_active == True,  # noqa: E712
             Company.build_status == "ready",
@@ -662,17 +680,29 @@ async def sitemap_xml(request: Request, db: Session = Depends(get_db)):
         for c in companies:
             # Только легитимные клиентские сайты (self-service или оплаченный claim).
             # Серые непроплаченные и демо-витрины НЕ индексируем.
+            # ⚠️ Это чужие хосты (поддомены). Вебмастер их из карты главного
+            # домена не возьмёт, но ссылка помогает обходу; свою карту каждый
+            # поддомен отдаёт сам (ветка ниже).
             if _indexable(c):
-                urls.append(f"https://{c.slug}.{settings.BASE_DOMAIN}/")
+                urls.append((f"https://{c.slug}.{settings.BASE_DOMAIN}/",
+                             c.last_parsed_at or c.created_at, "0.8"))
     elif not is_cabinet_host(request):
         company = get_company_by_request(request, db)
         if company and _indexable(company):
-            urls.append(f"https://{company.slug}.{settings.BASE_DOMAIN}/")
+            urls.append((f"https://{company.slug}.{settings.BASE_DOMAIN}/",
+                         company.last_parsed_at or company.created_at, "1.0"))
 
     xml = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-    for u in urls:
-        xml.append(f"  <url><loc>{u}</loc></url>")
+    for loc, lastmod, priority in urls:
+        row = f"  <url><loc>{loc}</loc>"
+        if lastmod is not None:
+            try:
+                row += f"<lastmod>{lastmod.date().isoformat()}</lastmod>"
+            except AttributeError:
+                pass
+        row += f"<priority>{priority}</priority></url>"
+        xml.append(row)
     xml.append("</urlset>")
     return Response(content="\n".join(xml), media_type="application/xml")
 
@@ -762,6 +792,9 @@ def _landing_context(request: Request, db: Session) -> dict:
         "works":   _landing_works(),
         "reviews": _landing_reviews(),
         "plans":   PLANS,
+        # Коды из .env. Пустые — мета-тег не выводится вовсе.
+        "yandex_verification": settings.YANDEX_VERIFICATION,
+        "google_verification": settings.GOOGLE_VERIFICATION,
     }
 
 

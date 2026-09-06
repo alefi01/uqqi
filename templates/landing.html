@@ -6,6 +6,8 @@
 <title>UQQI.RU — сайт за минуту бесплатно и навсегда</title>
 <meta name="description" content="Вставьте ссылку на карточку Яндекс Карт — за минуту получите работающий сайт с фото, часами, услугами и отзывами. Базовый сайт бесплатный навсегда. Pro — премиум-оформления и чат с клиентами, 990 ₽ в месяц.">
 <link rel="canonical" href="https://uqqi.ru/">
+{% if yandex_verification %}<meta name="yandex-verification" content="{{ yandex_verification }}">{% endif %}
+{% if google_verification %}<meta name="google-site-verification" content="{{ google_verification }}">{% endif %}
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:title" content="uqqi — бесплатный сайт для вашего дела за минуту">
@@ -13,7 +15,12 @@
 <meta property="og:url" content="https://uqqi.ru/">
 <meta property="og:site_name" content="uqqi">
 <meta property="og:locale" content="ru_RU">
+<meta property="og:image" content="https://uqqi.ru/static/hero.jpg">
+<meta property="og:image:width" content="1920">
+<meta property="og:image:height" content="1080">
+<meta property="og:image:alt" content="uqqi.ru — сайт для малого бизнеса из карточки Яндекс Карт">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://uqqi.ru/static/hero.jpg">
 <meta name="twitter:title" content="uqqi — бесплатный сайт для вашего дела за минуту">
 <meta name="twitter:description" content="Ссылка на карточку Яндекс Карт — и через минуту у вас свой сайт.">
 <script type="application/ld+json">
@@ -262,31 +269,22 @@ ul,ol{list-style:none;}
 .hero .btn--primary:hover{background:#242933;transform:translateY(-1px);box-shadow:0 16px 38px rgba(20,23,31,.28);}
 /* Стеклянная кнопка: переход длинный и по одной кривой — резкий скачок
    цвета на такой поверхности заметнее, чем на сплошной заливке. */
+/* Стеклянная кнопка: всё едет одним переходом по одной кривой и одной
+   длительности — разнобой в таймингах и читается как «дёрганый» ховер.
+   Подъём убран: сдвиг на 2px на стекле заметен как рывок сильнее, чем
+   изменение прозрачности. */
 .hero .btn--outline{background:rgba(255,255,255,.52);color:var(--ink);font-weight:500;
   border-color:rgba(255,255,255,.75);backdrop-filter:blur(14px) saturate(1.25);
-  -webkit-backdrop-filter:blur(14px) saturate(1.25);box-shadow:none;
-  transition:background 760ms var(--ease),border-color 760ms var(--ease),
-             color 620ms var(--ease),transform 760ms var(--ease),box-shadow 760ms var(--ease);}
-.hero .btn--outline:hover,.hero .btn--outline:focus-visible{background:rgba(255,255,255,.86);
-  border-color:#FFFFFF;transform:translateY(-2px);box-shadow:0 12px 30px rgba(20,23,31,.12);}
+  -webkit-backdrop-filter:blur(14px) saturate(1.25);box-shadow:0 0 0 rgba(20,23,31,0);
+  transition:background-color 700ms var(--ease),border-color 700ms var(--ease),
+             color 700ms var(--ease),box-shadow 700ms var(--ease);}
+.hero .btn--outline:hover,.hero .btn--outline:focus-visible{background:rgba(255,255,255,.88);
+  border-color:#FFFFFF;box-shadow:0 10px 26px rgba(20,23,31,.12);}
 .hero .btn:hover svg{transform:none;}
 .hero__note{margin-top:1rem;font-size:.85rem;color:var(--ink-2);font-weight:500;min-height:1.2em;
   max-width:46ch;margin-inline:auto;}
 /* Вращающееся кольцо у главного действия — тонкая кайма, не свечение.
    Живёт на обёртке: псевдоэлемент самой кнопки занят заливкой от курсора. */
-/* Магнитная кнопка: вокруг главного действия медленно дрейфуют точки,
-   при наведении слетаются к кнопке и гаснут. Дрейф и притяжение разнесены по
-   двум слоям — иначе анимация и переход дерутся за один transform. */
-.magnet{position:relative;display:inline-flex;max-inline-size:100%;}
-.magnet > .btn{width:100%;}
-.magnet__p{position:absolute;left:50%;top:50%;width:7px;height:7px;pointer-events:none;
-  transform:translate(var(--x),var(--y));opacity:.5;
-  transition:transform 900ms var(--ease-out),opacity 560ms linear;}
-.magnet__p i{display:block;width:100%;height:100%;border-radius:50%;background:var(--mark);}
-.js .magnet__p i{animation:drift var(--dur,7s) ease-in-out var(--del,0s) infinite alternate;}
-.magnet.pull .magnet__p{transform:translate(0,0) scale(.35);opacity:0;}
-@keyframes drift{from{transform:translate(0,0)}to{transform:translate(var(--dx),var(--dy))}}
-@media(max-width:640px){.magnet__p{display:none;}}
 .scrollhint{display:inline-flex;align-items:center;gap:.6rem;margin-top:clamp(2rem,5vw,3.4rem);
   font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);}
 .scrollhint__m{width:20px;height:32px;border:1.5px solid var(--ink-2);border-radius:var(--r-pill);
@@ -296,7 +294,7 @@ ul,ol{list-style:none;}
 .js .scrollhint__m::after{animation:wheel 1.8s var(--ease) infinite;}
 @keyframes wheel{0%{transform:translate(-50%,0);opacity:1}70%{transform:translate(-50%,11px);opacity:0}100%{opacity:0}}
 @media(max-width:520px){.hero__cta{flex-direction:column;align-items:stretch;}
-  .hero__cta .btn,.hero__cta .magnet,.hero__cta .demo-slot{width:100%;}}
+  .hero__cta .btn,.hero__cta .demo-slot{width:100%;}}
 
 /* ── витрина: живой сайт клиента ───────────────────────────────────────── */
 .stage{position:relative;z-index:3;background:var(--page);}
@@ -328,7 +326,13 @@ ul,ol{list-style:none;}
 .stage__cap a{border-bottom:1px solid var(--line-2);}
 .stage__cap a:hover{color:var(--ink);border-color:var(--ink);}
 .demo-slot{position:relative;display:inline-flex;}
-.demo-slot .btn,.demo-spin,.demo-link{transition:opacity var(--t-base) linear;}
+/* ⚠️ Это правило идёт ПОЗЖЕ `.hero .btn--outline` и при той же специфичности
+   перетирало весь transition кнопки — из-за этого ховер «Показать готовый
+   сайт» срабатывал мгновенно. Поэтому здесь перечислены и цветовые переходы,
+   а не только opacity подмены кнопки на ссылку. */
+.demo-spin,.demo-link{transition:opacity var(--t-base) linear;}
+.demo-slot .btn{transition:background-color 700ms var(--ease),border-color 700ms var(--ease),
+  color 700ms var(--ease),box-shadow 700ms var(--ease),opacity var(--t-base) linear;}
 .demo-spin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;}
 .demo-spin__ring{width:20px;height:20px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--mark);animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -622,7 +626,6 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
   .js .reveal,.js .reveal--zoom{opacity:1;transform:none;}
   .js .hero__sub,.js .hero__cta,.js .scrollhint,.js .nav__in{animation:none;opacity:1;transform:none;}
   .js .hero h1 .ln > span{animation:none;transform:none;}
-  .js .magnet__p i{animation:none;}
   /* Ничего не прилипает и не едет: витрина листается обычной прокруткой,
      карточки-возражения идут подряд. Ни один блок при этом не пропадает. */
   .hs--js .hs__sticky{position:static;height:auto;padding-bottom:var(--section);}
@@ -681,7 +684,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       <p class="hero__sub">Вставьте ссылку на карточку Яндекс Карт — фото, часы, услуги, цены и отзывы перенесём сами. Базовый сайт бесплатный навсегда.</p>
     </div>
     <div class="hero__cta">
-      <span class="magnet" id="magnetCta"><a href="https://lk.uqqi.ru/" class="btn btn--primary btn--wipe">Создать сайт бесплатно</a></span>
+      <a href="https://lk.uqqi.ru/" class="btn btn--primary btn--wipe">Создать сайт бесплатно</a>
       <div class="demo-slot" id="demoSlot">
         <button type="button" class="btn btn--outline" id="demoBtn" onclick="showRandomSite()">Показать готовый сайт</button>
         <div class="demo-spin" id="demoSpin"><span class="demo-spin__ring"></span></div>
@@ -1414,40 +1417,6 @@ function showRandomSite(){
   });
 })();
 
-/* Магнитная кнопка: точки вокруг главного действия. Раскладываем по кольцу
-   с разбросом, каждой — свой медленный дрейф; на наведении класс .pull
-   стягивает их к центру кнопки и гасит. Точки декоративные и вне потока,
-   поэтому на клавиатуру и скринридер не влияют. */
-(function(){
-  var wrap=document.getElementById('magnetCta');
-  if(!wrap) return;
-  if(matchMedia('(pointer:coarse)').matches) return;   // на телефоне ни к чему
-  var N=22, R0=86, R1=196, frag=document.createDocumentFragment();
-  for(var i=0;i<N;i++){
-    var a=(i/N)*Math.PI*2 + (Math.random()-.5)*.42;
-    var r=R0+Math.random()*(R1-R0);
-    var p=document.createElement('span');
-    p.className='magnet__p';
-    p.setAttribute('aria-hidden','true');
-    p.style.setProperty('--x', Math.round(Math.cos(a)*r*1.55)+'px');
-    p.style.setProperty('--y', Math.round(Math.sin(a)*r*.62)+'px');
-    p.style.setProperty('--dx', (Math.random()*14-7).toFixed(1)+'px');
-    p.style.setProperty('--dy', (Math.random()*12-6).toFixed(1)+'px');
-    p.style.setProperty('--dur', (6+Math.random()*5).toFixed(1)+'s');
-    p.style.setProperty('--del', (-Math.random()*6).toFixed(1)+'s');
-    p.style.opacity=(.28+Math.random()*.34).toFixed(2);
-    p.appendChild(document.createElement('i'));
-    frag.appendChild(p);
-  }
-  wrap.appendChild(frag);
-  var btn=wrap.querySelector('.btn');
-  function on(){ wrap.classList.add('pull'); }
-  function off(){ wrap.classList.remove('pull'); }
-  btn.addEventListener('mouseenter', on);
-  btn.addEventListener('mouseleave', off);
-  btn.addEventListener('focus', on);
-  btn.addEventListener('blur', off);
-})();
 </script>
 </body>
 </html>

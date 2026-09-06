@@ -6,6 +6,7 @@
 {{ company.title }}{% if company.category %} — {{ company.category|replace(', ', ', ') }}{% endif %}{% if company.address %} по адресу {{ company.address }}{% endif %}.{% if company.about_text %} {{ company.about_text[:140] }}{% else %} Услуги, фото, отзывы, часы работы, контакты.{% endif %}
 {%- endset -%}
 {%- set _img = company.gallery_photos[0] if company.gallery_photos else (company.logo_url or '') -%}
+{%- set _imgs = (company.gallery_photos[:3] if company.gallery_photos else ([company.logo_url] if company.logo_url else [])) -%}
 
 <title>{{ _title }}</title>
 <meta name="description" content="{{ _desc|trim }}">
@@ -33,8 +34,8 @@
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   "name": {{ company.title|tojson }},
-  "url": {{ site_url|tojson }}{% if _img %},
-  "image": {{ _img|tojson }}{% endif %}{% if company.about_text %},
+  "url": {{ site_url|tojson }}{% if _imgs %},
+  "image": [{% for i in _imgs %}{{ i|tojson }}{{ ',' if not loop.last }}{% endfor %}]{% endif %}{% if company.about_text %},
   "description": {{ company.about_text|tojson }}{% endif %}{% if company.phone %},
   "telephone": {{ company.phone|tojson }}{% endif %}{% if company.address %},
   "address": {
@@ -50,6 +51,22 @@
     "@type": "GeoCoordinates",
     "latitude": {{ (company.coordinates.split(',')[0] if ',' in company.coordinates else '')|tojson }},
     "longitude": {{ (company.coordinates.split(',')[1] if ',' in company.coordinates else '')|tojson }}
-  }{% endif %}
+  }{% endif %}{% if company.hours %},
+  "openingHoursSpecification": [
+    {%- set _days = {'monday':'Monday','tuesday':'Tuesday','wednesday':'Wednesday','thursday':'Thursday','friday':'Friday','saturday':'Saturday','sunday':'Sunday'} -%}
+    {%- set _open = [] -%}
+    {%- for e in company.hours if not e.closed and e.time and '–' in e.time or (not e.closed and e.time and '-' in e.time) -%}
+      {%- set _ = _open.append(e) -%}
+    {%- endfor -%}
+    {% for e in _open %}{
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": {{ _days.get((e.day or '')|lower, (e.day or ''))|tojson }},
+      "opens": {{ (e.time|replace('–','-')).split('-')[0]|trim|tojson }},
+      "closes": {{ (e.time|replace('–','-')).split('-')[1]|trim|tojson }}
+    }{{ ',' if not loop.last }}{% endfor %}
+  ]{% endif %}{% if company.avg_bill %},
+  "priceRange": {{ company.avg_bill|tojson }}{% endif %}{% if company.yandex_url %},
+  "hasMap": {{ company.yandex_url|tojson }}{% endif %}{% if company.social_links %},
+  "sameAs": [{% for l in company.social_links %}{{ (l.url if l.url is defined else l)|tojson }}{{ ',' if not loop.last }}{% endfor %}]{% endif %}
 }
 </script>

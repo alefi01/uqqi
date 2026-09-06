@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     SMTP_FROM:      str  = "clients@uqqi.ru"
     SUPPORT_EMAIL:  str  = "support@uqqi.ru"
 
+    # Подтверждение прав в Яндекс.Вебмастере и Google Search Console.
+    # Пустые по умолчанию — мета-тег не выводится, пока код не задан в .env.
+    YANDEX_VERIFICATION: str = ""
+    GOOGLE_VERIFICATION: str = ""
+
     # Автообновление данных
     AUTO_REFRESH_ENABLED: bool = True
 
