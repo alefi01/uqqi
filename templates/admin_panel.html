@@ -142,11 +142,25 @@
 
     /* ── SAVE BAR ── */
     .save-bar { position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border); padding:.85rem 2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-    .save-msg { font-size:.82rem; color:var(--green); opacity:0; transition:opacity .3s; }
-    .save-msg.show { opacity:1; }
     .save-btn { padding:.6rem 1.6rem; border-radius:8px; border:none; background:var(--accent); color:#fff; font-size:.88rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .2s; }
     .save-btn:hover { opacity:.85; }
     .save-btn:disabled { opacity:.5; cursor:not-allowed; }
+    /* Состояния сохранения: покой / идёт / сохранено. Кнопка в состоянии
+       «идёт» остаётся в полную силу — приглушать её значит сказать
+       «сюда нельзя», а не «это происходит». */
+    .save-state { font-size:.84rem; color:var(--muted,#5C636E); margin-right:auto; }
+    .save-reset { background:none; border:none; font:inherit; font-size:.84rem; color:var(--muted,#5C636E);
+      cursor:pointer; padding:.4rem .6rem; border-radius:8px; }
+    .save-reset:hover { color:var(--ink,#14171F); }
+    .save-btn { display:inline-flex; align-items:center; gap:.5rem; min-height:40px; }
+    .save-btn__spin { display:none; width:15px; height:15px; border-radius:50%;
+      border:2px solid rgba(255,255,255,.45); border-top-color:#fff; animation:savespin .7s linear infinite; }
+    @keyframes savespin { to { transform:rotate(360deg); } }
+    .save-bar[data-state="loading"] .save-btn__spin { display:block; }
+    .save-bar[data-state="loading"] .save-reset,
+    .save-bar[data-state="success"] .save-reset { visibility:hidden; }
+    .save-bar[data-state="success"] .save-btn { background:#0F6540; }
+    @media (prefers-reduced-motion:reduce) { .save-btn__spin { animation:none; } }
 
     /* ── ALERT ── */
     .alert { padding:.65rem 1rem; border-radius:8px; font-size:.85rem; margin-bottom:1rem; }
@@ -409,9 +423,13 @@
 </div>
 
 <!-- SAVE BAR -->
-<div class="save-bar">
-  <span class="save-msg" id="saveMsg">✓ Изменения сохранены</span>
-  <button class="save-btn" id="saveBtn" onclick="saveAll()">Сохранить</button>
+<div class="save-bar" id="saveBar" data-state="initial">
+  <span class="save-state" id="saveState">Есть несохранённые изменения</span>
+  <button class="save-reset" id="saveReset" type="button" onclick="resetSaveState()">Сбросить</button>
+  <button class="save-btn" id="saveBtn" onclick="saveAll()">
+    <span class="save-btn__spin" aria-hidden="true"></span>
+    <span class="save-btn__txt">Сохранить</span>
+  </button>
 </div>
 
 <script>
@@ -574,7 +592,7 @@ async function saveOrder() {
 async function saveAll() {
   const btn = document.getElementById('saveBtn');
   btn.disabled = true;
-  btn.textContent = 'Сохраняю...';
+  setSaveState('loading', 'Сохраняю изменения', 'Сохраняю…');
 
   // Основное
   const title    = document.getElementById('f-title').value.trim();
@@ -614,15 +632,31 @@ async function saveAll() {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(await res.text());
-    const msg = document.getElementById('saveMsg');
-    msg.classList.add('show');
-    setTimeout(() => msg.classList.remove('show'), 3000);
+    setSaveState('success', 'Изменения сохранены', 'Сохранено');
+    setTimeout(() => setSaveState('initial', 'Есть несохранённые изменения', 'Сохранить'), 2500);
   } catch(e) {
+    setSaveState('initial', 'Есть несохранённые изменения', 'Сохранить');
     showAlert('Ошибка: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Сохранить';
   }
+}
+
+/* Состояние панели сохранения. Кнопка при отправке не гасится: подпись
+   меняется на «Сохраняю…» и появляется спиннер. */
+function setSaveState(state, note, label) {
+  const bar = document.getElementById('saveBar');
+  if (!bar) return;
+  bar.dataset.state = state;
+  const st = document.getElementById('saveState');
+  const tx = bar.querySelector('.save-btn__txt');
+  if (st && note) st.textContent = note;
+  if (tx && label) tx.textContent = label;
+}
+
+function resetSaveState() {
+  // Сброс — это отказ от несохранённых правок, поэтому спрашиваем.
+  if (confirm('Отменить несохранённые изменения и перезагрузить данные?')) location.reload();
 }
 
 // ── ДИЗАЙН A/B ────────────────────────────────────────────────

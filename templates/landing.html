@@ -873,7 +873,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       <div class="rev__slides">
         {% for r in reviews %}
         <article class="rev__slide{% if loop.first %} on{% endif %}" aria-roledescription="слайд" aria-label="{{ loop.index }} из {{ reviews|length }}">
-          <img class="rev__photo" src="{{ r.photo }}" alt="{{ r.alt|default(r.business) }}" loading="lazy" decoding="async">
+          <img class="rev__photo" src="{{ r.photo }}" data-fallback="{{ r.fallback|default('') }}" alt="{{ r.alt|default(r.business) }}" loading="lazy" decoding="async">
           <div>
             <p class="rev__name">{{ r.name }}</p>
             <p class="rev__biz">{{ r.business }}</p>
@@ -985,7 +985,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       </div>
     </div>
     <div class="foot__bottom">
-      <span>© 2026 uqqi.ru · Самозанятый Запорожченко М. Р. · ИНН 610210547699</span>
+      <span>© 2026 uqqi.ru · ИП Запорожченко Е. Е. · ИНН 610204028543</span>
     </div>
   </div>
 </footer>
@@ -1193,6 +1193,17 @@ function showRandomSite(){
     card.addEventListener('mouseleave', function(){ stop(); i=0; img.src=shots[0]; });
     card.addEventListener('focusin', function(){ stop(); timer=setInterval(tick,1400); });
     card.addEventListener('focusout', function(){ stop(); i=0; img.src=shots[0]; });
+  });
+})();
+
+/* Фото заведений в отзывах: если владелец ещё не положил файл, вместо
+   битой картинки показываем заглушку того же формата. */
+(function(){
+  document.querySelectorAll('.rev__photo[data-fallback]').forEach(function(img){
+    img.addEventListener('error', function(){
+      var fb=img.getAttribute('data-fallback');
+      if(fb && img.src.indexOf(fb)===-1) img.src=fb;
+    }, {once:true});
   });
 })();
 
