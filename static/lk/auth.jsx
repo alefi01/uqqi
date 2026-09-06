@@ -70,7 +70,7 @@ function ScreenLogin({ nav, ctx }) {
             <form className="auth__form" onSubmit={submit}>
               <div className="field">
                 <label className="field__label">Email</label>
-                <input className="input" type="email" placeholder="you@example.ru" value={email} onChange={e => setEmail(e.target.value)} required />
+                <input className="input" type="email" placeholder="Введите ваш email" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               <PasswordField value={pw} onChange={e => setPw(e.target.value)} />
               {err && <div className="field__err" style={{ marginTop: '-.3rem' }}>{err}</div>}
@@ -121,11 +121,11 @@ function ScreenRegister({ nav, ctx }) {
         <div className="auth__main">
           <div className="auth__box">
             <h1 className="auth__h">Создать аккаунт</h1>
-            <p className="auth__sub">Бесплатно. Первый сайт — 7 дней пробного периода.</p>
+            <p className="auth__sub">Бесплатно. Базовый сайт остаётся бесплатным навсегда.</p>
             <form className="auth__form" onSubmit={submit}>
               <div className="field">
                 <label className="field__label">Email</label>
-                <input className="input" type="email" placeholder="you@example.ru" value={email} onChange={e => setEmail(e.target.value)} required />
+                <input className="input" type="email" placeholder="Введите ваш email" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               <PasswordField label="Пароль" value={pw} onChange={e => setPw(e.target.value)} />
               <div className="field">
@@ -260,7 +260,7 @@ function ScreenForgot({ nav, ctx }) {
             <form className="auth__form" onSubmit={submit}>
               <div className="field">
                 <label className="field__label">Email</label>
-                <input className="input" type="email" placeholder="you@example.ru" value={email} onChange={e => setEmail(e.target.value)} required />
+                <input className="input" type="email" placeholder="Введите ваш email" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
               <button className="btn btn--primary btn--block btn--lg" type="submit" disabled={busy}>{busy ? 'Отправляем…' : 'Отправить ссылку для сброса'}</button>
             </form>
