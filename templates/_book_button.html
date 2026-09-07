@@ -1,0 +1,18 @@
+{# Кнопка «Записаться» для витрин. Один вид разметки на все двенадцать оформлений.
+
+   Ожидает переменные (задаются через {% with %} на месте вызова):
+     book_class — классы кнопки в палитре оформления (обязательно);
+     book_text  — надпись, по умолчанию «Записаться».
+
+   Что рендерит, решает book_mode из контекста витрины (app/main._book_mode):
+     'slots'    — <button data-book>: открывает наш виджет записи;
+     'external' — обычная ссылка на внешний сервис владельца;
+     'off'      — ничего.
+   Так бесплатные оформления получают только внешнюю ссылку, а Pro с
+   настроенным графиком — полноценную запись, и разметка у них одна. #}
+{%- set _txt = book_text|default('Записаться') -%}
+{%- if book_mode == 'slots' -%}
+<button type="button" class="{{ book_class }}" data-book>{{ _txt }}</button>
+{%- elif book_mode == 'external' and company.book_url -%}
+<a class="{{ book_class }}" href="{{ company.book_url }}" target="_blank" rel="nofollow noopener">{{ _txt }}</a>
+{%- endif -%}

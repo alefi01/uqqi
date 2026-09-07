@@ -1,0 +1,281 @@
+{# Онлайн-запись на витрине (Pro). Подключается в конце body премиум-оформлений.
+   Открывается любой кнопкой с data-book, а также глобальной функцией uqqiBook().
+   Самодостаточен: свой CSS и JS, тот же origin, никаких зависимостей.
+
+   Показывается ТОЛЬКО при book_mode == 'slots' — режим включается, лишь когда
+   владелец настроил график (см. app/booking.py). Внешний сервис и «кнопки нет»
+   этот файл не рендерят вовсе. #}
+{% if book_mode == 'slots' %}
+<style>
+.uqbk{position:fixed;inset:0;z-index:9000;display:none;}
+.uqbk.open{display:block;}
+.uqbk__veil{position:absolute;inset:0;background:rgba(12,14,18,.55);backdrop-filter:blur(3px);}
+.uqbk__box{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(560px,calc(100vw - 2rem));max-height:min(86vh,760px);overflow-y:auto;
+  background:#fff;color:#14171F;border-radius:20px;padding:1.5rem;
+  box-shadow:0 30px 80px rgba(0,0,0,.35);
+  font-family:system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.5;}
+@media(max-width:560px){
+  /* На телефоне — лист снизу: до кнопок дотягивается большой палец. */
+  .uqbk__box{top:auto;bottom:0;left:0;transform:none;width:100%;max-width:none;
+    max-height:92vh;border-radius:20px 20px 0 0;padding:1.2rem 1rem 1.4rem;}
+}
+.uqbk__head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.1rem;}
+.uqbk__t{font-size:1.25rem;font-weight:700;letter-spacing:-.02em;margin:0;}
+.uqbk__sub{font-size:.88rem;color:#5C636E;margin:.25rem 0 0;}
+.uqbk__x{flex:none;width:40px;height:40px;border:0;border-radius:50%;background:#F1F3F6;
+  color:#14171F;cursor:pointer;font-size:1.3rem;line-height:1;}
+.uqbk__x:hover{background:#E4E7EC;}
+.uqbk__lbl{display:block;font-size:.78rem;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:#5C636E;margin:1.1rem 0 .5rem;}
+.uqbk__days{display:flex;gap:.5rem;overflow-x:auto;padding-bottom:.4rem;}
+.uqbk__day{flex:none;min-width:64px;min-height:66px;padding:.5rem .6rem;border-radius:12px;
+  border:1px solid #E6E7E3;background:#fff;color:#14171F;cursor:pointer;text-align:center;
+  transition:border-color .2s,background .2s;}
+.uqbk__day b{display:block;font-size:1.15rem;font-weight:700;}
+.uqbk__day span{display:block;font-size:.72rem;color:#5C636E;}
+.uqbk__day:hover{border-color:#14171F;}
+.uqbk__day[aria-pressed="true"]{background:#14171F;border-color:#14171F;color:#fff;}
+.uqbk__day[aria-pressed="true"] span{color:#C9CED6;}
+.uqbk__slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:.5rem;}
+.uqbk__slot{min-height:44px;padding:.6rem .4rem;border-radius:10px;border:1px solid #E6E7E3;
+  background:#fff;color:#14171F;font-size:.95rem;font-weight:600;cursor:pointer;
+  transition:border-color .2s,background .2s;}
+.uqbk__slot:hover{border-color:#14171F;}
+.uqbk__slot[aria-pressed="true"]{background:#14171F;border-color:#14171F;color:#fff;}
+.uqbk__field{margin-top:.8rem;}
+.uqbk__field input,.uqbk__field select,.uqbk__field textarea{width:100%;min-height:48px;
+  padding:.7rem .9rem;border:1px solid #DCDEDA;border-radius:12px;font:inherit;color:#14171F;
+  background:#fff;}
+.uqbk__field textarea{min-height:80px;resize:vertical;}
+.uqbk__field input:focus,.uqbk__field select:focus,.uqbk__field textarea:focus{
+  outline:2px solid #B33A0C;outline-offset:1px;border-color:#B33A0C;}
+.uqbk__go{width:100%;min-height:54px;margin-top:1.2rem;border:0;border-radius:99px;
+  background:#14171F;color:#fff;font:inherit;font-weight:600;font-size:1rem;cursor:pointer;
+  transition:background .3s;}
+.uqbk__go:hover:not(:disabled){background:#2A2F3A;}
+.uqbk__go:disabled{opacity:.55;cursor:default;}
+.uqbk__note{font-size:.8rem;color:#5C636E;margin-top:.7rem;text-align:center;}
+.uqbk__err{margin-top:.8rem;padding:.7rem .9rem;border-radius:10px;background:#FBEAE2;
+  color:#8F2E08;font-size:.9rem;}
+.uqbk__ok{text-align:center;padding:1.4rem .5rem;}
+.uqbk__ok svg{width:56px;height:56px;color:#0F6540;margin:0 auto 1rem;}
+.uqbk__ok h3{font-size:1.2rem;margin:0 0 .5rem;}
+.uqbk__ok p{color:#5C636E;margin:0;}
+.uqbk__empty{padding:1.2rem;border-radius:12px;background:#F6F7F9;color:#5C636E;font-size:.92rem;}
+@media(prefers-reduced-motion:reduce){.uqbk *{transition:none !important;}}
+</style>
+
+<div class="uqbk" id="uqbk" role="dialog" aria-modal="true" aria-labelledby="uqbkTitle" hidden>
+  <div class="uqbk__veil" data-uqbk-close></div>
+  <div class="uqbk__box">
+    <div class="uqbk__head">
+      <div>
+        <h2 class="uqbk__t" id="uqbkTitle">Онлайн-запись</h2>
+        <p class="uqbk__sub">{{ company.title }}</p>
+      </div>
+      <button type="button" class="uqbk__x" data-uqbk-close aria-label="Закрыть">&times;</button>
+    </div>
+    <div id="uqbkBody"><div class="uqbk__empty">Загружаем свободное время…</div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var SLUG = {{ company.slug|tojson }};
+  var root = document.getElementById('uqbk');
+  var body = document.getElementById('uqbkBody');
+  if(!root || !body) return;
+
+  var state = {days:[], services:[], date:'', slot:'', loaded:false, sending:false};
+  var lastFocus = null;
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  var WD = ['','пн','вт','ср','чт','пт','сб','вс'];
+  var MN = ['','янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+
+  function open(){
+    lastFocus = document.activeElement;
+    root.hidden = false;
+    root.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if(!state.loaded) load();
+    var f = root.querySelector('button, input, select');
+    if(f) f.focus();
+  }
+  function close(){
+    root.classList.remove('open');
+    root.hidden = true;
+    document.body.style.overflow = '';
+    if(lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  window.uqqiBook = open;
+
+  root.addEventListener('click', function(e){
+    if(e.target.closest('[data-uqbk-close]')) close();
+  });
+  addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !root.hidden) close();
+    // Фокус не должен уходить за пределы окна, пока оно открыто.
+    if(e.key === 'Tab' && !root.hidden){
+      var f = root.querySelectorAll('button,input,select,textarea,[href]');
+      if(!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  });
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-book]');
+    if(t){ e.preventDefault(); open(); }
+  });
+
+  function load(){
+    fetch('/api/booking/' + encodeURIComponent(SLUG) + '/days')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        state.loaded = true;
+        state.days = (d && d.days) || [];
+        state.services = (d && d.services) || [];
+        if(!state.days.length){
+          body.innerHTML = '<div class="uqbk__empty">Свободного времени сейчас нет. ' +
+            'Позвоните нам — подберём удобное.</div>';
+          return;
+        }
+        state.date = state.days[0].date;
+        render();
+        loadSlots();
+      })
+      .catch(function(){
+        body.innerHTML = '<div class="uqbk__empty">Не удалось загрузить расписание. ' +
+          'Обновите страницу или позвоните нам.</div>';
+      });
+  }
+
+  function render(){
+    var h = '<span class="uqbk__lbl">Выберите день</span><div class="uqbk__days">';
+    state.days.forEach(function(d){
+      h += '<button type="button" class="uqbk__day" data-date="' + esc(d.date) + '"' +
+           ' aria-pressed="' + (d.date === state.date ? 'true' : 'false') + '">' +
+           '<b>' + d.day + '</b><span>' + MN[d.month] + ', ' + WD[d.weekday] + '</span></button>';
+    });
+    h += '</div><span class="uqbk__lbl">Время</span>' +
+         '<div class="uqbk__slots" id="uqbkSlots"><div class="uqbk__empty">Загружаем…</div></div>';
+
+    if(state.services.length){
+      h += '<span class="uqbk__lbl">Услуга</span><div class="uqbk__field"><select id="uqbkSvc">' +
+           '<option value="">Не выбрана</option>';
+      state.services.forEach(function(s){ h += '<option>' + esc(s) + '</option>'; });
+      h += '</select></div>';
+    }
+    h += '<span class="uqbk__lbl">Ваши данные</span>' +
+         '<div class="uqbk__field"><input id="uqbkName" type="text" placeholder="Как вас зовут" autocomplete="name"></div>' +
+         '<div class="uqbk__field"><input id="uqbkPhone" type="tel" placeholder="Телефон" autocomplete="tel"></div>' +
+         '<div class="uqbk__field"><textarea id="uqbkNote" placeholder="Комментарий (необязательно)"></textarea></div>' +
+         '<div id="uqbkErr"></div>' +
+         '<button type="button" class="uqbk__go" id="uqbkGo">Записаться</button>' +
+         '<p class="uqbk__note">Мы перезвоним, чтобы подтвердить запись.</p>';
+    body.innerHTML = h;
+
+    body.querySelectorAll('.uqbk__day').forEach(function(b){
+      b.addEventListener('click', function(){
+        state.date = b.getAttribute('data-date');
+        state.slot = '';
+        body.querySelectorAll('.uqbk__day').forEach(function(x){
+          x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+        });
+        loadSlots();
+      });
+    });
+    document.getElementById('uqbkGo').addEventListener('click', send);
+  }
+
+  function loadSlots(){
+    var box = document.getElementById('uqbkSlots');
+    if(!box) return;
+    box.innerHTML = '<div class="uqbk__empty">Загружаем…</div>';
+    fetch('/api/booking/' + encodeURIComponent(SLUG) + '/slots?date=' + encodeURIComponent(state.date))
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        var slots = (d && d.slots) || [];
+        if(!slots.length){
+          box.innerHTML = '<div class="uqbk__empty">В этот день свободного времени нет.</div>';
+          return;
+        }
+        box.innerHTML = slots.map(function(s){
+          return '<button type="button" class="uqbk__slot" data-start="' + esc(s.start) + '"' +
+                 ' aria-pressed="false">' + esc(s.time) + '</button>';
+        }).join('');
+        box.querySelectorAll('.uqbk__slot').forEach(function(b){
+          b.addEventListener('click', function(){
+            state.slot = b.getAttribute('data-start');
+            box.querySelectorAll('.uqbk__slot').forEach(function(x){
+              x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+            });
+          });
+        });
+      })
+      .catch(function(){
+        box.innerHTML = '<div class="uqbk__empty">Не удалось загрузить время.</div>';
+      });
+  }
+
+  function fail(text){
+    var e = document.getElementById('uqbkErr');
+    if(e) e.innerHTML = '<div class="uqbk__err">' + esc(text) + '</div>';
+  }
+
+  function send(){
+    if(state.sending) return;
+    var name = (document.getElementById('uqbkName').value || '').trim();
+    var phone = (document.getElementById('uqbkPhone').value || '').trim();
+    var note = (document.getElementById('uqbkNote').value || '').trim();
+    var svcEl = document.getElementById('uqbkSvc');
+    if(!state.slot){ fail('Выберите время'); return; }
+    if(name.length < 2){ fail('Напишите, как вас зовут'); return; }
+    if(phone.replace(/\D/g, '').length < 10){ fail('Введите телефон полностью'); return; }
+
+    var btn = document.getElementById('uqbkGo');
+    state.sending = true;
+    btn.disabled = true;
+    btn.textContent = 'Записываем…';
+    document.getElementById('uqbkErr').innerHTML = '';
+
+    fetch('/api/booking/' + encodeURIComponent(SLUG) + '/create', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({start: state.slot, name: name, phone: phone,
+                            comment: note, service: svcEl ? svcEl.value : ''})
+    })
+      .then(function(r){ return r.json().then(function(j){ return {ok: r.ok, data: j}; }); })
+      .then(function(res){
+        state.sending = false;
+        btn.disabled = false;
+        btn.textContent = 'Записаться';
+        if(!res.ok){
+          fail((res.data && res.data.detail) || 'Не удалось записаться. Попробуйте ещё раз.');
+          // Слот мог заняться, пока человек заполнял форму — обновляем сетку.
+          loadSlots();
+          return;
+        }
+        body.innerHTML =
+          '<div class="uqbk__ok">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"' +
+          ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>' +
+          '<h3>Записали</h3><p>' + esc(res.data.when) + '. Мы перезвоним для подтверждения.</p></div>';
+      })
+      .catch(function(){
+        state.sending = false;
+        btn.disabled = false;
+        btn.textContent = 'Записаться';
+        fail('Сеть недоступна. Попробуйте ещё раз.');
+      });
+  }
+})();
+</script>
+{% endif %}

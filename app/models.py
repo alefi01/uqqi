@@ -77,7 +77,8 @@ class User(Base):
     agreed_at       = Column(DateTime, nullable=True)
     agreed_ip       = Column(String(64), default="")
 
-    # Триал использован (один на аккаунт за всю жизнь)
+    # Отметка «Pro-триал когда-либо выдавался». Показ НЕ гейтит: с 2026-09
+    # триал получает каждый новый сайт (см. job_tasks.finish_build).
     trial_used      = Column(Boolean, default=False)
     pending_claim_code = Column(String(40), default="")  # claim-код, ожидающий подтверждения email
 
@@ -141,7 +142,15 @@ class Company(Base):
 
     # Логотип
     logo_url        = Column(String(500), default="")
+    # Онлайн-запись. book_url — внешний сервис (Yclients и т.п.), приходит с
+    # Яндекса и правится вручную. booking_mode решает, что делает «Записаться»:
+    #   "off"      — кнопки нет;
+    #   "external" — ведёт на book_url (так работают и бесплатные оформления);
+    #   "slots"    — наша запись со слотами (только Pro и только если владелец
+    #                настроил график: без графика режим не включается).
     book_url        = Column(String(500), default="")
+    booking_mode    = Column(String(16), default="off")
+    _booking        = Column("booking", Text, default="{}")   # настройки слотов
     reviews_count   = Column(String(20), default="")
     catalog_title   = Column(String(50), default="Товары и услуги")  # «Меню» для общепита
     about_text      = Column(Text, default="")       # «Коротко о месте»
@@ -214,6 +223,16 @@ class Company(Base):
 
     def _set_json(self, col: str, value: Any) -> None:
         setattr(self, col, json.dumps(value, ensure_ascii=False))
+
+    @property
+    def booking(self) -> dict:
+        """Настройки записи: длительность слота, горизонт, график по дням, услуги."""
+        v = self._get_json("_booking")
+        return v if isinstance(v, dict) else {}
+
+    @booking.setter
+    def booking(self, value: dict) -> None:
+        self._set_json("_booking", value if isinstance(value, dict) else {})
 
     @property
     def hours(self) -> list[dict]:
@@ -443,6 +462,36 @@ class Job(Base):
 
     def __repr__(self) -> str:
         return f"<Job {self.id} {self.type} {self.status}>"
+
+
+class Booking(Base):
+    """
+    Запись клиента на приём (Pro-фича «Онлайн-запись»).
+
+    slot_start хранится в UTC (naive), как и всё остальное время в проекте;
+    показываем и принимаем в часовом поясе бизнеса (Company.booking['tz']).
+    Занятость слота = существующая запись с тем же slot_start и статусом,
+    отличным от 'canceled'.
+    """
+
+    __tablename__ = "bookings"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    company_id    = Column(Integer, index=True)
+    slot_start    = Column(DateTime, index=True)      # начало слота, UTC
+    duration_min  = Column(Integer, default=60)
+    service       = Column(String(200), default="")   # выбранная услуга (необязательно)
+    name          = Column(String(120), default="")
+    phone         = Column(String(40),  default="")
+    comment       = Column(String(500), default="")
+    status        = Column(String(16), default="new") # new | confirmed | canceled
+    source        = Column(String(16), default="site")
+    visitor_hash  = Column(String(64), default="", index=True)  # для антиспама, без сырого IP
+    notify_msg_id = Column(Integer, nullable=True)    # message_id уведомления владельцу
+    created_at    = Column(DateTime, default=datetime.utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<Booking {self.id} c{self.company_id} {self.slot_start} {self.status}>"
 
 
 class ChatMessage(Base):

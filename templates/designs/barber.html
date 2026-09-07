@@ -122,7 +122,7 @@ footer a{color:var(--brass)}
       {% if company.address %}<span class="pill">{{ company.address }}</span>{% endif %}
     </div>
     <div class="hero__cta">
-      {% if company.book_url %}<a class="btn btn--brass" href="{{ company.book_url }}" target="_blank" rel="nofollow noopener">Записаться онлайн</a>{% endif %}
+      {% with book_class="btn btn--brass", book_text="Записаться онлайн" %}{% include "_book_button.html" %}{% endwith %}
       {% if company.phone %}<a class="btn {{ 'btn--ghost' if company.book_url else 'btn--brass' }}" href="tel:{{ tel }}">{{ company.phone }}</a>{% endif %}
     </div>
   </div>
@@ -219,6 +219,7 @@ footer a{color:var(--brass)}
 {% endif %}
 
 {% include "_chat_widget.html" %}
+{% include "_booking_widget.html" %}
 {% include "_design_js.html" %}
 </body>
 </html>

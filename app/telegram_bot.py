@@ -47,16 +47,60 @@ def tg_call(method: str, params: dict | None = None, timeout: int = 30) -> dict 
         return None
 
 
-def tg_send_message(chat_id: str, text: str) -> int | None:
+def tg_send_message(chat_id: str, text: str, reply_markup: dict | None = None) -> int | None:
     """Шлёт сообщение. Возвращает message_id отправленного сообщения или None."""
-    res = tg_call("sendMessage", {"chat_id": chat_id, "text": text, "disable_web_page_preview": "true"})
+    params = {"chat_id": chat_id, "text": text, "disable_web_page_preview": "true"}
+    if reply_markup:
+        params["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
+    res = tg_call("sendMessage", params)
     if isinstance(res, dict):
         return res.get("message_id")
     return None
 
 
+def tg_edit_message(chat_id: str, message_id: int, text: str,
+                    reply_markup: dict | None = None) -> bool:
+    """Переписывает уже отправленное сообщение (карточку записи после решения)."""
+    params = {"chat_id": chat_id, "message_id": message_id, "text": text,
+              "disable_web_page_preview": "true"}
+    # Пустой inline_keyboard убирает кнопки — иначе они остаются кликабельными.
+    params["reply_markup"] = json.dumps(reply_markup or {"inline_keyboard": []},
+                                        ensure_ascii=False)
+    return tg_call("editMessageText", params) is not None
+
+
+def tg_answer_callback(callback_id: str, text: str = "") -> None:
+    """Гасит «часики» на нажатой кнопке. Без этого клиент ждёт до таймаута."""
+    tg_call("answerCallbackQuery", {"callback_query_id": callback_id, "text": text})
+
+
+def booking_keyboard(booking_id: int) -> dict:
+    """Кнопки под карточкой записи. callback_data читает scheduler."""
+    return {"inline_keyboard": [[
+        {"text": "Подтвердить", "callback_data": f"bk:ok:{booking_id}"},
+        {"text": "Отменить",    "callback_data": f"bk:no:{booking_id}"},
+    ]]}
+
+
+def tg_set_commands() -> None:
+    """Меню команд бота. Вызывается один раз при старте поллинга."""
+    cmds = [
+        {"command": "today",    "description": "Записи на сегодня"},
+        {"command": "tomorrow", "description": "Записи на завтра"},
+        {"command": "week",     "description": "Записи на неделю"},
+        {"command": "help",     "description": "Что умеет бот"},
+    ]
+    tg_call("setMyCommands", {"commands": json.dumps(cmds, ensure_ascii=False)})
+
+
 def tg_get_updates(offset: int = 0, timeout: int = 20) -> list:
     """Long-poll апдейтов. timeout — сколько сервер держит соединение (сек)."""
     # HTTP-таймаут даём чуть больше, чем long-poll timeout, иначе рвём раньше времени.
-    res = tg_call("getUpdates", {"offset": offset, "timeout": timeout}, timeout=timeout + 10)
+    # allowed_updates нужен явно: без него Telegram НЕ шлёт callback_query,
+    # и кнопки под записями молча ничего не делают.
+    res = tg_call("getUpdates", {
+        "offset": offset,
+        "timeout": timeout,
+        "allowed_updates": json.dumps(["message", "callback_query"]),
+    }, timeout=timeout + 10)
     return res if isinstance(res, list) else []

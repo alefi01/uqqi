@@ -12,8 +12,8 @@ main._build_site_context), и обязан подключать слоты _seo_
 Поэтапный выкат: у премиума enabled=False, пока он не готов — template_for
 вернёт None, и рендер упадёт на бесплатный A, а пикер его не покажет.
 
-self_mobile=True у премиума → у него свой адаптив, поэтому на мобильном НЕ
-форсим site_c.html (в отличие от бесплатных A/B).
+self_mobile=True у ВСЕХ двенадцати: у каждого оформления своя мобильная
+вёрстка, подмены шаблона по User-Agent больше нет (один адрес — один HTML).
 
 Проверка всех оформлений на тестовых данных: python3 scripts/render_designs.py
 """
@@ -27,10 +27,10 @@ _TPL_DIR = Path(__file__).resolve().parent.parent / "templates"
 # key → метаданные. fit — для кого; vibe — как выглядит (показываются в пикере ЛК).
 DESIGNS: dict[str, dict] = {
     "A": {"name": "Базовый",  "template": "site_a.html", "tier": "free",
-          "self_mobile": False, "enabled": True,
+          "self_mobile": True, "enabled": True,
           "vibe": "Светлый универсальный", "fit": "подходит любому делу"},
     "B": {"name": "Базовый+", "template": "site_b.html", "tier": "free",
-          "self_mobile": False, "enabled": True,
+          "self_mobile": True, "enabled": True,
           "vibe": "Светлый с крупным фото", "fit": "подходит любому делу"},
 
     # ── Премиум (Pro). Десять направлений под наши основные ниши. ──

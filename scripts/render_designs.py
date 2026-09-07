@@ -123,6 +123,9 @@ def build_context(company: Obj) -> dict:
         "is_claim_site": False,
         "chat_enabled": False,
         "unpaid_overlay": False,
+        # Виджет записи должен попадать под гейты, поэтому в фикстуре режим
+        # «наши слоты». У пустой карточки записи нет — проверяем и этот случай.
+        "book_mode": "off" if not company.book_url else "slots",
     }
 
 

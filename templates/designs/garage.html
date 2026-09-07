@@ -127,8 +127,7 @@ footer a{color:var(--amber)}
     <span class="hdr__b">{{ company.title }}</span>
     <div class="hdr__r">
       {% if company.phone %}<a class="hdr__tel" href="tel:{{ tel }}">{{ company.phone }}</a>{% endif %}
-      {% if company.book_url %}<a class="btn btn--amber" href="{{ company.book_url }}" target="_blank" rel="nofollow noopener">Записаться</a>
-      {% elif company.phone %}<a class="btn btn--amber" href="tel:{{ tel }}">Позвонить</a>{% endif %}
+      {% if company.phone %}<a class="btn btn--amber" href="tel:{{ tel }}">Позвонить</a>{% endif %}
     </div>
   </div>
 </header>
@@ -147,6 +146,7 @@ footer a{color:var(--amber)}
         {% if company.address %}<span class="chip">{{ company.address }}</span>{% endif %}
       </div>
       <div class="hero__cta">
+        {% with book_class="btn btn--amber" %}{% include "_book_button.html" %}{% endwith %}
         {% if company.phone %}<a class="btn btn--amber" href="tel:{{ tel }}">{{ company.phone }}</a>{% endif %}
         {% if route_url %}<a class="btn btn--ghost" href="{{ route_url }}" target="_blank" rel="nofollow noopener">Маршрут</a>{% endif %}
       </div>
@@ -256,6 +256,7 @@ footer a{color:var(--amber)}
 {% endif %}
 
 {% include "_chat_widget.html" %}
+{% include "_booking_widget.html" %}
 {% include "_design_js.html" %}
 </body>
 </html>

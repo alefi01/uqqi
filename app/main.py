@@ -66,10 +66,6 @@ async def security_headers(request: Request, call_next):
     else:
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
 
-    # Витрина отдаёт мобильный шаблон по User-Agent на том же адресе
-    # (dynamic serving). Без Vary поисковики и кеши считают ответ одним и тем
-    # же для всех устройств и могут показать десктопную версию на телефоне.
-    response.headers["Vary"] = "User-Agent"
 
     # Access-лог: только метаданные, без тел запросов (не пишем пароли/токены)
     log_access(ip, method, path, response.status_code, ua, elapsed_ms)
@@ -86,6 +82,8 @@ from app.cabinet import router as cabinet_router
 app.include_router(cabinet_router)
 from app.chat import router as chat_router
 app.include_router(chat_router)
+from app.booking import router as booking_router
+app.include_router(booking_router)
 
 SESSION_COOKIE = "admin_session"
 SESSION_TTL    = timedelta(days=7)
@@ -319,13 +317,6 @@ def _feat_icon(text: str) -> str:
 
 # ── ПУБЛИЧНЫЙ САЙТ ────────────────────────────────────────────────────────────
 
-def _is_mobile(request: Request) -> bool:
-    """Определяет мобильное устройство по User-Agent."""
-    ua = request.headers.get("user-agent", "").lower()
-    markers = ["mobile", "android", "iphone", "ipod", "ipad", "windows phone", "opera mini"]
-    return any(m in ua for m in markers)
-
-
 def _city_from_address(address: str) -> str:
     """Пытается извлечь город из адреса (обычно предпоследний/последний компонент)."""
     if not address:
@@ -452,15 +443,32 @@ def _build_site_context(request: Request, company) -> dict:
         "site_url":       site_url,
         "seo_noindex":    seo_noindex,
         "is_claim_site":  is_claim_site,
+        # Кнопка «Записаться»: 'slots' — наша запись (Pro + настроенный график),
+        # 'external' — внешний сервис по book_url, 'off' — кнопки нет.
+        # Бесплатные оформления читают то же поле, но 'slots' у них не бывает:
+        # премиум-гейт внутри booking.slots_active это отсекает.
+        "book_mode":      _book_mode(company),
     }
+
+
+def _book_mode(company) -> str:
+    """Режим кнопки записи. Вынесено, чтобы витрины не лезли в app.booking сами."""
+    try:
+        from app.booking import button_mode
+        return button_mode(company)
+    except Exception:                                        # noqa: BLE001
+        return "external" if (company.book_url or "").strip() else "off"
 
 
 def _variant_template(request: Request, company) -> str:
     """
     Файл витрины по ключу дизайна (реестр app/designs.py).
     - Премиум (tier=pro) отдаётся ТОЛЬКО при активном Pro и готовом шаблоне;
-      иначе фолбэк на бесплатный. У премиума свой адаптив — мобильный НЕ форсим C.
-    - Бесплатные A/B: мобильный всегда → site_c.html.
+      иначе фолбэк на бесплатный.
+    - У ВСЕХ двенадцати оформлений свой мобильный адаптив, поэтому подмены
+      шаблона по User-Agent больше нет: один адрес — один HTML на всех
+      устройствах. site_c.html остаётся отдельным мобильным оформлением для
+      тех, у кого он уже записан в template_variant.
     """
     from app import designs
     key = (company.template_variant or "A").strip()
@@ -472,11 +480,9 @@ def _variant_template(request: Request, company) -> str:
             if tpl:
                 return tpl   # премиум responsive — он же и на мобильном
         # Pro не активен или шаблон ещё не готов → бесплатный
-        return "site_c.html" if _is_mobile(request) else "site_a.html"
+        return "site_a.html"
 
-    # Бесплатные A/B
-    if _is_mobile(request):
-        return "site_c.html"
+    # Бесплатные A/B — оба адаптивные
     return "site_b.html" if key == "B" else "site_a.html"
 
 
@@ -1016,6 +1022,10 @@ class SavePayload(BaseModel):
     org_name:       str = ""
     org_type:       str = ""
     org_inn:        str = ""
+    # Онлайн-запись
+    booking_mode:   str  = ""
+    book_url:       str  = ""
+    booking:        dict = {}
 
 
 @app.post("/admin/save/{slug}")
@@ -1042,6 +1052,25 @@ async def admin_save(
     company.org_name = payload.org_name[:500]
     company.org_type = payload.org_type[:50]
     company.org_inn  = payload.org_inn[:20]
+
+    # Онлайн-запись. Режим слотов включается только с заполненным графиком:
+    # пустой календарь на витрине хуже, чем отсутствие кнопки.
+    if payload.booking_mode:
+        from app.booking import DEFAULTS, has_schedule
+        mode = payload.booking_mode if payload.booking_mode in ("off", "external", "slots") else "off"
+        cfg = {k: payload.booking.get(k, v) for k, v in DEFAULTS.items()}
+        company.booking = cfg
+        company.book_url = (payload.book_url or "").strip()[:500]
+        if mode == "slots" and not has_schedule(company):
+            raise HTTPException(
+                status_code=422,
+                detail="Отметьте хотя бы один день приёма — без графика запись не включить.")
+        if mode == "external" and not company.book_url:
+            raise HTTPException(
+                status_code=422,
+                detail="Укажите ссылку на внешний сервис записи.")
+        company.booking_mode = mode
+
     db.commit()
     return {"ok": True}
 

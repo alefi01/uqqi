@@ -127,7 +127,7 @@ footer a{color:var(--rose)}
         {% if company.avg_bill %}<span class="pill">{{ company.avg_bill }}</span>{% endif %}
       </div>
       <div class="hero__cta">
-        {% if company.book_url %}<a class="btn btn--rose" href="{{ company.book_url }}" target="_blank" rel="nofollow noopener">Записаться</a>{% endif %}
+        {% with book_class="btn btn--rose" %}{% include "_book_button.html" %}{% endwith %}
         {% if company.phone %}<a class="btn {{ 'btn--ghost' if company.book_url else 'btn--rose' }}" href="tel:{{ tel }}">{{ company.phone }}</a>{% endif %}
       </div>
     </div>
@@ -234,6 +234,7 @@ footer a{color:var(--rose)}
 {% endif %}
 
 {% include "_chat_widget.html" %}
+{% include "_booking_widget.html" %}
 {% include "_design_js.html" %}
 </body>
 </html>

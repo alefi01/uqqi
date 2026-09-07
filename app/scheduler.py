@@ -429,9 +429,117 @@ def _tg_save_offset(n: int):
         pass
 
 
+def _owner_companies(db, chat_id) -> list:
+    """Сайты владельца, привязавшего этот Telegram."""
+    from app.models import User, Company
+    u = db.query(User).filter(User.tg_chat_id == str(chat_id)).first()
+    if not u:
+        return []
+    return db.query(Company).filter(Company.user_id == u.id).all()
+
+
+def _bookings_digest(chat_id, days: int, title: str) -> str:
+    """Список записей владельца на ближайшие N дней (в поясе каждого сайта)."""
+    from datetime import timedelta
+    from app.models import SessionLocal, Booking
+    from app.booking import settings_of
+
+    db = SessionLocal()
+    try:
+        companies = _owner_companies(db, chat_id)
+        if not companies:
+            return ("Этот чат не привязан к аккаунту. Откройте «Подключить Telegram» "
+                    "в личном кабинете uqqi.ru.")
+        now = datetime.utcnow()
+        lines = [title]
+        total = 0
+        for c in companies:
+            cfg = settings_of(c)
+            tz = timedelta(hours=cfg["tz"])
+            # Границы берём в местном времени сайта и переводим обратно в UTC.
+            start_local = (now + tz).replace(hour=0, minute=0, second=0, microsecond=0)
+            rows = db.query(Booking).filter(
+                Booking.company_id == c.id,
+                Booking.slot_start >= start_local - tz,
+                Booking.slot_start < start_local - tz + timedelta(days=days),
+                Booking.status != "canceled",
+            ).order_by(Booking.slot_start).all()
+            if not rows:
+                continue
+            lines.append("")
+            lines.append(f"{c.title}:")
+            for b in rows:
+                local = b.slot_start + tz
+                mark = "" if b.status == "confirmed" else " (не подтверждена)"
+                svc = f" — {b.service}" if b.service else ""
+                lines.append(f"  {local:%d.%m} {local:%H:%M} · {b.name} · {b.phone}{svc}{mark}")
+                total += 1
+        if not total:
+            return f"{title}\n\nЗаписей нет."
+        return "\n".join(lines)
+    finally:
+        db.close()
+
+
+def _handle_booking_action(up: dict) -> bool:
+    """Нажатие «Подтвердить»/«Отменить» под карточкой записи. True — обработали."""
+    from datetime import timedelta
+    from app.models import SessionLocal, Booking, Company, User
+    from app.telegram_bot import tg_answer_callback, tg_edit_message
+    from app.booking import settings_of
+
+    cq = up.get("callback_query") or {}
+    data = (cq.get("data") or "").strip()
+    if not data.startswith("bk:"):
+        return False
+    cq_id = cq.get("id") or ""
+    chat_id = ((cq.get("message") or {}).get("chat") or {}).get("id")
+    message_id = (cq.get("message") or {}).get("message_id")
+    try:
+        _, action, raw_id = data.split(":", 2)
+        booking_id = int(raw_id)
+    except (ValueError, TypeError):
+        tg_answer_callback(cq_id, "Не понял кнопку")
+        return True
+
+    db = SessionLocal()
+    try:
+        b = db.query(Booking).filter(Booking.id == booking_id).first()
+        if not b:
+            tg_answer_callback(cq_id, "Запись не найдена")
+            return True
+        c = db.query(Company).filter(Company.id == b.company_id).first()
+        owner = db.query(User).filter(User.id == c.user_id).first() if c else None
+        # Решение принимает только владелец сайта — chat_id обязан совпасть.
+        if not owner or str(owner.tg_chat_id) != str(chat_id):
+            tg_answer_callback(cq_id, "Это не ваша запись")
+            return True
+
+        b.status = "confirmed" if action == "ok" else "canceled"
+        db.commit()
+
+        tz = timedelta(hours=settings_of(c)["tz"])
+        local = b.slot_start + tz
+        head = "Запись подтверждена" if b.status == "confirmed" else "Запись отменена"
+        text = (f"{head}\n{c.title}\n\n"
+                f"Когда: {local:%d.%m.%Y} в {local:%H:%M}\n"
+                f"Кто: {b.name}\nТелефон: {b.phone}")
+        if message_id and chat_id:
+            tg_edit_message(str(chat_id), message_id, text)
+        tg_answer_callback(cq_id, head)
+        return True
+    finally:
+        db.close()
+
+
 def _handle_tg_update(up: dict):
     from app.models import SessionLocal, User, Company, ChatMessage
     from app.telegram_bot import tg_send_message
+
+    # Кнопки под карточкой записи приходят как callback_query, не как message.
+    if up.get("callback_query"):
+        _handle_booking_action(up)
+        return
 
     msg = up.get("message") or {}
     chat = msg.get("chat") or {}
@@ -453,13 +561,36 @@ def _handle_tg_update(up: dict):
                 u.tg_link_token = ""
                 db.commit()
                 tg_send_message(str(chat_id),
-                    "✅ Telegram подключён. Сюда будут приходить сообщения с вашего сайта. "
-                    "Отвечайте на них через «Ответить» (Reply).")
+                    "Telegram подключён.\n\n"
+                    "Сюда будут приходить сообщения с сайта и новые записи. "
+                    "На сообщения отвечайте через «Ответить» (Reply), записи "
+                    "подтверждайте кнопками под карточкой.\n\n"
+                    "/today — записи на сегодня, /week — на неделю.")
             else:
                 tg_send_message(str(chat_id),
                     "Чтобы подключить уведомления, откройте «Подключить Telegram» в личном кабинете uqqi.ru.")
         finally:
             db.close()
+        return
+
+    # Команды по записям. Работают только у привязанного владельца.
+    cmd = text.split()[0].split("@")[0].lower() if text.startswith("/") else ""
+    if cmd in ("/today", "/tomorrow", "/week", "/help", "/bookings"):
+        if cmd == "/help":
+            tg_send_message(str(chat_id),
+                "Что умеет бот:\n"
+                "/today — записи на сегодня\n"
+                "/tomorrow — записи на завтра\n"
+                "/week — записи на неделю вперёд\n\n"
+                "Под каждой новой записью есть кнопки «Подтвердить» и «Отменить».\n"
+                "На сообщения посетителей с сайта отвечайте через «Ответить» (Reply).")
+            return
+        if cmd == "/tomorrow":
+            # Завтрашние — это неделя минус сегодня; отдельный срез делать незачем.
+            tg_send_message(str(chat_id), _bookings_digest(chat_id, 2, "Записи на два дня"))
+            return
+        days, title = (1, "Записи на сегодня") if cmd == "/today" else (7, "Записи на неделю")
+        tg_send_message(str(chat_id), _bookings_digest(chat_id, days, title))
         return
 
     # Ответ владельца: Reply на пересланное сообщение посетителя
@@ -514,6 +645,11 @@ async def _loop_telegram():
         print("[TG] бот не настроен — чат-поллинг выключен", flush=True)
         return
     _tg_load_offset()
+    try:
+        from app.telegram_bot import tg_set_commands
+        await asyncio.to_thread(tg_set_commands)
+    except Exception as e:
+        print(f"[TG] setMyCommands: {e}", flush=True)
     await asyncio.sleep(5)
     while True:
         try:

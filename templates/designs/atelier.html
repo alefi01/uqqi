@@ -131,6 +131,7 @@ footer a{color:var(--green)}
       {% for f in company.features[:3] %}<span class="badge">{{ f }}</span>{% endfor %}
     </div>
     <div class="hero__cta">
+      {% with book_class="btn btn--green" %}{% include "_book_button.html" %}{% endwith %}
       {% if company.phone %}<a class="btn btn--green" href="tel:{{ tel }}">Позвонить {{ company.phone }}</a>{% endif %}
       {% if route_url %}<a class="btn btn--ghost" href="{{ route_url }}" target="_blank" rel="nofollow noopener">Как добраться</a>{% endif %}
     </div>
@@ -237,6 +238,7 @@ footer a{color:var(--green)}
 {% endif %}
 
 {% include "_chat_widget.html" %}
+{% include "_booking_widget.html" %}
 {% include "_design_js.html" %}
 </body>
 </html>

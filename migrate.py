@@ -24,6 +24,9 @@ COMPANY_COLUMNS = {
     "paid_until":         "DATETIME",
     "build_status":       "VARCHAR(20) DEFAULT 'ready'",
     "book_url":           "VARCHAR(500) DEFAULT ''",
+    # Онлайн-запись (Pro): режим кнопки «Записаться» и настройки слотов
+    "booking_mode":       "VARCHAR(16) DEFAULT 'off'",
+    "booking":            "TEXT DEFAULT '{}'",
     "reviews_count":      "VARCHAR(20) DEFAULT ''",
     "catalog_title":      "VARCHAR(50) DEFAULT 'Товары и услуги'",
     "about_text":         "TEXT DEFAULT ''",
@@ -296,6 +299,32 @@ def main():
         cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_update ON chat_messages (tg_update_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS ix_chat_created ON chat_messages (created_at)")
         print("[migrate] + таблица chat_messages")
+        added += 1
+
+    # bookings (онлайн-запись со слотами; Pro-фича)
+    if not table_exists(cur, "bookings"):
+        cur.execute("""
+            CREATE TABLE bookings (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                company_id    INTEGER,
+                slot_start    DATETIME,
+                duration_min  INTEGER DEFAULT 60,
+                service       VARCHAR(200) DEFAULT '',
+                name          VARCHAR(120) DEFAULT '',
+                phone         VARCHAR(40)  DEFAULT '',
+                comment       VARCHAR(500) DEFAULT '',
+                status        VARCHAR(16)  DEFAULT 'new',
+                source        VARCHAR(16)  DEFAULT 'site',
+                visitor_hash  VARCHAR(64)  DEFAULT '',
+                notify_msg_id INTEGER,
+                created_at    DATETIME
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_bk_company ON bookings (company_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_bk_slot ON bookings (slot_start)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_bk_visitor ON bookings (visitor_hash)")
+        cur.execute("CREATE INDEX IF NOT EXISTS ix_bk_created ON bookings (created_at)")
+        print("[migrate] + таблица bookings")
         added += 1
 
     # WAL: несколько процессов (app + воркеры) пишут в одну SQLite

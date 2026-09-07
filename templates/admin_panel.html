@@ -391,6 +391,86 @@
       </div>
     </section>
 
+    <!-- ── ОНЛАЙН-ЗАПИСЬ ── -->
+    <section class="section" id="section-booking">
+      <h2 class="section__title">Онлайн-запись</h2>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.25rem">
+        Что делает кнопка «Записаться» на сайте. Наша запись со слотами включится,
+        только когда заполнен график работы ниже — пустой календарь клиентам не показываем.
+      </p>
+
+      {% set bk = company.booking or {} %}
+      <div class="field">
+        <label>Режим</label>
+        <select id="bk-mode" onchange="bkSync()">
+          <option value="off"      {{ 'selected' if company.booking_mode == 'off' or not company.booking_mode else '' }}>Кнопки нет</option>
+          <option value="external" {{ 'selected' if company.booking_mode == 'external' else '' }}>Внешний сервис по ссылке</option>
+          <option value="slots"    {{ 'selected' if company.booking_mode == 'slots' else '' }}>Наша запись со слотами (Pro)</option>
+        </select>
+      </div>
+
+      <div class="field" id="bk-external-box">
+        <label>Ссылка на внешний сервис</label>
+        <input type="url" id="bk-url" value="{{ company.book_url }}" placeholder="https://n123456.yclients.com/">
+      </div>
+
+      <div id="bk-slots-box">
+        <div class="field">
+          <label>Часовой пояс заведения</label>
+          <select id="bk-tz">
+            {% set tz = bk.get('tz', 3) %}
+            {% for h in range(2, 13) %}
+            <option value="{{ h }}" {{ 'selected' if tz == h else '' }}>UTC+{{ h }}{{ ' — Москва' if h == 3 else '' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>Длительность приёма, минут</label>
+          <input type="number" id="bk-duration" min="5" max="600" step="5" value="{{ bk.get('duration', 60) }}">
+        </div>
+        <div class="field">
+          <label>Записываться не позже чем за, часов</label>
+          <input type="number" id="bk-lead" min="0" max="72" value="{{ bk.get('lead_hours', 2) }}">
+        </div>
+        <div class="field">
+          <label>На сколько дней вперёд открыта запись</label>
+          <input type="number" id="bk-ahead" min="1" max="60" value="{{ bk.get('days_ahead', 14) }}">
+        </div>
+        <div class="field">
+          <label>Услуги на выбор — по одной в строке (необязательно)</label>
+          <textarea id="bk-services" rows="4" placeholder="Стрижка&#10;Стрижка и борода">{{ (bk.get('services') or [])|join('\n') }}</textarea>
+        </div>
+
+        <label style="display:block;font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:1.2rem 0 .6rem">
+          Когда принимаете
+        </label>
+        <div class="hours-editor" id="bkWeek">
+          {% set wd = {1:"Пн",2:"Вт",3:"Ср",4:"Чт",5:"Пт",6:"Сб",7:"Вс"} %}
+          {% set week = bk.get('week') or {} %}
+          {% for d in range(1, 8) %}
+            {% set rng = (week.get(d|string) or [["10:00","19:00"]])[0] %}
+            {% set has = (week.get(d|string) or [])|length > 0 %}
+            <div class="hours-row {{ '' if has else 'is-closed' }}" data-d="{{ d }}">
+              <span class="hours-row__day">{{ wd[d] }}</span>
+              <div class="hours-row__times" style="display:flex;gap:.5rem;align-items:center">
+                <input type="time" class="bk-from" value="{{ rng[0] if rng|length > 0 else '10:00' }}">
+                <span style="color:var(--muted);font-size:.85rem">—</span>
+                <input type="time" class="bk-to"   value="{{ rng[1] if rng|length > 1 else '19:00' }}">
+              </div>
+              <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);cursor:pointer">
+                <input type="checkbox" class="bk-on" {{ 'checked' if has else '' }}>
+                Принимаем
+              </label>
+            </div>
+          {% endfor %}
+        </div>
+        <p style="font-size:.82rem;color:var(--muted);margin-top:.9rem">
+          Записи приходят в Telegram: там же их можно подтвердить или отменить.
+          Подключить Telegram — в личном кабинете, раздел «Настройки».
+        </p>
+      </div>
+    </section>
+
     <!-- ── ДИЗАЙН ── -->
     <section class="section" id="section-design">
       <h2 class="section__title">Дизайн сайта</h2>
@@ -623,7 +703,27 @@ async function saveAll() {
     if (url && platform) social_links.push({ platform, url });
   });
 
-  const payload = { title, address, phone, category, hours, social_links, org_name, org_type, org_inn };
+  // Онлайн-запись
+  const week = {};
+  document.querySelectorAll('#bkWeek .hours-row').forEach(row => {
+    if (!row.querySelector('.bk-on').checked) return;
+    week[row.dataset.d] = [[row.querySelector('.bk-from').value,
+                            row.querySelector('.bk-to').value]];
+  });
+  const booking = {
+    tz:         parseInt(document.getElementById('bk-tz').value, 10) || 3,
+    duration:   parseInt(document.getElementById('bk-duration').value, 10) || 60,
+    lead_hours: parseInt(document.getElementById('bk-lead').value, 10) || 0,
+    days_ahead: parseInt(document.getElementById('bk-ahead').value, 10) || 14,
+    services:   (document.getElementById('bk-services').value || '')
+                  .split('\n').map(x => x.trim()).filter(Boolean),
+    week,
+  };
+  const booking_mode = document.getElementById('bk-mode').value;
+  const book_url = (document.getElementById('bk-url').value || '').trim();
+
+  const payload = { title, address, phone, category, hours, social_links,
+                    org_name, org_type, org_inn, booking_mode, book_url, booking };
 
   try {
     const res = await fetch(`/admin/save/${SLUG}`, {
@@ -641,6 +741,17 @@ async function saveAll() {
     btn.disabled = false;
   }
 }
+
+/* Онлайн-запись: показываем только те поля, которые нужны выбранному режиму. */
+function bkSync() {
+  const mode = document.getElementById('bk-mode');
+  if (!mode) return;
+  const ext = document.getElementById('bk-external-box');
+  const slots = document.getElementById('bk-slots-box');
+  ext.hidden   = mode.value !== 'external';
+  slots.hidden = mode.value !== 'slots';
+}
+bkSync();
 
 /* Состояние панели сохранения. Кнопка при отправке не гасится: подпись
    меняется на «Сохраняю…» и появляется спиннер. */
