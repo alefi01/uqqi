@@ -30,9 +30,9 @@ const SCREENS = [
   ['billing',  '',          async (p) => { await p.locator('.nav-i').nth(1).click(); }],
   ['settings', '',          async (p) => { await p.locator('.nav-i').nth(2).click(); }],
   ['support',  '',          async (p) => { await p.locator('.nav-i').nth(3).click(); }],
-  ['design',   '',          async (p) => { await p.locator('.sitecard .iconbtn').first().click();
-                                           await p.waitForTimeout(400);
-                                           await p.getByText('Дизайн', { exact: true }).click(); }],
+  // Действия карточки сайта теперь отдельными кнопками — «шестерёнки» нет.
+  ['design',   '',          async (p) => { await p.locator('.sitecard__actions button', { hasText: 'Дизайн' })
+                                             .first().click(); }],
 ];
 
 const VENDOR = '.design-gate/vendor';

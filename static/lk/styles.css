@@ -287,6 +287,17 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.55;}
 .muted{color:var(--ink-muted);}
 .divider{height:1px;background:var(--line);border:0;}
 .eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted);}
+/* Плашка «PRO 7 дней» на кнопке создания первого сайта: новый сайт получает
+   пробный Pro, и человек должен видеть это до нажатия, а не после.
+   Оранжевая на тёмной кнопке — контраст белого на --terracotta-deep. */
+.btn__pro{display:inline-flex;align-items:center;margin-left:.55rem;padding:.15rem .5rem;
+  border-radius:var(--r-pill);background:var(--terracotta-deep);color:#fff;
+  font-size:.68rem;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+
+/* Удаление — тихое действие в общем ряду, но при наведении показывает,
+   что оно опасное: цветом, а не размером. */
+.sitecard__del:hover{color:var(--danger,#B3261E);border-color:var(--danger,#B3261E);}
+
 .tag{display:inline-flex;align-items:center;gap:.35rem;font-size:.76rem;font-weight:500;color:var(--ink-2);background:var(--paper-2);border:1px solid var(--line);padding:.28rem .6rem;border-radius:var(--r-pill);}
 
 /* ---- сводка и цены ---- */
@@ -507,7 +518,11 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.55;}
   .sitecard__top{flex-direction:column;gap:.7rem;}
   .sitecard__title{font-size:1.02rem;overflow-wrap:anywhere;}
   .sitecard__thumb{width:44px;height:44px;}
-  .sitecard__actions .btn{flex:1;}
+  /* Действий на карточке теперь шесть — по одной в ряд они дали бы простыню.
+     Раскладываем по две: кнопка занимает половину строки минус зазор.
+     .tip-wrap — обёртка неактивной кнопки, она тоже участвует в раскладке. */
+  .sitecard__actions .btn,.sitecard__actions .tip-wrap{flex:1 1 calc(50% - .3rem);min-width:0;}
+  .sitecard__actions .tip-wrap .btn{width:100%;}
 
   /* строка «название — статус — действие»: в колонку, иначе название
      зажимается между бейджем и кнопкой и рвётся на три строки */

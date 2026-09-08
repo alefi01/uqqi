@@ -14,7 +14,7 @@ works = [
 ]
 ctx = dict(request=None, stats={"sites":128,"cities":37,"minutes":"3,8"},
            reviews=json.load(open('content/reviews.json')),
-           plans={"month":{"amount":"990.00"},"quarter":{"amount":"2490.00"},"year":{"amount":"8900.00"}})
+           plans={"month":{"amount":"399.00"},"quarter":{"amount":"999.00"},"year":{"amount":"3590.00"}})
 os.makedirs('.design-gate', exist_ok=True)
 
 

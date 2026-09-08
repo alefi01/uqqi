@@ -326,7 +326,7 @@ function App() {
               {!sites.some(s => s.proActive) && (
                 <div className="side__promo">
                   <b>Сейчас базовый тариф</b>
-                  <span>Pro добавляет премиум-оформления и чат с клиентами в Telegram. От 990 ₽ в месяц.</span>
+                  <span>Pro добавляет премиум-оформления и чат с клиентами в Telegram. От 299 ₽ в месяц.</span>
                   <button type="button" className="btn btn--primary btn--sm btn--block" onClick={() => nav('subscriptions')}>Посмотреть Pro</button>
                 </div>
               )}

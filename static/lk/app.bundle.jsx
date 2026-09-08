@@ -397,7 +397,7 @@ function StatusBadge({ site }) {
 }
 
 // ---- карточка сайта ----
-function SiteCard({ site, nav, onPay, onMenu, onStats }) {
+function SiteCard({ site, nav, onPay, onDesign, onDelete, onStats }) {
   const isBuilding = site.status === 'building';
   const isError = site.status === 'error';
   return (
@@ -434,25 +434,39 @@ function SiteCard({ site, nav, onPay, onMenu, onStats }) {
       {!isBuilding && !isError && (
         <div className="sitecard__meta">
           <span><b>{site.city}</b></span>
-          {site.status !== 'pro' && site.status !== 'protrial' && <span>Pro: <b>от 990 ₽ / мес</b></span>}
+          {site.status !== 'pro' && site.status !== 'protrial' && <span>Pro: <b>от 299 ₽ / мес</b></span>}
           <span>Создан: <b>{site.created}</b></span>
         </div>
       )}
 
+      {/* Все действия — отдельными кнопками на карточке: за «шестерёнкой»
+          их приходилось искать, а на телефоне это лишний экран. */}
       <div className="sitecard__actions">
         {!isBuilding && !isError && <button className="btn btn--ghost btn--sm" onClick={() => onStats(site)}><i data-lucide="bar-chart-2"></i> Статистика</button>}
+        {!isBuilding && !isError && <button className="btn btn--ghost btn--sm" onClick={() => onDesign(site)}><i data-lucide="palette"></i> Дизайн</button>}
+        {/* Редактирование содержимого — Pro-функция: бэкенд гейтит тем же
+            pro_active (_can_edit_site), кнопка лишь не ведёт в тупик. */}
+        {!isBuilding && !isError && (site.proActive
+          ? <a className="btn btn--ghost btn--sm" href={`/site/${site.slug}/edit`}><i data-lucide="pencil"></i> Контент</a>
+          : <span className="tip-wrap" data-tip="Редактирование содержимого входит в Pro">
+              <button className="btn btn--ghost btn--sm" disabled style={{ opacity: .45, cursor: 'not-allowed' }}><i data-lucide="pencil"></i> Контент</button>
+            </span>)}
         {site.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оплатить, чтобы забрать сайт</button>}
         {site.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Сделать PRO-сайтом</button>}
         {(site.status === 'protrial' || site.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
-        {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
+        {!isBuilding && (site.canDelete === false
+          ? <span className="tip-wrap" data-tip="Дождитесь окончания пробного периода">
+              <button className="btn btn--ghost btn--sm" disabled style={{ opacity: .45, cursor: 'not-allowed' }}><i data-lucide="trash-2"></i> Удалить</button>
+            </span>
+          : <button className="btn btn--ghost btn--sm sitecard__del" onClick={() => onDelete(site)}><i data-lucide="trash-2"></i> Удалить</button>)}
       </div>
     </div>
   );
 }
 
 // ---- экран «Мои сайты» ----
-function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd }) {
+function ScreenSites({ nav, sites, onPay, onDesign, onDelete, onStats, canAdd }) {
   if (sites.length === 0) {
     return (
       <div className="empty">
@@ -460,14 +474,17 @@ function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd }) {
           <div className="empty__ic"><i data-lucide="layout-template"></i></div>
           <h2>У вас пока нет сайтов</h2>
           <p>Вставьте ссылку на карточку вашей организации в Яндекс Картах — и мы соберём готовый сайт за минуту.</p>
-          <button className="btn btn--primary btn--lg" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Создать первый сайт</button>
+          <button className="btn btn--primary btn--lg" onClick={() => nav('add-site')}>
+            <i data-lucide="plus"></i> Создать первый сайт
+            <span className="btn__pro">PRO 7 дней</span>
+          </button>
         </div>
       </div>
     );
   }
   return (
     <div className="sites">
-      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onMenu={onMenu} onStats={onStats} />)}
+      {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onDesign={onDesign} onDelete={onDelete} onStats={onStats} />)}
       <div style={{ marginTop: '.3rem' }}>
         {canAdd
           ? (sites.length >= 4 && <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>)
@@ -822,9 +839,9 @@ const INCLUDED = [
 // ---- Сводка оплаты (внутри кабинета) ----
 // Тарифы Pro — синхронно с PLANS в app/cabinet.py
 const PLANS_LK = [
-  { id: 'month',   label: 'Месяц',    amount: 990,  perMonth: 990, period: '30 дней',  save: '' },
-  { id: 'quarter', label: '3 месяца', amount: 2490, perMonth: 830, period: '90 дней',  save: 'выгода 480 ₽' },
-  { id: 'year',    label: 'Год',      amount: 8900, perMonth: 742, period: '365 дней', save: 'выгода 2 980 ₽' },
+  { id: 'month',   label: 'Месяц',    amount: 399,  perMonth: 399, period: '30 дней',  save: '' },
+  { id: 'quarter', label: '3 месяца', amount: 999,  perMonth: 333, period: '90 дней',  save: 'выгода 198 ₽' },
+  { id: 'year',    label: 'Год',      amount: 3590, perMonth: 299, period: '365 дней', save: 'выгода 1 198 ₽' },
 ];
 const fmtRub = n => n.toLocaleString('ru-RU');
 
@@ -917,7 +934,7 @@ function ScreenYukassa({ nav }) {
           <div className="yk__body">
             <div className="between" style={{ marginBottom: '.2rem' }}>
               <span style={{ color: '#666', fontSize: '.86rem' }}>К оплате</span>
-              <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#1d1d1b' }}>990,00 ₽</span>
+              <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#1d1d1b' }}>399,00 ₽</span>
             </div>
             <div>
               <div className="yk__lbl">Номер карты</div>
@@ -927,7 +944,7 @@ function ScreenYukassa({ nav }) {
               <div style={{ flex: 1 }}><div className="yk__lbl">ММ / ГГ</div><div className="yk__inp">00 / 00</div></div>
               <div style={{ flex: 1 }}><div className="yk__lbl">CVC</div><div className="yk__inp">•••</div></div>
             </div>
-            <div className="yk__pay" onClick={() => nav('payment-processing')}>Оплатить 990 ₽</div>
+            <div className="yk__pay" onClick={() => nav('payment-processing')}>Оплатить 399 ₽</div>
             <p style={{ fontSize: '.7rem', color: '#aaa', textAlign: 'center', marginTop: '.2rem' }}>Демонстрационный экран. Реальное списание не производится.</p>
           </div>
         </div>
@@ -1282,7 +1299,6 @@ function App() {
   const [email, setEmail] = useState('');
   const [toast, setToast] = useState(null);
   const [payTarget, setPayTarget] = useState(null);
-  const [menuSite, setMenuSite] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
   const [delPw, setDelPw] = useState('');
   const [delSite, setDelSite] = useState(null);
@@ -1372,6 +1388,16 @@ function App() {
       .finally(() => setBooted(true));
   }, []);
 
+  // Почту берём на любом экране за логином, если её ещё нет: после
+  // подтверждения email (/verify) и сброса пароля загрузка идёт мимо API.me(),
+  // и до перезагрузки страницы в шапке висел запасной адрес.
+  useEffect(() => {
+    const authed = ['sites', 'add-site', 'building', 'design', 'metrics',
+                    'subscriptions', 'settings', 'support', 'payment-processing'];
+    if (!booted || email || !authed.includes(screen)) return;
+    window.API.me().then(u => { if (u && u.email) setEmail(u.email); }).catch(() => {});
+  }, [booted, email, screen]);
+
   async function loadSites() {
     try {
       const data = await window.API.sites();
@@ -1413,7 +1439,6 @@ function App() {
     loadSites();
   }
   async function openMetrics(site) {
-    setMenuSite(null);
     setMetrics(null);
     nav('metrics');
     try {
@@ -1434,7 +1459,6 @@ function App() {
     try { const d = await window.API.demoSites(); setDemoSlugs(d.slugs || []); } catch (e) {}
   }
   function openDesign(site) {
-    setMenuSite(null);
     setDesignSite(site);
     ensureDesigns();
     nav('design');
@@ -1454,7 +1478,6 @@ function App() {
       ping('Дождитесь окончания trial-периода');
       return;
     }
-    setMenuSite(null);
     setDelSiteText('');
     setDelSite(site);
   }
@@ -1517,7 +1540,7 @@ function App() {
   const state = headState(screen, sites, tickets);
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onDesign={openDesign} onDelete={askDeleteSite} onStats={openMetrics} canAdd={canAdd} />;
   else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} demoSlugs={demoSlugs} />;
   else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
@@ -1547,7 +1570,7 @@ function App() {
               {!sites.some(s => s.proActive) && (
                 <div className="side__promo">
                   <b>Сейчас базовый тариф</b>
-                  <span>Pro добавляет премиум-оформления и чат с клиентами в Telegram. От 990 ₽ в месяц.</span>
+                  <span>Pro добавляет премиум-оформления и чат с клиентами в Telegram. От 299 ₽ в месяц.</span>
                   <button type="button" className="btn btn--primary btn--sm btn--block" onClick={() => nav('subscriptions')}>Посмотреть Pro</button>
                 </div>
               )}
@@ -1596,33 +1619,6 @@ function App() {
         </div>
 
         {/* site menu modal */}
-        {menuSite && (
-          <div className="scrim" onClick={() => setMenuSite(null)}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-              <h3>{menuSite.name}</h3>
-              <p>{menuSite.slug}.uqqi.ru</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem', marginTop: '1.3rem' }}>
-                {/* «Статистика» вынесена отдельной кнопкой на карточку сайта. */}
-                {/* Редактирование содержимого — Pro-функция: бэкенд гейтит тем же
-                    pro_active (_can_edit_site), кнопка лишь не ведёт в тупик. */}
-                {menuSite.proActive
-                  ? <a className="btn btn--ghost btn--block" href={`/site/${menuSite.slug}/edit`}><i data-lucide="pencil"></i> Редактировать контент</a>
-                  : <span className="tip-wrap" data-tip="Редактирование содержимого входит в Pro" style={{ display: 'block' }}>
-                      <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="pencil"></i> Редактировать контент</button>
-                    </span>
-                }
-                <button className="btn btn--ghost btn--block" onClick={() => openDesign(menuSite)}><i data-lucide="palette"></i> Дизайн</button>
-                {menuSite.canDelete === false
-                  ? <span className="tip-wrap" data-tip="Дождитесь окончания trial-периода" style={{ display: 'block' }}>
-                      <button className="btn btn--ghost btn--block" disabled style={{ opacity: .45, cursor: 'not-allowed', width: '100%' }}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                    </span>
-                  : <button className="btn btn--danger btn--block" onClick={() => askDeleteSite(menuSite)}><i data-lucide="trash-2"></i> Удалить сайт</button>
-                }
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* delete site modal */}
         {delSite && (
           <div className="scrim" onClick={() => { setDelSite(null); setDelSiteText(''); }}>

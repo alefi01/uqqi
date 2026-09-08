@@ -60,7 +60,7 @@ function SiteCard({ site, nav, onPay, onMenu, onStats }) {
       {!isBuilding && !isError && (
         <div className="sitecard__meta">
           <span><b>{site.city}</b></span>
-          {site.status !== 'pro' && site.status !== 'protrial' && <span>Pro: <b>от 990 ₽ / мес</b></span>}
+          {site.status !== 'pro' && site.status !== 'protrial' && <span>Pro: <b>от 299 ₽ / мес</b></span>}
           <span>Создан: <b>{site.created}</b></span>
         </div>
       )}

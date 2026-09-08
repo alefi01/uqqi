@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session as OrmSession
 
 from app.config import settings
+from app.parser import city_from_address
 from app.models import User, Company, Session as DbSession, SessionLocal, get_db
 from app.mailer import send_email
 
@@ -433,7 +434,9 @@ def _site_dict(c: Company) -> dict:
         "id":        c.id,
         "name":      c.title or "Новый сайт",
         "slug":      c.slug,
-        "city":      (c.address or "").split(",")[-1].strip() if c.address else "",
+        # ⚠️ Раньше здесь брался ПОСЛЕДНИЙ компонент адреса, и в карточке
+        # сайта появлялось «этаж 1». Разбор общий — app.parser.city_from_address.
+        "city":      city_from_address(c.address),
         "status":    status,
         "proActive": pro_active,
         "isLegit":   is_legit,
@@ -453,14 +456,47 @@ class AddSitePayload(BaseModel):
     design: str = "A"   # "A" бесплатный / "B" премиум (показывается только при Pro)
 
 
+# Сколько сайтов разрешено при N оплаченных активных Pro.
+# ⚠️ Выше трёх Pro планка не растёт: правила на этот случай владелец не задавал,
+# поэтому упираемся в 10 и предлагаем написать в поддержку.
+SITE_LIMITS = ((3, 10), (1, 5), (0, 1))
+
+
+def _site_limit(paid_pro: int) -> int:
+    for need, limit in SITE_LIMITS:
+        if paid_pro >= need:
+            return limit
+    return 1
+
+
 def _can_add_site(user, sites) -> tuple[bool, str]:
     """
-    Можно ли создать новый сайт. Freemium: сайты бесплатны, лимита по оплате нет —
-    нельзя лишь пока предыдущий ещё строится (парсинг = 1 одновременно).
+    Можно ли создать новый сайт.
+
+    Лимит зависит от числа ОПЛАЧЕННЫХ активных Pro (решение владельца 2026-09):
+    нет Pro — один сайт, один-два Pro — до пяти, три и больше — до десяти.
+    Pro-триал не считается: он бесплатный и выдаётся каждому новому сайту, иначе
+    лимит обходился бы сам собой.
+
+    Плюс прежнее ограничение: пока предыдущий сайт собирается, новый не начинаем
+    (парсинг идёт по одному).
     """
     if any(c.build_status in ("queued", "building") for c in sites):
         return False, "Дождитесь завершения создания текущего сайта."
-    return True, ""
+
+    now = datetime.utcnow()
+    paid_pro = sum(1 for c in sites if c.paid_once and c.pro_until and c.pro_until > now)
+    limit = _site_limit(paid_pro)
+    if len(sites) < limit:
+        return True, ""
+
+    if paid_pro == 0:
+        return False, ("Бесплатно — один сайт. Чтобы добавить ещё, оформите Pro "
+                       "на своём сайте.")
+    if paid_pro < 3:
+        return False, (f"Сейчас доступно {limit} сайтов. Чтобы поднять лимит до 10, "
+                       "нужно три сайта с активным Pro.")
+    return False, f"Достигнут предел — {limit} сайтов. Напишите в поддержку, если нужно больше."
 
 
 @router.get("/sites")
@@ -772,9 +808,9 @@ async def create_ticket(payload: TicketPayload,
 # days — на сколько продлевать paid_until. months — для подачи «X ₽/мес».
 # ВАЖНО: дублируется на фронте (billing.jsx/app.bundle.jsx) — менять синхронно.
 PLANS = {
-    "month":   {"amount": "990.00",  "days": 30,  "months": 1,  "label": "Месяц"},
-    "quarter": {"amount": "2490.00", "days": 90,  "months": 3,  "label": "3 месяца"},
-    "year":    {"amount": "8900.00", "days": 365, "months": 12, "label": "Год"},
+    "month":   {"amount": "399.00",  "days": 30,  "months": 1,  "label": "Месяц"},
+    "quarter": {"amount": "999.00",  "days": 90,  "months": 3,  "label": "3 месяца"},
+    "year":    {"amount": "3590.00", "days": 365, "months": 12, "label": "Год"},
 }
 DEFAULT_PLAN = "quarter"
 

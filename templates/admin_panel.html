@@ -46,27 +46,19 @@
 
     .section__title { font-size:1.1rem; font-weight:600; margin-bottom:1.5rem; }
 
-    /* Дизайн A/B */
-    .design-options{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.2rem}
-    @media(max-width:680px){.design-options{grid-template-columns:1fr}}
-    .design-card{border:2px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;transition:border-color .2s,transform .15s;position:relative;background:var(--surface)}
-    .design-card:hover{border-color:var(--accent-dim);transform:translateY(-2px)}
-    .design-card.active{border-color:var(--accent)}
-    .design-card__preview{height:120px;border-radius:8px;overflow:hidden;margin-bottom:.8rem;background:#F2EDE6;position:relative}
-    .design-card__preview--a .dpv-hero{height:55%;background:linear-gradient(135deg,#C8643C,#E8B98F)}
-    .design-card__preview--a .dpv-bar{height:14%;margin:6px;background:#fff;border-radius:4px}
-    .design-card__preview--a .dpv-grid{display:flex;gap:5px;padding:0 6px}
-    .design-card__preview--a .dpv-grid span{flex:1;height:18px;background:#fff;border-radius:3px}
-    .design-card__preview--b .dpv-split{display:flex;height:100%;gap:6px;padding:8px}
-    .design-card__preview--b .dpv-text{flex:1;background:#fff;border-radius:4px}
-    .design-card__preview--b .dpv-collage{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-    .design-card__preview--b .dpv-collage span{background:linear-gradient(135deg,#C8643C,#E8B98F);border-radius:3px}
-    .design-card__name{font-weight:600;font-size:.92rem;margin-bottom:.3rem;color:var(--text)}
-    .design-card__desc{font-size:.8rem;color:var(--muted);line-height:1.45}
-    .design-card__badge{display:none;position:absolute;top:.7rem;right:.7rem;background:var(--accent);color:#fff;font-size:.7rem;font-weight:600;padding:.25rem .6rem;border-radius:20px}
-    .design-card.active .design-card__badge{display:block}
-    .design-preview-link{display:inline-flex;align-items:center;gap:.4rem;font-size:.84rem;color:var(--accent);text-decoration:none;font-weight:500}
-    .design-preview-link:hover{text-decoration:underline}
+    /* ── ПОДКЛЮЧЕНИЕ TELEGRAM ── */
+    .tg-box{margin-top:1.5rem;padding:1.1rem 1.2rem;background:var(--surface2);
+      border:1px solid var(--border);border-radius:12px}
+    .tg-box__head{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+    .tg-box__head svg{width:18px;height:18px;color:var(--accent)}
+    .tg-box__head b{font-size:.95rem}
+    .tg-box__note{font-size:.83rem;color:var(--muted);line-height:1.55}
+    .tg-box__state{margin-top:.9rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.86rem}
+    .tg-box__ok{color:#0F6540;font-weight:600}
+    .tg-box__btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;
+      padding:.5rem 1rem;border-radius:9px;border:1px solid var(--accent);background:var(--accent);
+      color:#fff;font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;text-decoration:none}
+    .tg-box__btn--ghost{background:transparent;color:var(--accent)}
 
     /* ── ФЛАГ АВТООБНОВЛЕНИЯ ── */
     .auto-flag{display:flex;align-items:center;gap:.6rem;padding:.8rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:1.25rem}
@@ -90,17 +82,6 @@
     .social-card__body label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em}
     .social-card__body input{width:100%;padding:.4rem .5rem;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.85rem;font-family:inherit}
     .social-card__body input:focus{outline:none;border-color:var(--accent)}
-
-    /* ── ВКЛАДКА ДИЗАЙН ── */
-    .design-options{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-    @media(max-width:560px){.design-options{grid-template-columns:1fr}}
-    .design-card{border:2px solid var(--border);border-radius:14px;padding:1.25rem;cursor:pointer;transition:border-color .2s,background .2s;text-align:center}
-    .design-card:hover{border-color:var(--accent)}
-    .design-card.active{border-color:var(--accent);background:var(--surface2)}
-    .design-card__name{font-size:1.05rem;font-weight:700;margin-bottom:.3rem}
-    .design-card__desc{font-size:.8rem;color:var(--muted);line-height:1.5}
-    .design-card__badge{display:inline-block;margin-top:.75rem;font-size:.72rem;color:var(--accent);font-weight:600}
-    .design-preview-link{display:inline-flex;align-items:center;gap:.4rem;margin-top:1.25rem;font-size:.85rem;color:var(--accent)}
 
     /* ── FORM ── */
     .field { margin-bottom:1.25rem; }
@@ -210,9 +191,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6"/></svg>
       Реквизиты
     </button>
-    <button class="nav-item" data-section="design">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
-      Дизайн
+    <button class="nav-item" data-section="booking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+      Онлайн-запись
     </button>
   </nav>
 
@@ -369,7 +350,7 @@
       <div class="field">
         <label>Полное наименование</label>
         <input type="text" id="f-org-name" value="{{ company.org_name or '' }}"
-               placeholder='ООО "Название" или ИП Запорожченко Максим Русланович'>
+               placeholder='ООО "Название"'>
       </div>
       <div class="field-row">
         <div class="field">
@@ -464,38 +445,20 @@
             </div>
           {% endfor %}
         </div>
-        <p style="font-size:.82rem;color:var(--muted);margin-top:.9rem">
-          Записи приходят в Telegram: там же их можно подтвердить или отменить.
-          Подключить Telegram — в личном кабинете, раздел «Настройки».
-        </p>
       </div>
-    </section>
 
-    <!-- ── ДИЗАЙН ── -->
-    <section class="section" id="section-design">
-      <h2 class="section__title">Дизайн сайта</h2>
-      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.25rem">
-        Выберите оформление для компьютерной версии. На телефонах всегда показывается адаптивная мобильная версия.
-      </p>
-      <div class="design-options">
-        <div class="design-card {{ 'active' if (company.template_variant or 'A')|upper == 'A' else '' }}"
-             id="design-A" onclick="selectDesign('A')">
-          <div class="design-card__preview design-card__preview--a">
-            <div class="dpv-hero"></div><div class="dpv-bar"></div><div class="dpv-grid"><span></span><span></span><span></span></div>
-          </div>
-          <div class="design-card__name">Вариант A — Кинообложка</div>
-          <div class="design-card__desc">Крупное фото-герой на весь экран, плашка с рейтингом, карточки услуг.</div>
-          <div class="design-card__badge">✓ Выбрано</div>
+      <!-- Подключение Telegram: и записи, и чат с сайта идут туда же, поэтому
+           привязка живёт рядом с настройкой записи, а не только в кабинете.
+           Эндпоинты /lk/api/telegram общие — редактор открыт на том же хосте
+           кабинета и с той же сессией. -->
+      <div class="tg-box" id="tgBox">
+        <div class="tg-box__head">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.3 18.9 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.3.3-.5.5-1 .5l.3-4.7 8.5-7.7c.4-.3-.1-.5-.6-.2L6.9 13 2.4 11.6c-1-.3-1-1 .2-1.5l17.9-6.9c.8-.3 1.5.2 1.4 1.1z"/></svg>
+          <b>Telegram</b>
         </div>
-        <div class="design-card {{ 'active' if (company.template_variant or 'A')|upper == 'B' else '' }}"
-             id="design-B" onclick="selectDesign('B')">
-          <div class="design-card__preview design-card__preview--b">
-            <div class="dpv-split"><div class="dpv-text"></div><div class="dpv-collage"><span></span><span></span><span></span><span></span></div></div>
-          </div>
-          <div class="design-card__name">Вариант B — Журнал</div>
-          <div class="design-card__desc">Фото-коллаж справа, текст слева, редакционный стиль с прайс-листом.</div>
-          <div class="design-card__badge">✓ Выбрано</div>
-        </div>
+        <p class="tg-box__note">Новые записи и сообщения посетителей с сайта приходят в Telegram.
+          Записи подтверждаются кнопками под карточкой, на сообщения отвечайте через «Ответить».</p>
+        <div id="tgState" class="tg-box__state">Проверяем подключение…</div>
       </div>
     </section>
 
@@ -742,6 +705,39 @@ async function saveAll() {
   }
 }
 
+/* Подключение Telegram. Статус и отвязка — те же эндпоинты, что в кабинете. */
+async function tgLoad() {
+  const box = document.getElementById('tgState');
+  if (!box) return;
+  try {
+    const res = await fetch('/lk/api/telegram');
+    if (!res.ok) throw new Error('нет доступа');
+    const d = await res.json();
+    if (d.connected) {
+      box.innerHTML = '<span class="tg-box__ok">Telegram подключён</span>' +
+        '<button type="button" class="tg-box__btn tg-box__btn--ghost" onclick="tgDisconnect()">Отключить</button>';
+    } else if (d.botConfigured && d.link) {
+      box.innerHTML = '<a class="tg-box__btn" href="' + d.link + '" target="_blank" rel="noopener">Подключить Telegram</a>' +
+        '<button type="button" class="tg-box__btn tg-box__btn--ghost" onclick="tgLoad()">Я нажал «Старт» — проверить</button>';
+    } else {
+      box.textContent = 'Бот пока не настроен. Напишите в поддержку.';
+    }
+  } catch (e) {
+    box.textContent = 'Не удалось проверить подключение. Обновите страницу.';
+  }
+}
+async function tgDisconnect() {
+  if (!confirm('Отключить Telegram? Записи и сообщения с сайта перестанут приходить.')) return;
+  try {
+    await fetch('/lk/api/telegram/disconnect', { method: 'POST' });
+    await tgLoad();
+    showAlert('Telegram отключён', 'success');
+  } catch (e) {
+    showAlert('Не удалось отключить: ' + e.message, 'error');
+  }
+}
+tgLoad();
+
 /* Онлайн-запись: показываем только те поля, которые нужны выбранному режиму. */
 function bkSync() {
   const mode = document.getElementById('bk-mode');
@@ -771,22 +767,6 @@ function resetSaveState() {
 }
 
 // ── ДИЗАЙН A/B ────────────────────────────────────────────────
-async function selectDesign(variant){
-  try {
-    const res = await fetch(`/admin/design/${SLUG}`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({variant}),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    document.getElementById('design-A').classList.toggle('active', variant === 'A');
-    document.getElementById('design-B').classList.toggle('active', variant === 'B');
-    showAlert('Дизайн ' + variant + ' применён', 'success');
-  } catch(e){
-    showAlert('Ошибка смены дизайна: ' + e.message, 'error');
-  }
-}
-
 function showAlert(text, type='success') {
   const box = document.getElementById('alertBox');
   box.innerHTML = `<div class="alert alert--${type}">${text}</div>`;

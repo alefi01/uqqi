@@ -317,22 +317,8 @@ def _feat_icon(text: str) -> str:
 
 # ── ПУБЛИЧНЫЙ САЙТ ────────────────────────────────────────────────────────────
 
-def _city_from_address(address: str) -> str:
-    """Пытается извлечь город из адреса (обычно предпоследний/последний компонент)."""
-    if not address:
-        return ""
-    import re as _re
-    # Ищем известные города или берём компонент после запятой, похожий на город
-    parts = [p.strip() for p in address.split(",") if p.strip()]
-    # Частый формат: «улица, дом, Город» — город часто последний или предпоследний
-    for p in reversed(parts):
-        # пропускаем дома/этажи/индексы
-        if _re.search(r'\d', p) and len(p) < 12:
-            continue
-        # первое «словесное» — вероятно город
-        if _re.match(r'^[А-ЯЁ][а-яё-]+', p):
-            return p
-    return parts[-1] if parts else ""
+# Город из адреса — общий разбор в app/parser.py (там же им пользуется ЛК).
+from app.parser import city_from_address as _city_from_address
 
 
 def _extract_org_id(url: str) -> str | None:
