@@ -37,6 +37,9 @@ const API = {
   siteStatus(id)                    { return this._req('GET', '/sites/' + id + '/status'); },
   siteMetrics(id)                   { return this._req('GET', '/sites/' + id + '/metrics'); },
   designs()                         { return this._req('GET', '/designs'); },
+  // Наши показательные витрины: на экране «Новый сайт» своего сайта ещё нет,
+  // и предпросмотр оформлений показывает эти.
+  demoSites()                       { return this._req('GET', '/demo-sites'); },
   setDesign(id, design)             { return this._req('POST', '/sites/' + id + '/design', { design }); },
   deleteSite(id, body)              { return this._req('DELETE', '/sites/' + id, body || {}); },
   cancelSubscription(id)            { return this._req('POST', '/sites/' + id + '/cancel'); },

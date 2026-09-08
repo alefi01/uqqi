@@ -474,6 +474,24 @@ async def list_sites(user: User = Depends(require_user), db: OrmSession = Depend
     }
 
 
+@router.get("/demo-sites")
+async def demo_sites(db: OrmSession = Depends(get_db)):
+    """
+    Витрины-образцы для предпросмотра оформлений на экране «Новый сайт».
+
+    До сборки своего сайта slug ещё нет, и карточка оформления могла показать
+    только название. Берём десять САМЫХ РАННИХ готовых сайтов — это наши
+    показательные витрины, владелец делает их сам. Фото обязательно: пустая
+    карточка в предпросмотре хуже, чем её отсутствие.
+    """
+    rows = db.query(Company).filter(
+        Company.is_active == True,          # noqa: E712
+        Company.build_status == "ready",
+    ).order_by(Company.id.asc()).limit(40).all()
+    slugs = [c.slug for c in rows if c.slug and c.gallery_photos][:10]
+    return {"slugs": slugs}
+
+
 @router.post("/sites/add")
 async def add_site(payload: AddSitePayload,
                     user: User = Depends(require_user),

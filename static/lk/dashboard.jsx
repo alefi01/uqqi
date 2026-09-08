@@ -68,7 +68,7 @@ function SiteCard({ site, nav, onPay, onMenu, onStats }) {
       <div className="sitecard__actions">
         {!isBuilding && !isError && <button className="btn btn--ghost btn--sm" onClick={() => onStats(site)}><i data-lucide="bar-chart-2"></i> Статистика</button>}
         {site.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оплатить, чтобы забрать сайт</button>}
-        {site.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оформить Pro</button>}
+        {site.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Сделать PRO-сайтом</button>}
         {(site.status === 'protrial' || site.status === 'pro') && <button className="btn btn--ghost btn--sm" onClick={() => onPay(site)}>Продлить Pro</button>}
         {isError && <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="rotate-cw"></i> Попробовать снова</button>}
         {!isBuilding && <button className="iconbtn" title="Настройки" onClick={() => onMenu(site)}><i data-lucide="settings-2"></i></button>}
@@ -233,17 +233,22 @@ function DesignCard({ d, selected, onSelect, slug, onZoom, lead }) {
   );
 }
 
-function DesignGallery({ designs, value, onSelect, slug, onZoom, applied }) {
+function DesignGallery({ designs, value, onSelect, slug, onZoom, applied, demoSlugs }) {
   if (!designs || !designs.length) return <div className="spin" style={{ margin: '1rem auto' }}></div>;
   // Действующее оформление идёт первым и во всю ширину: это ответ на вопрос
   // «что у меня сейчас», который человек задаёт раньше всех остальных.
   const lead = applied ? designs.filter(d => d.key === applied) : [];
   const rest = applied ? designs.filter(d => d.key !== applied) : designs;
+  const list = lead.concat(rest);
+  // На экране «Новый сайт» своего сайта ещё нет: показываем наши витрины-образцы,
+  // каждой карточке — свою, чтобы оформления сравнивались на разных заведениях.
+  const demos = (demoSlugs && demoSlugs.length) ? demoSlugs : null;
   return (
     <div className="dgrid">
-      {lead.concat(rest).map(d => (
+      {list.map((d, i) => (
         <DesignCard key={d.key} d={d} selected={value === d.key} onSelect={onSelect}
-          slug={slug} onZoom={onZoom} lead={applied ? d.key === applied : false} />
+          slug={slug || (demos ? demos[i % demos.length] : '')}
+          onZoom={onZoom} lead={applied ? d.key === applied : false} />
       ))}
     </div>
   );
@@ -331,7 +336,7 @@ function ScreenDesign({ nav, site, designs, onApply, onPay }) {
           </span>
           <button className="btn btn--primary" disabled={!changed || busy} onClick={() => apply()}>{busy ? 'Применяем…' : 'Применить'}</button>
           <a className="btn btn--ghost" href={liveUrl} target="_blank" rel="noopener"><i data-lucide="external-link"></i> Открыть в новой вкладке</a>
-          {isPro && !proActive && onPay && <button className="btn btn--outline" onClick={() => onPay(site)}>Оформить Pro</button>}
+          {isPro && !proActive && onPay && <button className="btn btn--outline" onClick={() => onPay(site)}>Сделать PRO-сайтом</button>}
         </div>
       </div>
       {zoom && <DesignPreview d={zoom} slug={site.slug} onClose={() => setZoom(null)}
@@ -341,11 +346,16 @@ function ScreenDesign({ nav, site, designs, onApply, onPay }) {
 }
 
 // ---- экран «Добавить сайт» ----
-function ScreenAddSite({ nav, onStartBuild, designs }) {
+function ScreenAddSite({ nav, onStartBuild, designs, demoSlugs }) {
   const [url, setUrl] = useStateD('');
   const [design, setDesign] = useStateD('A');
+  const [zoom, setZoom] = useStateD(null);
   const valid = validYandex(url);
   const isProSel = (designs || []).some(d => d.key === design && d.tier === 'pro');
+  const demos = demoSlugs || [];
+  // slug для полноэкранного просмотра — тот же образец, что и в карточке
+  const zoomSlug = zoom && demos.length
+    ? demos[(designs || []).findIndex(d => d.key === zoom.key) % demos.length] : '';
   return (
     <div className="wrap-md">
       <a className="linklike" style={{ fontSize: '.84rem', display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.2rem' }} onClick={() => nav('sites')}><i data-lucide="arrow-left" style={{ width: 15, height: 15 }}></i> Мои сайты</a>
@@ -365,11 +375,21 @@ function ScreenAddSite({ nav, onStartBuild, designs }) {
         </div>
         <div className="field" style={{ marginTop: '1.3rem' }}>
           <label className="field__label">Дизайн сайта</label>
-          <DesignGallery designs={designs} value={design} onSelect={setDesign} />
+          <DesignGallery designs={designs} value={design} onSelect={setDesign}
+            demoSlugs={demos} onZoom={demos.length ? setZoom : null} />
+          {demos.length > 0 && (
+            <span className="field__hint" style={{ marginTop: '.5rem', display: 'block' }}>
+              В карточках — наши готовые сайты в этом оформлении. Ваш соберётся из вашей карточки Яндекс Карт.
+            </span>
+          )}
           {isProSel && <span className="field__hint" style={{ marginTop: '.6rem', display: 'block' }}>Премиум-дизайн активен, пока действует Pro (в т.ч. пробный период). Без Pro сайт покажется в базовом дизайне — оформить Pro можно в любой момент из кабинета.</span>}
         </div>
         <button className="btn btn--primary btn--lg btn--block" style={{ marginTop: '1.3rem' }} disabled={valid !== true} onClick={() => onStartBuild(url, design)}>Создать сайт</button>
       </div>
+      {zoom && zoomSlug && (
+        <DesignPreview d={zoom} slug={zoomSlug} onClose={() => setZoom(null)}
+          onApply={(key) => { setDesign(key); setZoom(null); }} applying={false} />
+      )}
     </div>
   );
 }
