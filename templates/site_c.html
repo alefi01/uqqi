@@ -1,3 +1,4 @@
+{% import "_stars.html" as stars %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -164,6 +165,13 @@ img,svg{display:block;max-width:100%;}
 .rating-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;}
 .rating-row__num{font-family:var(--display);font-weight:900;font-size:2.4rem;line-height:1;}
 .rating-row__stars{color:var(--star);font-size:.9rem;}
+/* Звёзды рейтинга — инлайновый SVG вместо звёздочки-символа: одинаковая фигура
+   во всех системах и осмысленная озвучка (подпись на .stars-row). */
+.stars-row{display:inline-flex;align-items:center;gap:.08em;line-height:1;}
+.stars-row svg{width:1em;height:1em;flex:none;}
+.lb__close svg,.pm__close svg{width:18px;height:18px;}
+.stars svg,.st svg{width:1em;height:1em;vertical-align:-.12em;}
+
 .rating-row__cnt{font-size:.78rem;color:var(--muted);}
 .reviews-grid{display:flex;flex-direction:column;gap:.65rem;}
 .review{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:1rem 1.1rem;}
@@ -200,7 +208,7 @@ img,svg{display:block;max-width:100%;}
 .lb{display:none;position:fixed;inset:0;z-index:200;background:rgba(14,13,11,.96);align-items:center;justify-content:center;flex-direction:column;}
 .lb.open{display:flex;}
 .lb__img{width:min(92vw,520px);aspect-ratio:1;border-radius:var(--r-md);}
-.lb__close{position:absolute;top:1.2rem;right:1.2rem;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:1.1rem;cursor:pointer;}
+.lb__close{position:absolute;top:1.2rem;right:1.2rem;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;cursor:pointer;display:grid;place-items:center;}
 .lb__btn{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.3rem;cursor:pointer;}
 .lb__btn.prev{left:.8rem;} .lb__btn.next{right:.8rem;}
 .lb__cnt{position:absolute;bottom:1.6rem;color:rgba(255,255,255,.6);font-size:.82rem;}
@@ -214,7 +222,7 @@ img,svg{display:block;max-width:100%;}
 .pm__name{font-family:var(--display);font-weight:700;font-size:1.25rem;line-height:1.1;margin-bottom:.4rem;}
 .pm__price{font-family:var(--display);font-weight:700;font-size:1.4rem;margin-bottom:.9rem;}
 .pm__desc{font-size:.88rem;color:var(--ink-2);line-height:1.65;margin-bottom:1.2rem;}
-.pm__close{position:absolute;top:.8rem;right:.8rem;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:none;color:var(--ink);font-size:1rem;cursor:pointer;z-index:2;}
+.pm__close{position:absolute;top:.8rem;right:.8rem;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:none;color:var(--ink);cursor:pointer;display:grid;place-items:center;z-index:2;}
 .pm .cta{width:100%;}
 
 .reveal{opacity:1;transform:none;}
@@ -254,7 +262,7 @@ img,svg{display:block;max-width:100%;}
 
   <!-- chips -->
   <div class="chips">
-    {% if company.rating %}<span class="schip schip--rating" onclick="goTo('#reviews')"><span class="st">★</span> {{ company.rating }}{% if company.reviews_count or company.reviews %} · {{ company.reviews_count if company.reviews_count else company.reviews|length }}{% endif %}</span>{% endif %}
+    {% if company.rating %}<span class="schip schip--rating" onclick="goTo('#reviews')"><span class="st">{{ stars.one() }}</span> {{ company.rating }}{% if company.reviews_count or company.reviews %} · {{ company.reviews_count if company.reviews_count else company.reviews|length }}{% endif %}</span>{% endif %}
     {% if status %}<span class="schip schip--open">● {{ status }}</span>{% endif %}
     {% if company.avg_bill %}<span class="schip schip--bill">₽ {{ company.avg_bill }}</span>{% endif %}
   </div>
@@ -326,7 +334,7 @@ img,svg{display:block;max-width:100%;}
     <div class="block__title">Отзывы</div>
     <div class="rating-row">
       <div class="rating-row__num">{{ company.rating or '—' }}</div>
-      <div><div class="rating-row__stars">★★★★★</div><div class="rating-row__cnt">{{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов · Яндекс</div></div>
+      <div><div class="rating-row__stars">{{ stars.row(5) }}</div><div class="rating-row__cnt">{{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов · Яндекс</div></div>
     </div>
     <div class="reviews-grid" id="reviews-grid"></div>
     <button class="show-more" id="revMoreBtn" onclick="showMoreReviews(this)">Показать ещё отзывы</button>
@@ -360,7 +368,7 @@ img,svg{display:block;max-width:100%;}
 </div>
 
 <div class="lb" id="lb" onclick="if(event.target===this)closeLb()">
-  <button class="lb__close" onclick="closeLb()">✕</button>
+  <button class="lb__close" onclick="closeLb()" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   <button class="lb__btn prev" onclick="lbGo(-1)">‹</button>
   <div class="lb__img ph" id="lbImg"></div>
   <button class="lb__btn next" onclick="lbGo(1)">›</button>
@@ -369,7 +377,7 @@ img,svg{display:block;max-width:100%;}
 
 <div class="pm" id="pm" onclick="if(event.target===this)closePm()">
   <div class="pm__box">
-    <button class="pm__close" onclick="closePm()">✕</button>
+    <button class="pm__close" onclick="closePm()" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="pm__media ph" id="pmImg"></div>
     <div class="pm__info">
       <div class="pm__cat" id="pmCat"></div>

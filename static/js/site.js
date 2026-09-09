@@ -22,6 +22,21 @@
 
   /* ── CATALOG ── */
   const PER = 8;
+
+  /* Звёзды рейтинга: тот же контур, что в шаблонах (_stars.html) и у
+     премиум-оформлений. Символы звёздочек не используем — в разных системах
+     они рисуются по-разному, а скринридер читает их как «чёрная звезда».
+     Пустые звёзды даём тем же контуром с прозрачностью: обводка другой
+     формы читалась бы как другой значок. */
+  const STAR_PATH = 'M12 2l3 6.6 7 .8-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.8z';
+  const star = (dim) =>
+    `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"` +
+    (dim ? ' style="opacity:.28"' : '') + `><path d="${STAR_PATH}"/></svg>`;
+  const starsRow = (n) => {
+    const full = Math.max(0, Math.min(5, Number(n) || 0));
+    return `<span class="stars-row" role="img" aria-label="Оценка ${full} из 5">` +
+      star(false).repeat(full) + star(true).repeat(5 - full) + '</span>';
+  };
   let curCat = "all", page = 1;
   function cats(){ return ["all", ...new Set(D.services.map(s=>s.cat).filter(Boolean))]; }
   function visible(){ return D.services.filter(s=> curCat==="all" || s.cat===curCat); }
@@ -109,15 +124,19 @@
 
   /* ── REVIEWS ── */
   function reviewCard(r){
+    // Имя автора может отсутствовать: Яндекс отдаёт и анонимные отзывы.
+    // Раньше здесь читалось r.name[0] — на таком отзыве map падал целиком, и
+    // блок отзывов на витрине просто не появлялся.
+    const name = (r.name || '').trim();
     const avatar = r.av && r.av.startsWith('http')
       ? `<div class="review__av" style="background-image:url('${r.av}');background-size:cover"></div>`
-      : `<div class="review__av" style="background:${r.av||'#888'}">${r.name[0]||'?'}</div>`;
+      : `<div class="review__av" style="background:${r.av||'#888'}">${name[0] || '?'}</div>`;
     return `<div class="review">
       <div class="review__hdr">
         ${avatar}
         <div>
-          <div class="review__name">${r.name}</div>
-          <div class="review__sub"><span class="review__stars">${"★".repeat(r.stars)}${"☆".repeat(5-r.stars)}</span><span class="review__date">${r.date}</span></div>
+          <div class="review__name">${name || 'Посетитель'}</div>
+          <div class="review__sub"><span class="review__stars">${starsRow(r.stars)}</span><span class="review__date">${r.date}</span></div>
         </div>
       </div>
       <p class="review__text">${r.text}</p>

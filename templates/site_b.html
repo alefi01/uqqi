@@ -1,3 +1,4 @@
+{% import "_stars.html" as stars %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -84,6 +85,9 @@ img,svg{display:block;max-width:100%;}
 .hero__meta{display:flex;flex-wrap:wrap;gap:1.3rem;margin-bottom:1.7rem;}
 .hmeta{display:inline-flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--ink-2);font-weight:500;cursor:pointer;}
 .hmeta svg{width:17px;height:17px;color:var(--muted);}
+/* Иконки в этой строке серые, но звезда рейтинга — нет: правило выше
+   бьёт по любому svg внутри, поэтому цвет и размер звезды возвращаем явно. */
+.hmeta .stars svg{color:var(--star);width:1em;height:1em;}
 .hmeta .stars{color:var(--star);}
 .hmeta:hover{color:var(--terracotta);}
 .cta-row{display:flex;gap:.7rem;flex-wrap:wrap;}
@@ -198,6 +202,12 @@ img,svg{display:block;max-width:100%;}
 .rating-sum{display:flex;align-items:center;gap:2.4rem;flex-wrap:wrap;margin-bottom:2rem;}
 .rating-sum__num{font-family:var(--display);font-weight:900;font-size:4rem;line-height:1;letter-spacing:-.03em;}
 .rating-sum__stars{color:var(--star);font-size:1.1rem;margin-top:.2rem;}
+/* Звёзды рейтинга — инлайновый SVG вместо звёздочки-символа: одинаковая фигура
+   во всех системах и осмысленная озвучка (подпись на .stars-row). */
+.stars-row{display:inline-flex;align-items:center;gap:.08em;line-height:1;}
+.stars-row svg{width:1em;height:1em;flex:none;}
+.stars svg,.st svg{width:1em;height:1em;vertical-align:-.12em;}
+
 .rating-sum__cnt{font-size:.84rem;color:var(--muted);}
 .rating-bars{flex:1;min-width:220px;display:flex;flex-direction:column;gap:.4rem;}
 .rbar{display:flex;align-items:center;gap:.7rem;font-size:.78rem;color:var(--muted);}
@@ -242,7 +252,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
 .lb{display:none;position:fixed;inset:0;z-index:200;background:rgba(14,13,11,.96);align-items:center;justify-content:center;flex-direction:column;}
 .lb.open{display:flex;}
 .lb__img{width:min(90vw,720px);aspect-ratio:4/3;border-radius:var(--r-md);}
-.lb__close{position:absolute;top:1.2rem;right:1.2rem;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;cursor:pointer;display:grid;place-items:center;}
+.lb__close{position:absolute;top:1.2rem;right:1.2rem;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;cursor:pointer;display:grid;place-items:center;display:grid;place-items:center;}
 .lb__close svg,.pm__close svg{width:18px;height:18px;}
 .lb__btn{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.4rem;cursor:pointer;}
 .lb__btn.prev{left:1rem;} .lb__btn.next{right:1rem;}
@@ -257,7 +267,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
 .pm__name{font-family:var(--display);font-weight:700;font-size:1.5rem;line-height:1.1;margin-bottom:.5rem;}
 .pm__price{font-family:var(--display);font-weight:700;font-size:1.6rem;margin-bottom:1.2rem;}
 .pm__desc{font-size:.92rem;color:var(--ink-2);line-height:1.7;margin-bottom:1.5rem;}
-.pm__close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.8);border:none;color:var(--ink);cursor:pointer;z-index:2;display:grid;place-items:center;}
+.pm__close{position:absolute;top:1rem;right:1rem;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.8);border:none;color:var(--ink);cursor:pointer;display:grid;place-items:center;z-index:2;display:grid;place-items:center;}
 
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .5s var(--ease),transform .5s var(--ease);}
 .reveal.in{opacity:1;transform:none;}
@@ -297,7 +307,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
         <h1 class="hero__title">{{ company.title }}</h1>
         {% if company.about_text %}<p class="hero__lead">{{ company.about_text }}</p>{% endif %}
         <div class="hero__meta">
-          {% if company.rating %}<span class="hmeta" onclick="goTo('#reviews')"><span class="stars">★</span> {{ company.rating }}{% if company.reviews_count or company.reviews %} · {{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов{% endif %}</span>{% endif %}
+          {% if company.rating %}<span class="hmeta" onclick="goTo('#reviews')"><span class="stars">{{ stars.one() }}</span> {{ company.rating }}{% if company.reviews_count or company.reviews %} · {{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов{% endif %}</span>{% endif %}
           <span class="hmeta" onclick="goTo('#location')"><i data-lucide="map-pin"></i> {{ company.address }}</span>
         </div>
         <div class="cta-row">
@@ -318,7 +328,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
         <div class="c c1 ph" {% if company.gallery_photos|length > 0 %}style="background-image:url('{{ company.gallery_photos[0] }}');background-size:cover;background-position:center"{% else %}style="background:linear-gradient(150deg,#3a2a1c,#1d1512)"{% endif %}></div>
         <div class="c c2 ph" {% if company.gallery_photos|length > 1 %}style="background-image:url('{{ company.gallery_photos[1] }}');background-size:cover;background-position:center"{% else %}style="background:linear-gradient(135deg,#E8B98F,#C8643C)"{% endif %}></div>
         <div class="c c3 ph" {% if company.gallery_photos|length > 2 %}style="background-image:url('{{ company.gallery_photos[2] }}');background-size:cover;background-position:center"{% else %}style="background:linear-gradient(135deg,#7FA98F,#4E7A5E)"{% endif %}></div>
-        {% if company.rating %}<div class="collage__badge"><div class="n">{{ company.rating }}</div><div class="s"><span class="st">★★★★★</span>{{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов</div></div>{% endif %}
+        {% if company.rating %}<div class="collage__badge"><div class="n">{{ company.rating }}</div><div class="s"><span class="st">{{ stars.row(5) }}</span>{{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов</div></div>{% endif %}
       </div>
     </div>
 
@@ -390,7 +400,7 @@ footer .wrap{display:flex;flex-direction:column;gap:1rem;}
     <div class="rating-sum">
       <div>
         <div class="rating-sum__num">{{ company.rating or '—' }}</div>
-        <div class="rating-sum__stars">★★★★★</div>
+        <div class="rating-sum__stars">{{ stars.row(5) }}</div>
         <div class="rating-sum__cnt">{{ company.reviews_count if company.reviews_count else company.reviews|length }} отзывов</div>
       </div>
       <div class="rating-bars">
