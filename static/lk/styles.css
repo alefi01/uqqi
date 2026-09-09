@@ -236,7 +236,7 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.55;}
 .main__head .state{font-family:var(--font-serif);font-style:italic;font-weight:300;
   font-size:clamp(1rem,1.3vw,1.15rem);line-height:1.25;color:var(--ink-muted);margin-top:.3rem;}
 .main__head .sub{font-size:.84rem;color:var(--ink-muted);margin-top:.45rem;max-width:60ch;}
-/* ⚠️ overflow-y:auto без явного overflow-x даёт вычисленный overflow-x:auto —
+/* Внимание: overflow-y:auto без явного overflow-x даёт вычисленный overflow-x:auto —
    контейнер становится СВОИМ боковым скроллером, и любой элемент чуть шире
    экрана позволяет таскать всю страницу вбок. body{overflow-x:hidden} тут не
    спасает: прокрутка живёт внутри. Держим ось X закрытой явно. */
@@ -287,6 +287,19 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.55;}
 .muted{color:var(--ink-muted);}
 .divider{height:1px;background:var(--line);border:0;}
 .eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted);}
+/* Окно «пробный Pro закончился»: что именно отключилось и сколько стоит вернуть.
+   Старая цена зачёркнута — это маркетинговый приём, поэтому она подписана для
+   скринридера через <s>, а не только визуально. */
+.trial-lost{list-style:none;margin:1rem 0 .2rem;padding:0;display:flex;flex-direction:column;gap:.5rem;}
+.trial-lost li{display:flex;align-items:center;gap:.55rem;font-size:.88rem;color:var(--ink-2);}
+.trial-lost svg{width:16px;height:16px;flex:none;color:var(--terracotta-deep);}
+.trial-price{display:flex;align-items:baseline;gap:.5rem;margin-top:1.1rem;padding:.8rem 1rem;
+  background:var(--sand);border:1px solid var(--sand-line);border-radius:var(--r-md);}
+.trial-price__old{font-size:1rem;color:var(--ink-muted);text-decoration:line-through;}
+.trial-price__new{font-family:var(--font-display,inherit);font-size:1.6rem;font-weight:700;
+  color:var(--terracotta-deep);letter-spacing:-.02em;}
+.trial-price__per{font-size:.85rem;color:var(--ink-2);}
+
 /* Плашка «PRO 7 дней» на кнопке создания первого сайта: новый сайт получает
    пробный Pro, и человек должен видеть это до нажатия, а не после.
    Оранжевая на тёмной кнопке — контраст белого на --terracotta-deep. */
@@ -560,7 +573,7 @@ textarea.input{resize:vertical;min-height:96px;line-height:1.55;}
 }
 
 /* Панель полноэкранного предпросмотра на телефоне.
-   ⚠️ На десктопной раскладке всё это лежит в одну строку и переносится как
+   Внимание: На десктопной раскладке всё это лежит в одну строку и переносится как
    попало: сегмент «Компьютер/Телефон», ссылка, кнопка выбора и крестик
    налезали друг на друга, а крестик уезжал за край. Раскладываем по строкам:
    заголовок и крестик сверху, действия — отдельной строкой на всю ширину. */

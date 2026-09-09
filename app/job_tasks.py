@@ -145,21 +145,18 @@ async def build_site(company_id: int):
         company.is_active      = True
         company.sub_status     = "free"   # freemium: сайт бесплатен и живёт сразу
 
-        # Pro-триал 7 дней — КАЖДОМУ новому сайту, а не один раз на аккаунт
-        # (2026-09, решение владельца): триал показывает премиум-дизайн, чат и
-        # онлайн-запись на настоящих данных, и упереться в «уже использован» на
-        # втором сайте — потерять продажу. Начисляем ПО ГОТОВНОСТИ, а не при
-        # создании: так триал не сгорает на неудачной сборке. Claim-сайты
-        # (is_claim, user_id ещё NULL при сборке) получают триал при привязке.
-        # users.trial_used остаётся как отметка «триал вообще выдавался» —
-        # логику показа он больше не гейтит.
+        # Pro-триал 7 дней — ТОЛЬКО на первый сайт аккаунта (2026-09, решение
+        # владельца; недолго побыл «на каждый сайт»). Отметка — users.trial_used.
+        # Начисляем ПО ГОТОВНОСТИ, а не при создании: так триал не сгорает на
+        # неудачной сборке. Claim-сайты (is_claim, user_id ещё NULL при сборке)
+        # получают триал при привязке — там та же проверка trial_used.
         granted = False
         if company.user_id and not company.is_claim:
             u = db.query(User).filter(User.id == company.user_id).first()
-            company.pro_until = now + timedelta(days=TRIAL_DAYS)
-            granted = True
-            if u:
+            if u and not u.trial_used:
+                company.pro_until = now + timedelta(days=TRIAL_DAYS)
                 u.trial_used = True
+                granted = True
         db.commit()
         if granted:
             job_log(company_id, f"✅ Готово: {slug}.uqqi.ru — бесплатный, Pro-триал до {company.pro_until:%d.%m.%Y}")

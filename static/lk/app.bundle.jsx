@@ -465,6 +465,40 @@ function SiteCard({ site, nav, onPay, onDesign, onDelete, onStats }) {
   );
 }
 
+// ---- окно «пробный Pro закончился» ----
+// Показываем один раз за сессию (sessionStorage): «при входе в ЛК», а не на
+// каждом переключении экрана. Ключ с id сайта — про каждый сайт напоминаем свой раз.
+function TrialEndedModal({ site, onPay, onClose }) {
+  if (!site) return null;
+  return (
+    <div className="scrim" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3>Пробный Pro закончился</h3>
+        <p>На сайте <b>{site.name}</b> ({site.slug}.uqqi.ru) закончился пробный
+          период{site.trialEndedAt ? ` ${site.trialEndedAt}` : ''}. Сайт продолжает работать
+          бесплатно, но эти возможности сейчас отключены:</p>
+        <ul className="trial-lost">
+          <li><i data-lucide="palette"></i>Премиум-оформления витрины</li>
+          <li><i data-lucide="calendar-check"></i>Онлайн-запись со слотами</li>
+          <li><i data-lucide="message-circle"></i>Чат на сайте с сообщениями в Telegram</li>
+          <li><i data-lucide="pencil"></i>Редактирование содержимого сайта</li>
+        </ul>
+        <div className="trial-price">
+          {/* <s> — семантическое «уже не действует»: скринридер объявит его как
+              зачёркнутое, одного line-through в CSS для этого мало. */}
+          <s className="trial-price__old"><span className="sr-only">Старая цена </span>599 ₽</s>
+          <span className="trial-price__new">399 ₽</span>
+          <span className="trial-price__per">в месяц</span>
+        </div>
+        <div className="modal__actions">
+          <button className="btn btn--ghost btn--block" onClick={onClose}>Позже</button>
+          <button className="btn btn--primary btn--block" onClick={() => onPay(site)}>Вернуть Pro</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---- экран «Мои сайты» ----
 function ScreenSites({ nav, sites, onPay, onDesign, onDelete, onStats, canAdd }) {
   if (sites.length === 0) {
@@ -1313,6 +1347,7 @@ function App() {
   const [tickets, setTickets] = useState([]);
   const [designs, setDesigns] = useState([]);
   const [demoSlugs, setDemoSlugs] = useState([]);
+  const [trialEnded, setTrialEnded] = useState(null);
   const [designSite, setDesignSite] = useState(null);
 
   const ctx = { email, setEmail, pendingClaim, setPendingClaim };
@@ -1398,12 +1433,27 @@ function App() {
     window.API.me().then(u => { if (u && u.email) setEmail(u.email); }).catch(() => {});
   }, [booted, email, screen]);
 
+  // Первый сайт, у которого догорел пробный Pro и о котором ещё не напоминали
+  // в этой сессии. sessionStorage: «при входе в ЛК» — один раз, а не на каждом
+  // переключении экрана; в новой вкладке напомним снова.
+  function pickTrialEnded(list) {
+    try {
+      const seen = JSON.parse(sessionStorage.getItem('uqqiTrialSeen') || '[]');
+      const hit = (list || []).find(s => s.trialEnded && seen.indexOf(s.id) === -1);
+      if (!hit) return null;
+      sessionStorage.setItem('uqqiTrialSeen', JSON.stringify(seen.concat([hit.id])));
+      return hit;
+    } catch (e) { return null; }   // приватный режим — просто не показываем
+  }
+
   async function loadSites() {
     try {
       const data = await window.API.sites();
       setSites(data.sites || []);
       setCanAdd(data.canAdd !== false);
       setCanAddReason(data.canAddReason || '');
+      const hit = pickTrialEnded(data.sites);
+      if (hit) setTrialEnded(hit);
       return data;
     } catch (e) { return { sites: [] }; }
   }
@@ -1619,6 +1669,10 @@ function App() {
         </div>
 
         {/* site menu modal */}
+        <TrialEndedModal site={trialEnded}
+          onPay={(s) => { setTrialEnded(null); openPay(s); }}
+          onClose={() => setTrialEnded(null)} />
+
         {/* delete site modal */}
         {delSite && (
           <div className="scrim" onClick={() => { setDelSite(null); setDelSiteText(''); }}>

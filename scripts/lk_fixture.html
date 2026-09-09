@@ -4,7 +4,8 @@
   Кабинет — SPA на React: без бэкенда он показывает экран входа, поэтому
   здесь подставлены ответы /lk/api (те же поля, что отдаёт app/cabinet.py).
   Запуск:  python3 -m http.server 8899  →  /scripts/lk_fixture.html
-  Ключи:   ?empty=1 — ни одного сайта, ?anon=1 — гость (экран входа).
+  Ключи:   ?empty=1 — ни одного сайта, ?anon=1 — гость (экран входа),
+           ?trial=1 — окно «Пробный Pro закончился».
   Снимки для гейтов: node scripts/snapshot_lk.mjs
 -->
 <html lang="ru">
@@ -67,6 +68,8 @@ const ROUTES = {
 };
 const Q = new URLSearchParams(location.search);
 if (Q.has('empty')) ROUTES['/sites'] = {sites:[], canAdd:true, canAddReason:""};
+// ?trial=1 — у второго сайта закончился Pro-триал: показывается окно «Пробный Pro закончился».
+if (Q.has('trial')) Object.assign(SITES[1], {trialEnded:true, trialEndedAt:"01.09.2026"});
 window.fetch = function(url, opts){
   const path = String(url).replace('/lk/api','');
   if (Q.has('anon') && path === '/me')

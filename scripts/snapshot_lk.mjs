@@ -33,6 +33,8 @@ const SCREENS = [
   // Действия карточки сайта теперь отдельными кнопками — «шестерёнки» нет.
   ['design',   '',          async (p) => { await p.locator('.sitecard__actions button', { hasText: 'Дизайн' })
                                              .first().click(); }],
+  // Окно «Пробный Pro закончился» — показывается раз за сессию по флагу сайта.
+  ['trial',    '?trial=1',  async () => {}],
 ];
 
 const VENDOR = '.design-gate/vendor';

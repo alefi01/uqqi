@@ -11,7 +11,12 @@
       /* Светлая терракотовая тема — единый вид с кабинетом (А2) */
       --bg:#FAF8F4; --surface:#FFFFFF; --surface2:#F2EDE6;
       --border:#E8E3DC; --accent:#C8643C; --accent-dim:#E8B98F;
-      --text:#1A1714; --muted:#8A7F78;
+      /* Текстовый акцент отдельно от заливки: #C8643C читается на светлом
+         только как крупный/декоративный (3.37:1). --accent-ink даёт 5.2–5.8:1
+         и идёт во всё, что человек читает: активный пункт меню, ссылки,
+         кнопки с белым текстом. */
+      --accent-ink:#A6431D;
+      --text:#1A1714; --muted:#6F6560;
       --green:#21A038; --red:#D24B3E;
     }
 
@@ -35,7 +40,7 @@
     .sidebar { border-right:1px solid var(--border); padding:1.5rem 0; }
     .nav-item { display:flex; align-items:center; gap:.6rem; padding:.55rem 1.5rem; font-size:.88rem; color:var(--muted); cursor:pointer; transition:color .2s, background .2s; border:none; background:transparent; width:100%; text-align:left; font-family:inherit; }
     .nav-item:hover { color:var(--text); background:var(--surface); }
-    .nav-item.active { color:var(--accent); background:var(--surface2); }
+    .nav-item.active { color:var(--accent-ink); background:var(--surface2); }
     .nav-item svg { width:1rem; height:1rem; flex-shrink:0; }
 
     /* ── CONTENT ── */
@@ -50,21 +55,22 @@
     .tg-box{margin-top:1.5rem;padding:1.1rem 1.2rem;background:var(--surface2);
       border:1px solid var(--border);border-radius:12px}
     .tg-box__head{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
-    .tg-box__head svg{width:18px;height:18px;color:var(--accent)}
+    .tg-box__head svg{width:18px;height:18px;color:var(--accent-ink)}
     .tg-box__head b{font-size:.95rem}
     .tg-box__note{font-size:.83rem;color:var(--muted);line-height:1.55}
     .tg-box__state{margin-top:.9rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.86rem}
     .tg-box__ok{color:#0F6540;font-weight:600}
     .tg-box__btn{display:inline-flex;align-items:center;justify-content:center;min-height:40px;
-      padding:.5rem 1rem;border-radius:9px;border:1px solid var(--accent);background:var(--accent);
+      padding:.5rem 1rem;border-radius:9px;border:1px solid var(--accent-ink);background:var(--accent-ink);
       color:#fff;font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;text-decoration:none}
-    .tg-box__btn--ghost{background:transparent;color:var(--accent)}
+    .tg-box__btn--ghost{background:transparent;color:var(--accent-ink)}
 
     /* ── ФЛАГ АВТООБНОВЛЕНИЯ ── */
-    .auto-flag{display:flex;align-items:center;gap:.6rem;padding:.8rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:1.25rem}
-    .auto-flag label{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;flex:1;margin:0;text-transform:none;letter-spacing:0;color:var(--text)}
-    .auto-flag input[type=checkbox]{width:auto;cursor:pointer}
-    .auto-flag__hint{font-size:.74rem;color:var(--muted)}
+    .auto-flag{display:flex;align-items:center;flex-wrap:wrap;gap:.4rem .6rem;padding:.8rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:1.25rem}
+    .auto-flag label{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;flex:1 1 12rem;min-width:0;margin:0;text-transform:none;letter-spacing:0;color:var(--text)}
+    .auto-flag label span,.auto-flag label{overflow-wrap:anywhere}
+    .auto-flag input[type=checkbox]{width:auto;flex:none;cursor:pointer}
+    .auto-flag__hint{font-size:.74rem;color:var(--muted);min-width:0;overflow-wrap:anywhere}
     .section--locked .field input,.section--locked .field textarea,.section--locked .field select,
     .section--locked .hours-editor input,.section--locked .social-input{
       opacity:.55;pointer-events:none;background:var(--surface2)
@@ -122,9 +128,10 @@
     .social-row label { font-size:.82rem; color:var(--muted); }
 
     /* ── SAVE BAR ── */
-    .save-bar { position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border); padding:.85rem 2rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-    .save-btn { padding:.6rem 1.6rem; border-radius:8px; border:none; background:var(--accent); color:#fff; font-size:.88rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .2s; }
-    .save-btn:hover { opacity:.85; }
+    .save-bar { position:sticky; bottom:0; background:var(--surface); border-top:1px solid var(--border); padding:.85rem 2rem; display:flex; align-items:center; justify-content:space-between; gap:.6rem 1rem; flex-wrap:wrap; }
+    .save-state { min-width:0; overflow-wrap:anywhere; }
+    .save-btn { padding:.6rem 1.6rem; border-radius:8px; border:none; background:var(--accent-ink); color:#fff; font-size:.88rem; font-weight:600; font-family:inherit; cursor:pointer; transition:opacity .2s; }
+    .save-btn:hover { background:#8F3817; }
     .save-btn:disabled { opacity:.5; cursor:not-allowed; }
     /* Состояния сохранения: покой / идёт / сохранено. Кнопка в состоянии
        «идёт» остаётся в полную силу — приглушать её значит сказать
@@ -142,6 +149,22 @@
     .save-bar[data-state="success"] .save-reset { visibility:hidden; }
     .save-bar[data-state="success"] .save-btn { background:#0F6540; }
     @media (prefers-reduced-motion:reduce) { .save-btn__spin { animation:none; } }
+
+    /* ── Узкие экраны ──────────────────────────────────────────────────
+       Поля по 2rem съедали пол-экрана, а панель сохранения не переносилась.
+       Проверено verify_responsive на 280/320/414px при 1.25x шрифте. */
+    @media (max-width:560px) {
+      .header { padding:.85rem 1rem; }
+      .header__actions { gap:.5rem; }
+      .content { padding:1.25rem 1rem 0; }
+      .save-bar { padding:.75rem 1rem; }
+      .save-bar .save-state { flex-basis:100%; }
+      .save-btn { flex:1; padding:.6rem 1rem; }
+      .save-reset { flex:none; }
+      .nav-item { padding:.55rem 1rem; }
+      .tg-box { padding:.9rem; }
+      .tg-box__btn { flex:1 1 100%; }
+    }
 
     /* ── ALERT ── */
     .alert { padding:.65rem 1rem; border-radius:8px; font-size:.85rem; margin-bottom:1rem; }

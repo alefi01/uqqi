@@ -340,7 +340,11 @@ def _bind_claim_to_user(code: str, user: User, db: OrmSession):
     company.paid_once  = False
     company.demo_until = None
     company.is_active  = True
-    company.pro_until  = _dt.utcnow() + _td(days=7)   # Pro-триал: превью премиум-дизайна + чата
+    # Pro-триал 7 дней — только если аккаунт его ещё не получал: триал даётся
+    # на ПЕРВЫЙ сайт (2026-09). Отметка общая с self-service — users.trial_used.
+    if not user.trial_used:
+        company.pro_until = _dt.utcnow() + _td(days=7)
+        user.trial_used = True
     db.commit()
     return {
         "slug":  company.slug,
@@ -443,6 +447,11 @@ def _site_dict(c: Company) -> dict:
         "isClaim":   bool(c.is_claim),
         "proUntil":  pro_until,
         "proDays":   pro_days,
+        # Пробный Pro закончился и оплаты не было — кабинет показывает окно
+        # с предложением. Признак: Pro когда-то был (pro_until заполнен),
+        # сейчас не активен, и сайт ни разу не оплачивали.
+        "trialEnded": bool(c.pro_until and not pro_active and not c.paid_once),
+        "trialEndedAt": c.pro_until.strftime("%d.%m.%Y") if c.pro_until else None,
         "created":   c.created_at.strftime("%d.%m.%Y") if c.created_at else "",
         "icon":      "store",
         "build_status": c.build_status,
