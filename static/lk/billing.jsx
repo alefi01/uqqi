@@ -13,9 +13,9 @@ const INCLUDED = [
 // ---- Сводка оплаты (внутри кабинета) ----
 // Тарифы Pro — синхронно с PLANS в app/cabinet.py
 const PLANS_LK = [
-  { id: 'month',   label: 'Месяц',    amount: 399,  perMonth: 399, period: '30 дней',  save: '' },
-  { id: 'quarter', label: '3 месяца', amount: 999,  perMonth: 333, period: '90 дней',  save: 'выгода 198 ₽' },
-  { id: 'year',    label: 'Год',      amount: 3590, perMonth: 299, period: '365 дней', save: 'выгода 1 198 ₽' },
+  { id: 'month',   label: 'Месяц',    amount: 990,  perMonth: 990, period: '30 дней',  save: '' },
+  { id: 'quarter', label: '3 месяца', amount: 2490, perMonth: 830, period: '90 дней',  save: 'выгода 480 ₽' },
+  { id: 'year',    label: 'Год',      amount: 8900, perMonth: 742, period: '365 дней', save: 'выгода 2 980 ₽' },
 ];
 const fmtRub = n => n.toLocaleString('ru-RU');
 
@@ -108,7 +108,7 @@ function ScreenYukassa({ nav }) {
           <div className="yk__body">
             <div className="between" style={{ marginBottom: '.2rem' }}>
               <span style={{ color: '#666', fontSize: '.86rem' }}>К оплате</span>
-              <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#1d1d1b' }}>399,00 ₽</span>
+              <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#1d1d1b' }}>990,00 ₽</span>
             </div>
             <div>
               <div className="yk__lbl">Номер карты</div>
@@ -118,7 +118,7 @@ function ScreenYukassa({ nav }) {
               <div style={{ flex: 1 }}><div className="yk__lbl">ММ / ГГ</div><div className="yk__inp">00 / 00</div></div>
               <div style={{ flex: 1 }}><div className="yk__lbl">CVC</div><div className="yk__inp">•••</div></div>
             </div>
-            <div className="yk__pay" onClick={() => nav('payment-processing')}>Оплатить 399 ₽</div>
+            <div className="yk__pay" onClick={() => nav('payment-processing')}>Оплатить 990 ₽</div>
             <p style={{ fontSize: '.7rem', color: '#aaa', textAlign: 'center', marginTop: '.2rem' }}>Демонстрационный экран. Реальное списание не производится.</p>
           </div>
         </div>

@@ -817,9 +817,9 @@ async def create_ticket(payload: TicketPayload,
 # days — на сколько продлевать paid_until. months — для подачи «X ₽/мес».
 # ВАЖНО: дублируется на фронте (billing.jsx/app.bundle.jsx) — менять синхронно.
 PLANS = {
-    "month":   {"amount": "399.00",  "days": 30,  "months": 1,  "label": "Месяц"},
-    "quarter": {"amount": "999.00",  "days": 90,  "months": 3,  "label": "3 месяца"},
-    "year":    {"amount": "3590.00", "days": 365, "months": 12, "label": "Год"},
+    "month":   {"amount": "990.00",  "days": 30,  "months": 1,  "label": "Месяц"},
+    "quarter": {"amount": "2490.00", "days": 90,  "months": 3,  "label": "3 месяца"},
+    "year":    {"amount": "8900.00", "days": 365, "months": 12, "label": "Год"},
 }
 DEFAULT_PLAN = "quarter"
 

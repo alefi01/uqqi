@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UQQI.RU — сайт за минуту бесплатно и навсегда</title>
-<meta name="description" content="Вставьте ссылку на карточку Яндекс Карт — за минуту получите работающий сайт с фото, часами, услугами и отзывами. Базовый сайт бесплатный навсегда. Pro — премиум-оформления и чат с клиентами, 399 ₽ в месяц.">
+<meta name="description" content="Вставьте ссылку на карточку Яндекс Карт — за минуту получите работающий сайт с фото, часами, услугами и отзывами. Базовый сайт бесплатный навсегда. Pro — премиум-оформления и чат с клиентами, 990 ₽ в месяц.">
 <link rel="canonical" href="https://uqqi.ru/">
 {% if yandex_verification %}<meta name="yandex-verification" content="{{ yandex_verification }}">{% endif %}
 {% if google_verification %}<meta name="google-site-verification" content="{{ google_verification }}">{% endif %}
@@ -38,7 +38,7 @@
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {"@type":"Question","name":"Сколько стоит сайт на uqqi?","acceptedAnswer":{"@type":"Answer","text":"Базовый сайт бесплатный и остаётся бесплатным. Платный только тариф Pro: 399 ₽ за месяц, 999 ₽ за три месяца, 3590 ₽ за год. Pro даёт премиум-оформления витрины и чат с клиентами в Telegram."}},
+    {"@type":"Question","name":"Сколько стоит сайт на uqqi?","acceptedAnswer":{"@type":"Answer","text":"Базовый сайт бесплатный и остаётся бесплатным. Платный только тариф Pro: 990 ₽ за месяц, 2490 ₽ за три месяца, 8900 ₽ за год. Pro даёт премиум-оформления витрины, онлайн-запись и чат с клиентами в Telegram."}},
     {"@type":"Question","name":"Что входит в бесплатный сайт?","acceptedAnswer":{"@type":"Answer","text":"Сайт на адресе название.uqqi.ru, данные из карточки Яндекс Карт с автообновлением, фото, часы работы со статусом, услуги и цены, отзывы, кнопки звонка и маршрута, мобильная версия, SSL, панель управления и статистика посещений."}},
     {"@type":"Question","name":"Сколько времени занимает запуск?","acceptedAnswer":{"@type":"Answer","text":"Около минуты. Вы вставляете ссылку на карточку организации в Яндекс Картах, сайт собирается автоматически и открывается по адресу название.uqqi.ru."}},
     {"@type":"Question","name":"Нужно ли разбираться в технике?","acceptedAnswer":{"@type":"Answer","text":"Нет. Панель управления на русском: поменять фото, часы, тексты и оформление можно самому за пару минут. Программист не нужен."}},
@@ -822,7 +822,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       <div class="obj__card" style="--i:0">
         <div class="obj__q"><span class="n">01</span><p>«Это дорого. От 50 тысяч, и ещё техзадание писать»</p></div>
         <p class="obj__a">Столько стоит сайт, который делают руками с нуля. Здесь его собирает робот из данных, которые вы уже заполнили в Яндекс Картах, поэтому базовый сайт стоит ноль рублей и остаётся бесплатным. Техзадание не нужно: описание, фото, услуги и часы берём из карточки.</p>
-        <div class="obj__fact"><span>0 ₽ базовый</span><span>399 ₽ Pro в месяц</span><span>без техзадания</span></div>
+        <div class="obj__fact"><span>0 ₽ базовый</span><span>990 ₽ Pro в месяц</span><span>без техзадания</span></div>
       </div>
       <div class="obj__card" style="--i:1">
         <div class="obj__q"><span class="n">02</span><p>«Нет времени. Смены, поставщики, сезон»</p></div>
@@ -870,12 +870,13 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
       <div class="plan plan--pro">
         <span class="plan__tag">выгоднее</span>
         <span class="plan__name">Pro</span>
-        <span class="plan__price"><span class="num">{{ (pl.quarter.amount|default('999.00'))|float|round|int }} ₽</span><span class="plan__per">за 3 месяца</span></span>
-        <p class="plan__alt">или {{ (pl.month.amount|default('399.00'))|float|round|int }} ₽ в месяц · {{ (pl.year.amount|default('3590.00'))|float|round|int }} ₽ в год</p>
+        <span class="plan__price"><span class="num">{{ (pl.month.amount|default('990.00'))|float|round|int }} ₽</span><span class="plan__per">в месяц</span></span>
+        <p class="plan__alt">или {{ (pl.quarter.amount|default('2490.00'))|float|round|int }} ₽ за три месяца · {{ (pl.year.amount|default('8900.00'))|float|round|int }} ₽ в год</p>
         <p class="plan__desc">Когда сайт должен не только находиться, но и продавать.</p>
         <ul class="plan__list">
           <li><i data-lucide="check"></i>Десять премиум-оформлений витрины</li>
           <li><i data-lucide="check"></i>Чат на сайте, сообщения приходят в Telegram</li>
+          <li><i data-lucide="check"></i>Онлайн-запись: клиент выбирает время сам, заявка приходит в Telegram</li>
           <li><i data-lucide="check"></i>Редактирование содержимого: фото, тексты, часы, цены</li>
           <li><i data-lucide="check"></i>Семь дней бесплатно</li>
         </ul>
@@ -935,7 +936,7 @@ footer{background:var(--page);border-top:1px solid var(--line);padding-top:clamp
     </div>
     <div class="faq" id="faqList">
       <div class="faq-item open"><button class="faq-q" type="button" aria-expanded="true" aria-controls="fa1">Сколько это стоит?<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 3v12"/><path d="M3 9h12"/></svg></button>
-        <div class="faq-a" id="fa1"><div><p>Базовый сайт бесплатный и остаётся бесплатным: с него не берут денег ни через месяц, ни через год. Платный только Pro: 399 ₽ за месяц, 999 ₽ за три месяца, 3590 ₽ за год. Pro даёт премиум-оформления, чат с клиентами в Telegram и редактирование содержимого.</p></div></div></div>
+        <div class="faq-a" id="fa1"><div><p>Базовый сайт бесплатный и остаётся бесплатным: с него не берут денег ни через месяц, ни через год. Платный только Pro: 990 ₽ за месяц, 2490 ₽ за три месяца, 8900 ₽ за год. Pro даёт премиум-оформления, онлайн-запись, чат с клиентами в Telegram и редактирование содержимого.</p></div></div></div>
 
       <div class="faq-item"><button class="faq-q" type="button" aria-expanded="false" aria-controls="fa2">Что входит в бесплатный сайт?<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 3v12"/><path d="M3 9h12"/></svg></button>
         <div class="faq-a" id="fa2"><div><p>Всё, что нужно, чтобы вас находили и вам звонили: сайт на своём адресе, данные из карточки с автообновлением, фото, часы работы со статусом, услуги и цены, отзывы, кнопки звонка и маршрута, мобильная версия, защищённое соединение, панель управления и статистика посещений.</p></div></div></div>

@@ -31,7 +31,9 @@ SaaS для малого бизнеса: автоматически генери
   оплачен) и `trialEndedAt`. Фронт (`app.bundle.jsx`: `TrialEndedModal` +
   `pickTrialEnded()`) показывает его один раз за сессию (`sessionStorage`
   `uqqiTrialSeen`) при загрузке списка сайтов: что отключилось и цена
-  399 ₽ со зачёркнутой 599 ₽. Стенд: `scripts/lk_fixture.html?trial=1`,
+  месячного тарифа (берётся из `PLANS_LK[0]`, не хардкод) со зачёркнутой
+  1990 ₽ — это реальная прежняя цена продукта, а не выдуманная «до скидки».
+  Стенд: `scripts/lk_fixture.html?trial=1`,
   снимок `trial` в `scripts/snapshot_lk.mjs`.
 
 Ключевые поля `Company`: `pro_until` (Pro активен), `is_claim` (серый origin,
@@ -39,8 +41,9 @@ SaaS для малого бизнеса: автоматически генери
 `pro_active()`, `is_legit()`, `_indexable()`. Старые `sub_status` (free/active),
 `trial_ends_at`, `paid_until`, `demo_until` — legacy/вестигиальны (не гейтят показ).
 
-**Тарифы Pro** (`PLANS` в `app/cabinet.py`, дефолт `quarter`): месяц 399 ₽ (30 дн),
-3 месяца 999 ₽ (90 дн), год 3590 ₽ (365 дн) — цены снижены 2026-09.
+**Тарифы Pro** (`PLANS` в `app/cabinet.py`, дефолт `quarter`): месяц 990 ₽ (30 дн),
+3 месяца 2490 ₽ (90 дн), год 8900 ₽ (365 дн). Снижение до 399/999/3590 (2026-09)
+откачено по решению владельца — вернулись к прежним ценам.
 Дублируются в `oferta.html` (п. 3.1) — менять синхронно, это публичная оферта. `payment_create` принимает `plan`,
 пишет `amount`+`days` в `Payment`; `_apply_successful_payment` продлевает `pro_until`
 на `pay.days` и ставит `paid_once=True`. Фронт-дубль тарифов: `PLANS_LK` в
