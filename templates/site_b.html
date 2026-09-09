@@ -14,10 +14,14 @@
 <style>
 :root{
   --paper:#FAF8F4; --paper-2:#F4EDE5; --surface:#FFFFFF;
-  --ink:#1A1714; --ink-2:#3D3733; --muted:#8A7F78; --line:#E8E3DC; --line-2:#EFE7DD;
+  --ink:#1A1714; --ink-2:#3D3733; --muted:#736A63; --line:#E8E3DC; --line-2:#EFE7DD;
   --terracotta:#C8643C; --terracotta-deep:#B0522F; --terracotta-wash:#F6EAE1; --terracotta-soft:#F0D9CB;
   --gold:#C8A96E; --signal:#21A038; --signal-tint:rgba(33,160,56,.12); --star:#FFBB00; --yellow:#FFDB4D;
   --espresso:#0E0D0B;
+  /* «Чернильные» варианты акцентов — для ТЕКСТА на светлом: терракота
+     #C8643C даёт на бумаге 3.7:1, зелёный #21A038 — 3.22:1. Сами акценты
+     остаются заливкам, иконкам и крупному тексту (им хватает 3:1). */
+  --terracotta-ink:#A6431D; --signal-ink:#177A29;
   --display:'Unbounded',system-ui,sans-serif;
   --serif:'Playfair Display',Georgia,serif;
   --body:'Inter',system-ui,-apple-system,sans-serif;
@@ -58,7 +62,7 @@ img,svg{display:block;max-width:100%;}
 .nav__seal:has(img){background:#fff;border:1px solid var(--line);}
 .nav__seal img{width:100%;height:100%;object-fit:contain;border-radius:inherit;}
 .nav__seal b{font-family:var(--display);font-weight:700;font-size:1.05rem;color:#fff;line-height:1;}
-.nav__seal b span{color:var(--terracotta);}
+.nav__seal b span{color:var(--terracotta-ink);}
 .nav__name{font-family:var(--display);font-weight:700;font-size:.98rem;}
 .nav__links{display:flex;gap:1.6rem;flex:1;margin-left:1.4rem;}
 .nav__links a{font-size:.84rem;font-weight:500;color:var(--ink-2);position:relative;}
@@ -73,13 +77,17 @@ img,svg{display:block;max-width:100%;}
 .hero{padding:3rem 0 2.5rem;}
 .hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:2.5rem;align-items:center;}
 @media(max-width:820px){.hero__grid{grid-template-columns:1fr;gap:2rem;}}
-.hero__eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta);margin-bottom:1.2rem;overflow-wrap:anywhere;}
+.hero__eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta-ink);margin-bottom:1.2rem;overflow-wrap:anywhere;}
 /* Категория капсом с разрядкой плюс «Открыто до …» не помещались в одну
    строку на 320px, а inline-flex не переносит: на узком экране страницу
    уносило вбок на 130px. Переносим по словам и не даём точке сжаться. */
-.hero__eyebrow .open{display:inline-flex;align-items:center;gap:.35rem;color:var(--signal);}
+.hero__eyebrow .open{display:inline-flex;align-items:center;gap:.35rem;color:var(--signal-ink);}
 .hero__eyebrow .open .dot{width:6px;height:6px;flex:none;border-radius:50%;background:var(--signal);}
-.hero__title{font-family:var(--display);font-weight:900;letter-spacing:-.035em;font-size:clamp(1.9rem,6.5vw,4.6rem);line-height:.95;margin-bottom:1.3rem;overflow-wrap:anywhere;}
+.hero__title{font-family:var(--display);font-weight:900;letter-spacing:-.035em;font-size:clamp(1.9rem,6.5vw,4.6rem);line-height:.95;margin-bottom:1.3rem;overflow-wrap:break-word;}
+/* anywhere нужен только на узком экране: там длинное слово в названии
+   задаёт минимальную ширину колонки. На обычной ширине он ломает слова
+   посреди строки — оставляем break-word. */
+@media(max-width:430px){.hero__title{overflow-wrap:anywhere;}}
 .hero__title em{font-family:var(--serif);font-style:italic;font-weight:500;color:var(--terracotta);}
 .hero__lead{font-size:clamp(1rem,1.4vw,1.12rem);color:var(--ink-2);max-width:440px;margin-bottom:1.6rem;}
 .hero__meta{display:flex;flex-wrap:wrap;gap:1.3rem;margin-bottom:1.7rem;}
@@ -89,7 +97,7 @@ img,svg{display:block;max-width:100%;}
    бьёт по любому svg внутри, поэтому цвет и размер звезды возвращаем явно. */
 .hmeta .stars svg{color:var(--star);width:1em;height:1em;}
 .hmeta .stars{color:var(--star);}
-.hmeta:hover{color:var(--terracotta);}
+.hmeta:hover{color:var(--terracotta-ink);}
 .cta-row{display:flex;gap:.7rem;flex-wrap:wrap;}
 .cta{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.85rem 1.4rem;border-radius:var(--r-pill);font-family:var(--body);font-weight:600;font-size:.92rem;border:1.5px solid transparent;cursor:pointer;transition:transform .2s var(--ease),box-shadow .25s,background .2s,filter .2s;}
 .cta svg{width:17px;height:17px;}
@@ -120,7 +128,7 @@ img,svg{display:block;max-width:100%;}
 .hours-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:1rem;background:none;border:none;cursor:pointer;font-family:var(--body);padding:1.1rem 0;text-align:left;}
 .hours-toggle .lbl{display:flex;align-items:center;gap:.6rem;font-size:.95rem;font-weight:600;}
 .hours-toggle .lbl svg{width:18px;height:18px;color:var(--terracotta);}
-.hours-toggle .now{font-size:.9rem;color:var(--signal);font-weight:600;display:flex;align-items:center;gap:.6rem;}
+.hours-toggle .now{font-size:.9rem;color:var(--signal-ink);font-weight:600;display:flex;align-items:center;gap:.6rem;}
 .hours-toggle .chev{width:16px;height:16px;color:var(--muted);transition:transform .25s var(--ease);}
 .hours-toggle.open .chev{transform:rotate(180deg);}
 .hours-panel{max-height:0;overflow:hidden;transition:max-height .35s var(--ease);}
@@ -131,7 +139,7 @@ img,svg{display:block;max-width:100%;}
 .hours-table td{padding:.55rem 0;font-size:.9rem;}
 .hours-table td:first-child{color:var(--muted);}
 .hours-table td:last-child{text-align:right;}
-.hours-table .today td:first-child{color:var(--terracotta);font-weight:600;}
+.hours-table .today td:first-child{color:var(--terracotta-ink);font-weight:600;}
 .hours-table .today td:last-child{font-weight:600;}
 .hours-table .off td{opacity:.4;}
 
@@ -140,10 +148,10 @@ img,svg{display:block;max-width:100%;}
 .section--alt{background:var(--paper-2);}
 .sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.6rem 1rem;margin-bottom:2rem;border-bottom:1.5px solid var(--ink);padding-bottom:1rem;}
 .sec-head h2{overflow-wrap:anywhere;}
-.sec-head .num{font-family:var(--display);font-weight:700;font-size:.8rem;color:var(--terracotta);letter-spacing:.1em;}
+.sec-head .num{font-family:var(--display);font-weight:700;font-size:.8rem;color:var(--terracotta-ink);letter-spacing:.1em;}
 .sec-head h2{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:clamp(1.6rem,3.4vw,2.3rem);line-height:1.05;margin-top:.3rem;}
 .sec-link{font-size:.84rem;font-weight:500;color:var(--muted);white-space:nowrap;cursor:pointer;}
-.sec-link:hover{color:var(--terracotta);}
+.sec-link:hover{color:var(--terracotta-ink);}
 
 .pagination{display:flex;align-items:center;justify-content:center;gap:.35rem;margin-top:1.6rem;}
 .page-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:.84rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--body);transition:all .15s;}
@@ -173,7 +181,7 @@ img,svg{display:block;max-width:100%;}
 #catalogGrid{display:flex;flex-direction:column;}
 .svc-row{display:flex;align-items:baseline;gap:1rem;padding:1.15rem 0;border-bottom:1px solid var(--line);cursor:pointer;transition:padding-left .2s var(--ease);}
 .svc-row:hover{padding-left:.6rem;}
-.svc-row:hover .svc-row__name{color:var(--terracotta);}
+.svc-row:hover .svc-row__name{color:var(--terracotta-ink);}
 .svc-row__main{flex-shrink:0;max-width:62%;}
 .svc-row__name{font-family:var(--display);font-weight:500;font-size:1.12rem;letter-spacing:-.01em;transition:color .2s;}
 .svc-row__desc{font-size:.84rem;color:var(--muted);line-height:1.5;margin-top:.25rem;}
@@ -234,7 +242,7 @@ img,svg{display:block;max-width:100%;}
 .map-foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 1.4rem;}
 .map-foot .addr{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--ink-2);font-weight:500;}
 .map-foot .addr svg{width:17px;height:17px;color:var(--terracotta);}
-.map-foot a{display:inline-flex;align-items:center;gap:.4rem;font-size:.84rem;font-weight:600;color:var(--terracotta);}
+.map-foot a{display:inline-flex;align-items:center;gap:.4rem;font-size:.84rem;font-weight:600;color:var(--terracotta-ink);}
 
 /* footer */
 footer{background:var(--espresso);color:rgba(255,255,255,.7);padding:2.6rem 0 2rem;}

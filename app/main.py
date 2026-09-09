@@ -460,8 +460,7 @@ def _variant_template(request: Request, company) -> str:
       иначе фолбэк на бесплатный.
     - У ВСЕХ двенадцати оформлений свой мобильный адаптив, поэтому подмены
       шаблона по User-Agent больше нет: один адрес — один HTML на всех
-      устройствах. site_c.html остаётся отдельным мобильным оформлением для
-      тех, у кого он уже записан в template_variant.
+      устройствах.
     """
     from app import designs
     key = (company.template_variant or "A").strip()
@@ -835,15 +834,15 @@ async def site_index(request: Request, db: Session = Depends(get_db)):
     # Freemium: сайт бесплатен и всегда виден (кроме ручной деактивации и сборки выше).
     # Серые непроплаченные claim-сайты показываются, но noindex + дисклеймер (см. контекст).
 
-    # Превью конкретного дизайна (?variant=A|B|C|<premium-key>) из пикера/ЛК —
+    # Превью конкретного дизайна (?variant=A|B|<premium-key>) из пикера/ЛК —
     # рендерим напрямую, в ОБХОД Pro-гейта и БЕЗ учёта визита (клиент смотрит,
     # как выглядел бы его сайт в этом дизайне).
     preview = request.query_params.get("variant", "").strip()
     if preview:
         from app import designs
         up = preview.upper()
-        if up in ("A", "B", "C"):
-            ptpl = {"A": "site_a.html", "B": "site_b.html", "C": "site_c.html"}[up]
+        if up in ("A", "B"):
+            ptpl = {"A": "site_a.html", "B": "site_b.html"}[up]
         else:
             ptpl = designs.template_for(preview)   # премиум, если включён и готов
         if ptpl:
