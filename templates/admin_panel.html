@@ -518,6 +518,16 @@ document.querySelectorAll('.is-closed-cb').forEach(cb => {
   });
 });
 
+/* График записи: та же строка, но галочка обратная — «Принимаем».
+   Без этого обработчика класс is-closed висел вечно, а он гасит
+   pointer-events у полей времени: день нельзя было отредактировать,
+   даже поставив галочку. */
+document.querySelectorAll('#bkWeek .bk-on').forEach(cb => {
+  cb.addEventListener('change', () => {
+    cb.closest('.hours-row').classList.toggle('is-closed', !cb.checked);
+  });
+});
+
 // ── ФОТО ──────────────────────────────────────────────────────
 const photoDrop  = document.getElementById('photoDrop');
 const photoInput = document.getElementById('photoInput');

@@ -447,9 +447,9 @@ function SiteCard({ site, nav, onPay, onDesign, onDelete, onStats }) {
         {/* Редактирование содержимого — Pro-функция: бэкенд гейтит тем же
             pro_active (_can_edit_site), кнопка лишь не ведёт в тупик. */}
         {!isBuilding && !isError && (site.proActive
-          ? <a className="btn btn--ghost btn--sm" href={`/site/${site.slug}/edit`}><i data-lucide="pencil"></i> Контент</a>
+          ? <a className="btn btn--ghost btn--sm" href={`/site/${site.slug}/edit`}><i data-lucide="pencil"></i> Редактировать</a>
           : <span className="tip-wrap" data-tip="Редактирование содержимого входит в Pro">
-              <button className="btn btn--ghost btn--sm" disabled style={{ opacity: .45, cursor: 'not-allowed' }}><i data-lucide="pencil"></i> Контент</button>
+              <button className="btn btn--ghost btn--sm" disabled style={{ opacity: .45, cursor: 'not-allowed' }}><i data-lucide="pencil"></i> Редактировать</button>
             </span>)}
         {site.status === 'claim' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Оплатить, чтобы забрать сайт</button>}
         {site.status === 'free' && <button className="btn btn--primary btn--sm" onClick={() => onPay(site)}>Сделать PRO-сайтом</button>}
@@ -863,11 +863,14 @@ function ScreenBuilding({ onDone, buildId }) {
 // billing.jsx — оплата, ЮKassa, подписки, поддержка, настройки
 // ============================================================
 
+// Что даёт Pro — держать синхронно с карточкой тарифа на лендинге.
 const INCLUDED = [
-  'Премиум-дизайны сайта',
-  'Чат на сайте — заявки приходят вам в Telegram',
-  'Снятие пометки «демо» и индексация в поиске (для demo-сайтов)',
-  'Приоритетная поддержка',
+  'Десять премиум-оформлений витрины',
+  'Онлайн-запись: клиент сам выбирает время, заявка приходит в Telegram',
+  'Чат на сайте — сообщения приходят вам в Telegram',
+  'Редактирование содержимого: фото, тексты, часы, цены',
+  'Снятие пометки «демонстрация» и индексация в поиске',
+  'Больше сайтов на аккаунте: с одним Pro — до пяти',
 ];
 
 // ---- Сводка оплаты (внутри кабинета) ----

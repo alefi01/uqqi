@@ -84,8 +84,6 @@ p{color:var(--ink-2)}
 .soc:hover{border-color:var(--green);color:var(--green)}
 .map{border:1px solid var(--line);border-radius:4px;overflow:hidden;min-height:300px}
 .map iframe{width:100%;height:100%;min-height:300px;border:0;display:block}
-footer{border-top:1px solid var(--line);padding-block:2rem;font-size:.85rem;color:var(--muted);text-align:center}
-footer a{color:var(--green)}.legal-slot{margin-top:1rem}
 .fab{position:fixed;right:16px;bottom:16px;z-index:50;display:none;align-items:center;gap:.5rem;background:var(--green);color:#fff;
  font-weight:600;padding:.85rem 1.2rem;border-radius:4px;box-shadow:0 12px 28px rgba(31,36,32,.24)}
 .fab svg{width:17px;height:17px;fill:currentColor}
@@ -183,10 +181,7 @@ footer a{color:var(--green)}.legal-slot{margin-top:1rem}
   </div>
 </section>
 </main>
-<footer><div class="wrap">
-  <p>{{ company.title }} · данные из Яндекс Карт · сайт собран на <a href="https://uqqi.ru">uqqi.ru</a></p>
-  <div class="legal-slot">{% include "_claim_disclaimer.html" %}</div>
-</div></footer>
+{% include "_claim_disclaimer.html" %}
 {% if company.phone %}<a class="fab" href="tel:{{ tel }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.24c1.1.37 2.3.57 3.6.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.3.2 2.5.57 3.6a1 1 0 01-.25 1z"/></svg> Позвонить</a>{% endif %}
 {% include "_chat_widget.html" %}
 {% include "_booking_widget.html" %}
