@@ -72,10 +72,13 @@ img,svg{display:block;max-width:100%;}
 .hero{padding:3rem 0 2.5rem;}
 .hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:2.5rem;align-items:center;}
 @media(max-width:820px){.hero__grid{grid-template-columns:1fr;gap:2rem;}}
-.hero__eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta);margin-bottom:1.2rem;}
+.hero__eyebrow{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta);margin-bottom:1.2rem;overflow-wrap:anywhere;}
+/* Категория капсом с разрядкой плюс «Открыто до …» не помещались в одну
+   строку на 320px, а inline-flex не переносит: на узком экране страницу
+   уносило вбок на 130px. Переносим по словам и не даём точке сжаться. */
 .hero__eyebrow .open{display:inline-flex;align-items:center;gap:.35rem;color:var(--signal);}
-.hero__eyebrow .open .dot{width:6px;height:6px;border-radius:50%;background:var(--signal);}
-.hero__title{font-family:var(--display);font-weight:900;letter-spacing:-.035em;font-size:clamp(2.8rem,6.5vw,4.6rem);line-height:.95;margin-bottom:1.3rem;}
+.hero__eyebrow .open .dot{width:6px;height:6px;flex:none;border-radius:50%;background:var(--signal);}
+.hero__title{font-family:var(--display);font-weight:900;letter-spacing:-.035em;font-size:clamp(1.9rem,6.5vw,4.6rem);line-height:.95;margin-bottom:1.3rem;overflow-wrap:anywhere;}
 .hero__title em{font-family:var(--serif);font-style:italic;font-weight:500;color:var(--terracotta);}
 .hero__lead{font-size:clamp(1rem,1.4vw,1.12rem);color:var(--ink-2);max-width:440px;margin-bottom:1.6rem;}
 .hero__meta{display:flex;flex-wrap:wrap;gap:1.3rem;margin-bottom:1.7rem;}
@@ -131,7 +134,8 @@ img,svg{display:block;max-width:100%;}
 /* ─── SECTION ─── */
 .section{padding:3.6rem 0;scroll-margin-top:72px;}
 .section--alt{background:var(--paper-2);}
-.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:2rem;border-bottom:1.5px solid var(--ink);padding-bottom:1rem;}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.6rem 1rem;margin-bottom:2rem;border-bottom:1.5px solid var(--ink);padding-bottom:1rem;}
+.sec-head h2{overflow-wrap:anywhere;}
 .sec-head .num{font-family:var(--display);font-weight:700;font-size:.8rem;color:var(--terracotta);letter-spacing:.1em;}
 .sec-head h2{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:clamp(1.6rem,3.4vw,2.3rem);line-height:1.05;margin-top:.3rem;}
 .sec-link{font-size:.84rem;font-weight:500;color:var(--muted);white-space:nowrap;cursor:pointer;}
@@ -216,7 +220,7 @@ img,svg{display:block;max-width:100%;}
 
 /* map */
 .map-card{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-card);background:var(--surface);}
-.map-card iframe{width:100%;height:400px;border:0;display:block;}
+.map-card iframe{width:100%;max-width:100%;min-width:0;height:400px;border:0;display:block;}
 .map-foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 1.4rem;}
 .map-foot .addr{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--ink-2);font-weight:500;}
 .map-foot .addr svg{width:17px;height:17px;color:var(--terracotta);}
