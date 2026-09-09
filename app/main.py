@@ -58,10 +58,15 @@ async def security_headers(request: Request, call_next):
     # помечаются заголовком X-Uqqi-Embeddable и получают CSP frame-ancestors,
     # разрешающий вложение только внутрь нашего домена.
     # У starlette.MutableHeaders нет .pop() — только get/__delitem__.
-    if response.headers.get("X-Uqqi-Embeddable") == "1":
+    embeddable = response.headers.get("X-Uqqi-Embeddable")
+    if embeddable:
         del response.headers["X-Uqqi-Embeddable"]
+        # 'tg' — мини-приложение владельца: веб-версия Telegram открывает его
+        # в iframe со своих доменов, обычный SAMEORIGIN это ломает.
+        allow = ("https://web.telegram.org https://telegram.org"
+                 if embeddable == "tg" else "")
         response.headers["Content-Security-Policy"] = (
-            "frame-ancestors 'self' https://uqqi.ru https://*.uqqi.ru"
+            f"frame-ancestors 'self' https://uqqi.ru https://*.uqqi.ru {allow}".strip()
         )
     else:
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
@@ -84,6 +89,8 @@ from app.chat import router as chat_router
 app.include_router(chat_router)
 from app.booking import router as booking_router
 app.include_router(booking_router)
+from app.miniapp import router as miniapp_router
+app.include_router(miniapp_router)
 
 SESSION_COOKIE = "admin_session"
 SESSION_TTL    = timedelta(days=7)

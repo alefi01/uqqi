@@ -40,6 +40,8 @@ DEFAULTS = {
     "days_ahead": 14,      # горизонт записи
     "services": [],        # список услуг (необязательно)
     "week": {},            # {"1": [["10:00","20:00"]], ...}, 1=понедельник
+    "multi": False,        # режим «Мульти»: несколько мастеров со своими графиками
+    "masters": [],         # [{"name": "Иван", "week": {...}}] — только при multi
 }
 
 MAX_DAYS_AHEAD = 60
@@ -77,7 +79,36 @@ def settings_of(company) -> dict:
     cfg["week"] = week if isinstance(week, dict) else {}
     services = cfg.get("services")
     cfg["services"] = [s for s in services if s] if isinstance(services, list) else []
+    cfg["masters"] = _masters(cfg.get("masters"), cfg["week"])
+    # «Мульти» без единого мастера с графиком — это обычный режим одного мастера.
+    cfg["multi"] = bool(cfg.get("multi")) and bool(cfg["masters"])
     return cfg
+
+
+def _masters(raw, fallback_week: dict) -> list[dict]:
+    """
+    Мастера режима «Мульти», приведённые к виду [{'name':…, 'week':{…}}].
+
+    Как и всё в settings_of, вызывается на ПУБЛИЧНОЙ витрине: любой мусор в
+    JSON превращается в пустой список, а не в исключение. Мастер без своего
+    графика работает по общему — так владельцу не нужно заполнять одно и то же
+    семь раз, если мастера работают в одну смену.
+    """
+    if not isinstance(raw, list):
+        return []
+    out: list[dict] = []
+    seen: set[str] = set()
+    for item in raw[:20]:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "").strip()[:120]
+        if not name or name.lower() in seen:
+            continue
+        week = item.get("week")
+        week = week if isinstance(week, dict) else {}
+        out.append({"name": name, "week": week or dict(fallback_week)})
+        seen.add(name.lower())
+    return out
 
 
 def has_schedule(company) -> bool:
@@ -88,15 +119,18 @@ def has_schedule(company) -> bool:
     а «25:00–x» или «19:00–10:00» — нет. Иначе режим включился бы на битом
     графике и витрина показала бы пустой календарь.
     """
-    for ranges in settings_of(company)["week"].values():
-        if not isinstance(ranges, list):
-            continue
-        for r in ranges:
-            if not (isinstance(r, (list, tuple)) and len(r) == 2):
+    cfg = settings_of(company)
+    weeks = [cfg["week"]] + [m["week"] for m in cfg["masters"]]
+    for week in weeks:
+        for ranges in week.values():
+            if not isinstance(ranges, list):
                 continue
-            a, b = _parse_hhmm(r[0]), _parse_hhmm(r[1])
-            if a is not None and b is not None and b > a:
-                return True
+            for r in ranges:
+                if not (isinstance(r, (list, tuple)) and len(r) == 2):
+                    continue
+                a, b = _parse_hhmm(r[0]), _parse_hhmm(r[1])
+                if a is not None and b is not None and b > a:
+                    return True
     return False
 
 
@@ -129,6 +163,15 @@ def button_mode(company) -> str:
 
 # ── Расчёт слотов ────────────────────────────────────────────────────────────
 
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+\.[^@\s]+$")
+
+
+def _clean_email(value: str) -> str:
+    """Почта клиента или пустая строка. Она необязательна и ничего не гейтит."""
+    v = (value or "").strip().lower()[:160]
+    return v if _EMAIL_RE.match(v) else ""
+
+
 def _parse_hhmm(value: str) -> int | None:
     """'09:30' → минуты от полуночи. Мусор → None."""
     m = re.match(r"^\s*(\d{1,2}):(\d{2})\s*$", str(value or ""))
@@ -140,11 +183,16 @@ def _parse_hhmm(value: str) -> int | None:
     return h * 60 + mi
 
 
-def _day_ranges(cfg: dict, local_day: datetime) -> list[tuple[int, int]]:
-    """Рабочие интервалы дня в минутах от полуночи (местное время)."""
+def _day_ranges(cfg: dict, local_day: datetime, week: dict | None = None) -> list[tuple[int, int]]:
+    """Рабочие интервалы дня в минутах от полуночи (местное время).
+
+    `week` позволяет посчитать день по графику конкретного мастера; без него
+    берётся общий график заведения.
+    """
     key = str(local_day.isoweekday())          # 1 = понедельник
+    src = week if isinstance(week, dict) else cfg["week"]
     out = []
-    for r in cfg["week"].get(key) or []:
+    for r in src.get(key) or []:
         if not (isinstance(r, (list, tuple)) and len(r) == 2):
             continue
         a, b = _parse_hhmm(r[0]), _parse_hhmm(r[1])
@@ -154,21 +202,44 @@ def _day_ranges(cfg: dict, local_day: datetime) -> list[tuple[int, int]]:
     return sorted(out)
 
 
-def _taken(db, company_id: int, since_utc: datetime, until_utc: datetime) -> set[datetime]:
-    """Занятые начала слотов (всё, кроме отменённых)."""
-    rows = db.query(Booking.slot_start).filter(
+def _taken(db, company_id: int, since_utc: datetime, until_utc: datetime,
+           exclude_id: int | None = None) -> dict[datetime, set[str]]:
+    """
+    Занятые начала слотов → множество мастеров, у которых это время занято.
+
+    В режиме одного мастера имя пустое, и множество вырождается в {''} — слот
+    занят целиком. В режиме «Мульти» слот свободен, пока свободен хоть один
+    мастер. `exclude_id` нужен, когда владелец переносит существующую запись:
+    её собственное время не должно считаться занятым ею же.
+    """
+    q = db.query(Booking.slot_start, Booking.master).filter(
         Booking.company_id == company_id,
         Booking.slot_start >= since_utc,
         Booking.slot_start < until_utc,
         Booking.status != "canceled",
-    ).all()
-    return {r[0] for r in rows if r[0]}
+    )
+    if exclude_id:
+        q = q.filter(Booking.id != exclude_id)
+    out: dict[datetime, set[str]] = {}
+    for start, master in q.all():
+        if start:
+            out.setdefault(start, set()).add((master or "").strip())
+    return out
 
 
-def free_slots(db, company, day: str) -> list[dict]:
+def free_slots(db, company, day: str, *, owner: bool = False,
+               exclude_id: int | None = None) -> list[dict]:
     """
     Свободные слоты на дату 'YYYY-MM-DD' (дата местная для бизнеса).
-    Возвращает [{'time': '10:00', 'start': '2026-09-08T10:00'}] — местное время.
+
+    Возвращает [{'time': '10:00', 'start': '2026-09-08T10:00', 'masters': [...]}]
+    в местном времени. `masters` пуст в обычном режиме и содержит свободных
+    мастеров в режиме «Мульти».
+
+    `owner=True` снимает ограничение «не раньше чем через N часов»: правило
+    защищает от записи впритык с улицы, а владелец в мини-приложении заводит
+    записи и на ближайший час. `exclude_id` не считает занятой ту запись,
+    которую сейчас переносят.
     """
     cfg = settings_of(company)
     try:
@@ -178,32 +249,49 @@ def free_slots(db, company, day: str) -> list[dict]:
 
     tz = timedelta(hours=cfg["tz"])
     now_local = datetime.utcnow() + tz
-    earliest_local = now_local + timedelta(hours=cfg["lead_hours"])
+    earliest_local = now_local if owner else now_local + timedelta(hours=cfg["lead_hours"])
     horizon_local = (now_local + timedelta(days=cfg["days_ahead"])).replace(
         hour=23, minute=59, second=59, microsecond=0)
-    if local_day.date() > horizon_local.date():
+    if not owner and local_day.date() > horizon_local.date():
         return []
 
-    ranges = _day_ranges(cfg, local_day)
-    if not ranges:
+    # Кто на смене: в режиме «Мульти» — каждый мастер со своим графиком,
+    # иначе один безымянный «мастер» по общему графику заведения.
+    if cfg["multi"]:
+        crew = [(m["name"], _day_ranges(cfg, local_day, m["week"])) for m in cfg["masters"]]
+        crew = [(name, ranges) for name, ranges in crew if ranges]
+    else:
+        crew = [("", _day_ranges(cfg, local_day))]
+        crew = [c for c in crew if c[1]]
+    if not crew:
         return []
 
     taken = _taken(db, company.id,
                    local_day - tz - timedelta(hours=1),
-                   local_day - tz + timedelta(days=1, hours=1))
+                   local_day - tz + timedelta(days=1, hours=1),
+                   exclude_id=exclude_id)
+
+    # Слот → свободные на нём мастера. Порядок держим по времени начала.
+    found: dict[int, list[str]] = {}
+    for name, ranges in crew:
+        for start_min, end_min in ranges:
+            t = start_min
+            # Слот целиком должен помещаться в интервал: полуслотов не предлагаем.
+            while t + cfg["duration"] <= end_min:
+                start_local = local_day + timedelta(minutes=t)
+                busy = taken.get(start_local - tz, set())
+                if start_local >= earliest_local and name not in busy:
+                    found.setdefault(t, []).append(name)
+                t += cfg["step"]
 
     out: list[dict] = []
-    for start_min, end_min in ranges:
-        t = start_min
-        # Слот целиком должен помещаться в интервал: полуслотов не предлагаем.
-        while t + cfg["duration"] <= end_min:
-            start_local = local_day + timedelta(minutes=t)
-            if start_local >= earliest_local and (start_local - tz) not in taken:
-                out.append({
-                    "time":  f"{t // 60:02d}:{t % 60:02d}",
-                    "start": start_local.strftime("%Y-%m-%dT%H:%M"),
-                })
-            t += cfg["step"]
+    for t in sorted(found):
+        start_local = local_day + timedelta(minutes=t)
+        out.append({
+            "time":    f"{t // 60:02d}:{t % 60:02d}",
+            "start":   start_local.strftime("%Y-%m-%dT%H:%M"),
+            "masters": [n for n in found[t] if n],
+        })
     return out
 
 
@@ -251,7 +339,8 @@ async def api_days(slug: str):
         c = _company(db, slug)
         cfg = settings_of(c)
         return {"ok": True, "days": open_days(db, c),
-                "services": cfg["services"], "duration": cfg["duration"]}
+                "services": cfg["services"], "duration": cfg["duration"],
+                "masters": [m["name"] for m in cfg["masters"]] if cfg["multi"] else []}
     finally:
         db.close()
 
@@ -272,6 +361,8 @@ class BookPayload(BaseModel):
     phone:   str = ""
     service: str = ""
     comment: str = ""
+    master:  str = ""     # режим «Мульти»: кого выбрали; пусто = любой свободный
+    email:   str = ""     # необязательно, единственный канал напоминания клиенту
 
 
 @router.post("/{slug}/create")
@@ -295,9 +386,20 @@ async def api_create(slug: str, payload: BookPayload, request: Request):
 
         # Слот проверяем заново по расписанию: клиент мог прислать что угодно.
         day_key = start_local.strftime("%Y-%m-%d")
-        allowed = {s["start"] for s in free_slots(db, c, day_key)}
-        if payload.start not in allowed:
+        slot = next((s for s in free_slots(db, c, day_key) if s["start"] == payload.start), None)
+        if not slot:
             raise HTTPException(status_code=409, detail="Это время уже заняли. Выберите другое.")
+
+        # Мастера выбирает клиент или мы сами берём первого свободного.
+        master = ""
+        if cfg["multi"]:
+            want = (payload.master or "").strip()
+            if want and want not in slot["masters"]:
+                raise HTTPException(status_code=409,
+                                    detail="Этот мастер уже занят. Выберите другое время.")
+            master = want or (slot["masters"][0] if slot["masters"] else "")
+            if not master:
+                raise HTTPException(status_code=409, detail="Это время уже заняли. Выберите другое.")
 
         ip = (request.client.host if request.client else "") or ""
         vhash = hashlib.sha256(f"{slug}|{ip}|{phone}".encode()).hexdigest()[:64]
@@ -310,6 +412,7 @@ async def api_create(slug: str, payload: BookPayload, request: Request):
         if db.query(Booking).filter(
             Booking.company_id == c.id,
             Booking.slot_start == start_utc,
+            Booking.master == master,
             Booking.status != "canceled",
         ).first():
             raise HTTPException(status_code=409, detail="Это время уже заняли. Выберите другое.")
@@ -319,6 +422,8 @@ async def api_create(slug: str, payload: BookPayload, request: Request):
             service=(payload.service or "").strip()[:200], name=name, phone=phone,
             comment=(payload.comment or "").strip()[:500],
             status="new", source="site", visitor_hash=vhash,
+            master=master, created_by="client",
+            client_email=_clean_email(payload.email),
         )
         db.add(b)
         db.commit()

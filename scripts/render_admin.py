@@ -21,7 +21,10 @@ company = SimpleNamespace(
     book_url="", booking_mode="slots",
     # график пуст — именно этот случай ломал редактирование времени
     booking={"tz": 3, "duration": 60, "lead_hours": 2, "days_ahead": 14,
-             "services": ["Шиномонтаж", "Развал-схождение"], "week": {}},
+             "services": ["Шиномонтаж", "Развал-схождение"], "week": {},
+             "multi": True,
+             "masters": [{"name": "Иван"},
+                         {"name": "Пётр", "week": {"1": [["11:00", "18:00"]]}}]},
     hours=[], gallery_photos=[], menu_items=[], social_links=[],
 )
 

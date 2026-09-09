@@ -82,15 +82,34 @@ def booking_keyboard(booking_id: int) -> dict:
     ]]}
 
 
+def miniapp_url() -> str:
+    """Адрес мини-приложения владельца. Только https — Telegram другого не примет."""
+    return f"https://lk.{settings.BASE_DOMAIN}/tg/app"
+
+
+def miniapp_keyboard(label: str = "Открыть календарь") -> dict:
+    """Инлайн-кнопка, открывающая мини-приложение прямо из сообщения."""
+    return {"inline_keyboard": [[{"text": label, "web_app": {"url": miniapp_url()}}]]}
+
+
 def tg_set_commands() -> None:
-    """Меню команд бота. Вызывается один раз при старте поллинга."""
+    """
+    Меню команд бота и кнопка мини-приложения слева от поля ввода.
+
+    setChatMenuButton без chat_id ставит кнопку по умолчанию для всех чатов —
+    отдельно каждому владельцу её ставить не нужно.
+    """
     cmds = [
+        {"command": "app",      "description": "Календарь записей"},
         {"command": "today",    "description": "Записи на сегодня"},
         {"command": "tomorrow", "description": "Записи на завтра"},
         {"command": "week",     "description": "Записи на неделю"},
         {"command": "help",     "description": "Что умеет бот"},
     ]
     tg_call("setMyCommands", {"commands": json.dumps(cmds, ensure_ascii=False)})
+    tg_call("setChatMenuButton", {"menu_button": json.dumps(
+        {"type": "web_app", "text": "Записи", "web_app": {"url": miniapp_url()}},
+        ensure_ascii=False)})
 
 
 def tg_get_updates(offset: int = 0, timeout: int = 20) -> list:

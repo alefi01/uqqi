@@ -490,6 +490,12 @@ class Booking(Base):
     notify_msg_id = Column(Integer, nullable=True)    # message_id уведомления владельцу
     created_at    = Column(DateTime, default=datetime.utcnow, index=True)
 
+    # Мини-приложение владельца (2026-09)
+    master        = Column(String(120), default="")   # мастер в режиме «Мульти», пусто = один мастер
+    created_by    = Column(String(16), default="client")  # client | owner
+    client_email  = Column(String(160), default="")   # необязательный, единственный канал до клиента
+    reminder_sent = Column(Boolean, default=False)    # напоминание за час отправлено
+
     def __repr__(self) -> str:
         return f"<Booking {self.id} c{self.company_id} {self.slot_start} {self.status}>"
 

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Записи — uqqi</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* Мини-приложение владельца внутри Telegram.
+
+   Цвета берём из темы Telegram (--tg-theme-*), у каждой переменной есть
+   запасное значение: приложение открывают и вне Telegram (например, гейты
+   и просмотр глазами), там переменных нет вовсе.
+   Иконки — инлайновые SVG, эмодзи не используем. */
+:root{
+  --bg:      var(--tg-theme-bg-color, #FCFBF9);
+  --panel:   var(--tg-theme-secondary-bg-color, #FFFFFF);
+  --ink:     var(--tg-theme-text-color, #16130F);
+  --muted:   var(--tg-theme-hint-color, #6B6259);
+  --link:    var(--tg-theme-link-color, #A6431D);
+  --accent:  var(--tg-theme-button-color, #16130F);
+  --on-accent: var(--tg-theme-button-text-color, #FFFFFF);
+  --line:    rgba(128,116,104,.28);
+  --ok:      #1F7A36;
+  --warn:    #A6431D;
+  --r-sm:8px; --r-md:12px; --r-lg:18px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,sans-serif;
+  overflow-x:hidden;
+  padding:0 0 calc(84px + env(safe-area-inset-bottom));
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px;border-radius:var(--r-sm)}
+
+.wrap{max-width:560px;margin:0 auto;padding:0 12px}
+
+/* ── Шапка: сайт и неделя ─────────────────────────────────────────────── */
+.top{position:sticky;top:0;z-index:20;background:var(--bg);padding-top:10px}
+.sitebar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.sitebar h1{font-size:1.02rem;font-weight:600;margin:0;flex:1 1 auto;min-width:0;
+  overflow-wrap:anywhere}
+.sitesel{flex:0 1 auto;max-width:100%;min-width:0;background:var(--panel);color:var(--ink);
+  border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px;font-size:.86rem}
+
+.week{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.week::-webkit-scrollbar{display:none}
+.day{flex:0 0 auto;min-width:46px;min-height:56px;border:1px solid var(--line);
+  background:var(--panel);border-radius:var(--r-md);padding:7px 6px;text-align:center;
+  cursor:pointer;transition:background .18s var(--ease),border-color .18s var(--ease)}
+.day:hover{border-color:var(--ink)}
+.day__wd{display:block;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.day__n{display:block;font-size:1.05rem;font-weight:600;margin-top:2px}
+.day__dot{display:block;width:5px;height:5px;border-radius:50%;background:var(--link);
+  margin:3px auto 0}
+.day__dot[hidden]{display:none}
+.day[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.day[aria-pressed="true"] .day__wd{color:var(--on-accent);opacity:.75}
+.day[aria-pressed="true"] .day__dot{background:var(--on-accent)}
+.day--today .day__n{text-decoration:underline;text-underline-offset:3px}
+
+/* ── Список записей ───────────────────────────────────────────────────── */
+.daysum{font-size:.82rem;color:var(--muted);margin:2px 0 10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:12px 13px;margin-bottom:10px}
+.card__top{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}
+.card__time{font-size:1.15rem;font-weight:600;font-variant-numeric:tabular-nums}
+.card__dur{font-size:.78rem;color:var(--muted)}
+.chip{margin-left:auto;font-size:.72rem;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--line)}
+.chip--new{color:var(--warn);border-color:var(--warn)}
+.chip--confirmed{color:var(--ok);border-color:var(--ok)}
+.chip--canceled{color:var(--muted)}
+.card__name{font-weight:600;margin:7px 0 2px;overflow-wrap:anywhere}
+.card__row{font-size:.87rem;color:var(--muted);overflow-wrap:anywhere}
+.card__row a{color:var(--link)}
+.card--canceled .card__time,.card--canceled .card__name{text-decoration:line-through;opacity:.6}
+
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:36px;padding:7px 12px;border-radius:var(--r-sm);border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);font-size:.85rem;font-weight:500;cursor:pointer;
+  transition:background .18s var(--ease),border-color .18s var(--ease),opacity .18s}
+.btn:hover{border-color:var(--ink)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.btn--main{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn--danger{color:var(--warn);border-color:var(--warn)}
+.btn--wide{width:100%}
+
+/* ── Пустые состояния ─────────────────────────────────────────────────── */
+.empty{text-align:center;padding:38px 16px 26px}
+.empty svg{width:38px;height:38px;stroke:var(--muted);fill:none;stroke-width:1.5;
+  stroke-linecap:round;stroke-linejoin:round}
+.empty h2{font-size:1.05rem;font-weight:600;margin:12px 0 6px}
+.empty p{font-size:.9rem;color:var(--muted);margin:0 auto;max-width:34ch}
+.empty .btn{margin-top:16px}
+
+/* ── Кнопка добавления ────────────────────────────────────────────────── */
+.addbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg);
+  border-top:1px solid var(--line);
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.addbar .wrapin{max-width:560px;margin:0 auto}
+/* На узком экране кнопка всегда под рукой, на широком (Telegram на компьютере)
+   ей незачем висеть поверх карточек — уходит в конец страницы. */
+@media (min-width:640px){
+  .addbar{position:static;border-top:none;padding:4px 12px 24px}
+  body{padding-bottom:24px}
+}
+/* Внутри Telegram добавляет родная нижняя кнопка — свою прячем. */
+body.has-mainbutton .addbar{display:none}
+body.has-mainbutton{padding-bottom:24px}
+
+/* ── Лист снизу ───────────────────────────────────────────────────────── */
+.sheet{position:fixed;inset:0;z-index:60;display:none}
+.sheet.is-open{display:block}
+.sheet__scrim{position:absolute;inset:0;background:rgba(10,8,6,.5)}
+.sheet__box{position:absolute;left:0;right:0;bottom:0;max-height:92vh;overflow-y:auto;
+  background:var(--bg);border-radius:var(--r-lg) var(--r-lg) 0 0;
+  padding:16px 14px calc(18px + env(safe-area-inset-bottom));
+  animation:up .28s var(--ease)}
+@keyframes up{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.sheet__head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sheet__head h2{font-size:1.05rem;font-weight:600;margin:0;flex:1;min-width:0}
+.x{width:34px;height:34px;flex:none;border-radius:50%;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.x svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
+
+.f{margin-bottom:11px}
+.f label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;min-width:0;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 10px;font-size:.92rem}
+.f textarea{resize:vertical;min-height:56px}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}
+.slot{min-height:38px;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:var(--r-sm);cursor:pointer;font-variant-numeric:tabular-nums;font-size:.9rem}
+.slot[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.note{font-size:.8rem;color:var(--muted);margin:.4rem 0 0}
+.err{font-size:.85rem;color:var(--warn);margin:.5rem 0 0;min-height:1.2em}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<div id="root" class="wrap">
+  <div class="empty" id="boot">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/></svg>
+    <h2>Загружаем записи</h2>
+    <p>Секунду.</p>
+  </div>
+</div>
+
+<!-- Лист добавления и правки -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet__scrim" data-close></div>
+  <div class="sheet__box">
+    <div class="sheet__head">
+      <h2 id="sheetTitle">Новая запись</h2>
+      <button type="button" class="x" data-close aria-label="Закрыть">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<div class="addbar" id="addbar" hidden>
+  <div class="wrapin">
+    <button type="button" class="btn btn--main btn--wide" id="addBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Добавить запись
+    </button>
+  </div>
+</div>
+
+<script>
+/* Мини-приложение владельца: календарь записей внутри Telegram.
+
+   Авторизация — initData от Telegram: строку подписывает Telegram, проверяет
+   бэкенд ключом бота. Поэтому она уходит в каждый запрос телом POST, а не в
+   адресной строке: там бы её увидел access-лог.
+
+   Всё состояние — в STATE; перерисовка целиком (записей на день десятки, не
+   тысячи), так проще и нет рассинхрона. */
+(function () {
+  var TG = window.Telegram && window.Telegram.WebApp;
+  if (TG) { TG.ready(); TG.expand(); }
+  // Родная кнопка Telegram внизу экрана — она же «Добавить запись». Если её
+  // нет (страницу открыли вне Telegram), остаётся своя панель в разметке.
+  var MB = TG && TG.MainButton && TG.MainButton.setText ? TG.MainButton : null;
+  if (MB) document.body.classList.add('has-mainbutton');
+  var INIT = (TG && TG.initData) || '';
+
+  var WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  var STATE = { sites: [], site: null, date: today(), bookings: [], loading: false };
+
+  function today() {
+    var d = new Date();
+    return iso(d);
+  }
+  function iso(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function haptic(kind) {
+    try { TG.HapticFeedback.notificationOccurred(kind); } catch (e) {}
+  }
+
+  function api(path, body) {
+    body = body || {};
+    body.initData = INIT;
+    return fetch('/tg/api/' + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok) throw new Error(j.detail || 'Ошибка ' + r.status);
+        return j;
+      });
+    });
+  }
+
+  /* ── Экраны ─────────────────────────────────────────────────────────── */
+
+  function fail(title, text) {
+    document.getElementById('root').innerHTML =
+      '<div class="empty">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/>' +
+      '<path d="M12 8v5M12 16h.01"/></svg>' +
+      '<h2>' + esc(title) + '</h2><p>' + esc(text) + '</p></div>';
+    document.getElementById('addbar').hidden = true;
+    if (MB) MB.hide();
+  }
+
+  function boot() {
+    api('bootstrap').then(function (r) {
+      STATE.sites = r.sites || [];
+      if (!STATE.sites.length) {
+        fail('Нет сайтов на Pro',
+             'Записи ведутся на тарифе Pro. Подключите Pro в кабинете — и календарь появится здесь.');
+        return;
+      }
+      STATE.site = STATE.sites[0];
+      loadDay();
+    }).catch(function (e) {
+      fail('Не открылось', e.message);
+    });
+  }
+
+  function loadDay() {
+    STATE.loading = true;
+    render();
+    api('bookings', { site_id: STATE.site.id, date_from: STATE.date, date_to: STATE.date })
+      .then(function (r) {
+        STATE.bookings = r.bookings || [];
+      })
+      .catch(function () { STATE.bookings = []; })
+      .then(function () { STATE.loading = false; render(); });
+  }
+
+  function weekDays() {
+    var out = [], base = new Date(STATE.date + 'T00:00:00');
+    for (var i = -1; i < 13; i++) {
+      var d = new Date(base.getTime());
+      d.setDate(d.getDate() + i);
+      out.push(d);
+    }
+    return out;
+  }
+
+  function render() {
+    var s = STATE.site;
+    var h = '<div class="top">';
+
+    h += '<div class="sitebar"><h1>' + esc(s.title) + '</h1>';
+    if (STATE.sites.length > 1) {
+      h += '<select class="sitesel" id="siteSel" aria-label="Выбрать сайт">';
+      STATE.sites.forEach(function (x) {
+        h += '<option value="' + x.id + '"' + (x.id === s.id ? ' selected' : '') + '>' +
+             esc(x.title) + '</option>';
+      });
+      h += '</select>';
+    }
+    h += '</div>';
+
+    h += '<div class="week" role="group" aria-label="Дни">';
+    weekDays().forEach(function (d) {
+      var key = iso(d), on = key === STATE.date, isToday = key === today();
+      h += '<button type="button" class="day' + (isToday ? ' day--today' : '') +
+           '" data-date="' + key + '" aria-pressed="' + on + '">' +
+           '<span class="day__wd">' + WD[(d.getDay() + 6) % 7] + '</span>' +
+           '<span class="day__n">' + d.getDate() + '</span>' +
+           '<span class="day__dot"' + (on ? '' : ' hidden') + '></span></button>';
+    });
+    h += '</div></div>';
+
+    if (STATE.loading) {
+      h += '<p class="daysum">Загружаем…</p>';
+    } else if (!s.slotsOn) {
+      h += '<div class="empty">' +
+           '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
+           '<path d="M8 3v4M16 3v4M3 11h18"/></svg>' +
+           '<h2>Запись не включена</h2>' +
+           '<p>Включите режим «Наша запись со слотами» и заполните график в редакторе содержимого сайта.</p></div>';
+    } else if (!STATE.bookings.length) {
+      h += '<div class="empty">' +
+           '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
+           '<path d="M8 3v4M16 3v4M3 11h18"/></svg>' +
+           '<h2>В этот день записей нет</h2>' +
+           '<p>Свободный день. Запись можно добавить вручную — например, если клиент позвонил.</p></div>';
+    } else {
+      var live = STATE.bookings.filter(function (b) { return b.status !== 'canceled'; }).length;
+      h += '<p class="daysum">' + live + ' ' + plural(live, 'запись', 'записи', 'записей') +
+           ' на ' + human(STATE.date) + '</p>';
+      STATE.bookings.forEach(function (b) { h += card(b); });
+    }
+
+    document.getElementById('root').innerHTML = h;
+    document.getElementById('addbar').hidden = !s.slotsOn;
+    if (MB) {
+      if (s.slotsOn) { MB.setText('Добавить запись'); MB.show(); } else { MB.hide(); }
+    }
+  }
+
+  function plural(n, one, few, many) {
+    var a = Math.abs(n) % 100, b = a % 10;
+    if (a > 10 && a < 20) return many;
+    if (b > 1 && b < 5) return few;
+    if (b === 1) return one;
+    return many;
+  }
+  function human(key) {
+    var d = new Date(key + 'T00:00:00');
+    return d.getDate() + '.' + pad(d.getMonth() + 1);
+  }
+
+  function card(b) {
+    var label = { new: 'Новая', confirmed: 'Подтверждена', canceled: 'Отменена' }[b.status] || b.status;
+    var h = '<article class="card' + (b.status === 'canceled' ? ' card--canceled' : '') + '">' +
+      '<div class="card__top"><span class="card__time">' + esc(b.time) + '</span>' +
+      '<span class="card__dur">' + b.duration + ' мин</span>' +
+      '<span class="chip chip--' + esc(b.status) + '">' + esc(label) + '</span></div>' +
+      '<p class="card__name">' + esc(b.name) + '</p>';
+    if (b.phone) {
+      h += '<p class="card__row"><a href="tel:' + esc(b.phone.replace(/[^\d+]/g, '')) + '">' +
+           esc(b.phone) + '</a></p>';
+    }
+    if (b.service) h += '<p class="card__row">' + esc(b.service) + '</p>';
+    if (b.master) h += '<p class="card__row">Мастер: ' + esc(b.master) + '</p>';
+    if (b.comment) h += '<p class="card__row">' + esc(b.comment) + '</p>';
+    if (!b.byOwner && !b.email) {
+      h += '<p class="card__row">Почты нет — о переносе клиент не узнает, позвоните ему.</p>';
+    }
+
+    h += '<div class="acts">';
+    if (b.status !== 'confirmed' && b.status !== 'canceled') {
+      h += act(b.id, 'confirm', 'Подтвердить', '<path d="M4 12l5 5L20 6"/>', 'btn--main');
+    }
+    h += act(b.id, 'edit', 'Перенести', '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/>');
+    if (b.status !== 'canceled') {
+      h += act(b.id, 'cancel', 'Отменить', '<path d="M6 6l12 12M18 6L6 18"/>', 'btn--danger');
+    }
+    h += act(b.id, 'delete', 'Удалить', '<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>', 'btn--danger');
+    h += '</div></article>';
+    return h;
+  }
+
+  function act(id, kind, label, path, cls) {
+    return '<button type="button" class="btn ' + (cls || '') + '" data-act="' + kind +
+      '" data-id="' + id + '"><svg viewBox="0 0 24 24" aria-hidden="true">' + path + '</svg>' +
+      label + '</button>';
+  }
+
+  /* ── Лист: добавление и перенос ─────────────────────────────────────── */
+
+  var sheet = document.getElementById('sheet');
+  var lastFocus = null;
+
+  function background(off) {
+    // Пока лист открыт, страница под ним выключена: и для клавиатуры, и для
+    // скринридера. Ловушки фокуса мало — без inert за спиной остаётся
+    // кликабельный и озвучиваемый слой.
+    ['root', 'addbar'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (off) { el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true'); }
+      else { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); }
+    });
+  }
+
+  function openSheet(title, html) {
+    document.getElementById('sheetTitle').textContent = title;
+    document.getElementById('sheetBody').innerHTML = html;
+    lastFocus = document.activeElement;
+    sheet.classList.add('is-open');
+    background(true);
+    var first = sheet.querySelector('input,select,button.slot,button');
+    if (first) first.focus();
+  }
+  function closeSheet() {
+    sheet.classList.remove('is-open');
+    background(false);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  sheet.addEventListener('click', function (e) {
+    if (e.target.closest('[data-close]')) closeSheet();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && sheet.classList.contains('is-open')) closeSheet();
+    if (e.key === 'Tab' && sheet.classList.contains('is-open')) trap(e);
+  });
+  function trap(e) {
+    var f = sheet.querySelectorAll('button,input,select,textarea,a[href]');
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  function slotPicker(id) {
+    return '<div class="f"><label for="pkDate">Дата</label>' +
+      '<input type="date" id="pkDate" value="' + STATE.date + '"></div>' +
+      '<div class="f"><label>Время</label><div class="slots" id="pkSlots">' +
+      '<p class="note">Загружаем…</p></div></div>' +
+      (STATE.site.multi ? '<div class="f"><label for="pkMaster">Мастер</label>' +
+        '<select id="pkMaster"><option value="">Любой свободный</option></select></div>' : '') +
+      '<input type="hidden" id="pkStart" value=""><input type="hidden" id="pkId" value="' + (id || '') + '">';
+  }
+
+  function loadSlots() {
+    var date = document.getElementById('pkDate').value;
+    var box = document.getElementById('pkSlots');
+    var id = parseInt(document.getElementById('pkId').value, 10) || 0;
+    box.innerHTML = '<p class="note">Загружаем…</p>';
+    api('slots', { site_id: STATE.site.id, date: date, exclude_id: id }).then(function (r) {
+      var list = r.slots || [];
+      if (!list.length) {
+        box.innerHTML = '<p class="note">В этот день свободного времени нет. ' +
+          'Проверьте график в редакторе сайта.</p>';
+        return;
+      }
+      box.innerHTML = list.map(function (s) {
+        return '<button type="button" class="slot" data-start="' + s.start + '" ' +
+          'data-masters="' + esc((s.masters || []).join('|')) + '" aria-pressed="false">' +
+          s.time + '</button>';
+      }).join('');
+    }).catch(function (e) {
+      box.innerHTML = '<p class="note">' + esc(e.message) + '</p>';
+    });
+  }
+
+  function formFields(b) {
+    b = b || {};
+    return '<div class="f"><label for="fName">Имя клиента</label>' +
+      '<input id="fName" value="' + esc(b.name || '') + '" autocomplete="off"></div>' +
+      '<div class="f"><label for="fPhone">Телефон</label>' +
+      '<input id="fPhone" type="tel" value="' + esc(b.phone || '') + '" autocomplete="off"></div>' +
+      '<div class="f"><label for="fEmail">Почта клиента (необязательно)</label>' +
+      '<input id="fEmail" type="email" value="' + esc(b.email || '') + '" autocomplete="off">' +
+      '<p class="note">Нужна, чтобы сообщить клиенту о переносе или отмене.</p></div>' +
+      '<div class="f"><label for="fService">Услуга</label>' +
+      '<input id="fService" value="' + esc(b.service || '') + '" autocomplete="off"></div>' +
+      '<div class="f"><label for="fComment">Комментарий</label>' +
+      '<textarea id="fComment">' + esc(b.comment || '') + '</textarea></div>';
+  }
+
+  if (MB) MB.onClick(openCreate);
+  document.getElementById('addBtn').addEventListener('click', openCreate);
+
+  function openCreate() {
+    openSheet('Новая запись',
+      slotPicker(0) + formFields(null) +
+      '<p class="err" id="fErr"></p>' +
+      '<button type="button" class="btn btn--main btn--wide" id="fSave">Записать</button>');
+    fillMasters();
+    loadSlots();
+  }
+
+  function fillMasters(current) {
+    var sel = document.getElementById('pkMaster');
+    if (!sel) return;
+    (STATE.site.masters || []).forEach(function (m) {
+      var o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      if (m === current) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target.id === 'pkDate') loadSlots();
+    if (e.target.id === 'siteSel') {
+      var id = parseInt(e.target.value, 10);
+      STATE.site = STATE.sites.filter(function (x) { return x.id === id; })[0] || STATE.site;
+      loadDay();
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    var slot = e.target.closest('.slot');
+    if (slot) {
+      sheet.querySelectorAll('.slot').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+      slot.setAttribute('aria-pressed', 'true');
+      document.getElementById('pkStart').value = slot.dataset.start;
+      return;
+    }
+    var day = e.target.closest('.day');
+    if (day) { STATE.date = day.dataset.date; loadDay(); return; }
+
+    var save = e.target.closest('#fSave');
+    if (save) { submitSheet(save); return; }
+
+    var btn = e.target.closest('[data-act]');
+    if (btn) { doAct(btn.dataset.act, parseInt(btn.dataset.id, 10), btn); }
+  });
+
+  function submitSheet(btn) {
+    var err = document.getElementById('fErr');
+    var start = document.getElementById('pkStart').value;
+    var id = parseInt(document.getElementById('pkId').value, 10) || 0;
+    var master = document.getElementById('pkMaster') ? document.getElementById('pkMaster').value : '';
+    if (!start) { err.textContent = 'Выберите время'; return; }
+
+    var body = {
+      start: start, master: master,
+      name: document.getElementById('fName').value.trim(),
+      phone: document.getElementById('fPhone').value.trim(),
+      email: document.getElementById('fEmail').value.trim(),
+      service: document.getElementById('fService').value.trim(),
+      comment: document.getElementById('fComment').value.trim()
+    };
+    if (body.name.length < 2) { err.textContent = 'Укажите имя клиента'; return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Сохраняем…';
+    var p = id ? api('booking/update', Object.assign({ id: id }, body))
+               : api('booking/create', Object.assign({ site_id: STATE.site.id }, body));
+    p.then(function () {
+      haptic('success');
+      closeSheet();
+      loadDay();
+    }).catch(function (e2) {
+      haptic('error');
+      err.textContent = e2.message;
+      btn.disabled = false;
+      btn.textContent = id ? 'Перенести' : 'Записать';
+    });
+  }
+
+  function doAct(kind, id, btn) {
+    var b = STATE.bookings.filter(function (x) { return x.id === id; })[0];
+    if (!b) return;
+
+    if (kind === 'edit') {
+      STATE.date = b.date;
+      openSheet('Перенести запись',
+        slotPicker(id) + formFields(b) +
+        '<p class="err" id="fErr"></p>' +
+        '<button type="button" class="btn btn--main btn--wide" id="fSave">Перенести</button>');
+      fillMasters(b.master);
+      loadSlots();
+      return;
+    }
+
+    var ask = { confirm: null,
+                cancel: 'Отменить запись' + (b.email ? '? Клиенту уйдёт письмо.' : '?'),
+                delete: 'Удалить запись' + (b.email ? '? Клиенту уйдёт письмо.' : '?') }[kind];
+    if (ask && !window.confirm(ask)) return;
+
+    btn.disabled = true;
+    var p = kind === 'delete'
+      ? api('booking/delete', { id: id })
+      : api('booking/update', { id: id, status: kind === 'confirm' ? 'confirmed' : 'canceled' });
+    p.then(function () { haptic('success'); loadDay(); })
+     .catch(function (e) { haptic('error'); alert(e.message); btn.disabled = false; });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

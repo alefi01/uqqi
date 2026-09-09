@@ -172,3 +172,43 @@ def monthly_report_html(title: str, visitors: int, slug: str) -> str:
         f'видели актуальную информацию.</p>'
     )
     return _mail_wrap("Отчёт за месяц", body, "Открыть кабинет", _lk_url())
+
+
+# ── Письма клиенту записи (Pro, онлайн-запись) ───────────────────────────────
+# Почта у клиента необязательная: он оставляет её в виджете сам. Если её нет —
+# уведомить его нечем, и вызывающий код просто ничего не отправляет.
+
+def booking_changed_html(title: str, when: str, was: str = "", master: str = "") -> str:
+    """Владелец перенёс запись клиента."""
+    lines = [f'<p style="font-size:.95rem;color:#555;line-height:1.6;margin:0 0 1rem">'
+             f'Ваша запись в <strong>{title}</strong> перенесена.</p>']
+    if was:
+        lines.append(f'<p style="font-size:.95rem;color:#999;margin:0 0 .3rem">'
+                     f'Было: <s>{was}</s></p>')
+    lines.append(f'<p style="font-size:1.05rem;font-weight:600;margin:0 0 1rem">Стало: {when}</p>')
+    if master:
+        lines.append(f'<p style="font-size:.9rem;color:#555;margin:0 0 1rem">Мастер: {master}</p>')
+    lines.append('<p style="font-size:.88rem;color:#555;line-height:1.6;margin:0">'
+                 'Если время не подходит, свяжитесь с заведением.</p>')
+    return _mail_wrap("Запись перенесена", "".join(lines))
+
+
+def booking_canceled_html(title: str, when: str) -> str:
+    """Владелец отменил запись клиента."""
+    body = (f'<p style="font-size:.95rem;color:#555;line-height:1.6;margin:0 0 1rem">'
+            f'Ваша запись в <strong>{title}</strong> на {when} отменена заведением.</p>'
+            f'<p style="font-size:.88rem;color:#555;line-height:1.6;margin:0">'
+            f'Если это ошибка, свяжитесь с заведением — вас запишут заново.</p>')
+    return _mail_wrap("Запись отменена", body)
+
+
+def booking_reminder_html(title: str, when: str, address: str = "", phone: str = "") -> str:
+    """Напоминание клиенту за час до визита."""
+    rows = [f'<p style="font-size:1.05rem;font-weight:600;margin:0 0 1rem">{when}</p>']
+    if address:
+        rows.append(f'<p style="font-size:.9rem;color:#555;margin:0 0 .3rem">{address}</p>')
+    if phone:
+        rows.append(f'<p style="font-size:.9rem;color:#555;margin:0 0 1rem">{phone}</p>')
+    body = (f'<p style="font-size:.95rem;color:#555;line-height:1.6;margin:0 0 1rem">'
+            f'Напоминаем: сегодня вас ждут в <strong>{title}</strong>.</p>' + "".join(rows))
+    return _mail_wrap("Через час вас ждут", body)

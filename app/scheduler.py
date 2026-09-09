@@ -565,7 +565,7 @@ def _handle_tg_update(up: dict):
                     "Сюда будут приходить сообщения с сайта и новые записи. "
                     "На сообщения отвечайте через «Ответить» (Reply), записи "
                     "подтверждайте кнопками под карточкой.\n\n"
-                    "/today — записи на сегодня, /week — на неделю.")
+                    "/app — календарь записей приложением, /today — на сегодня.")
             else:
                 tg_send_message(str(chat_id),
                     "Чтобы подключить уведомления, откройте «Подключить Telegram» в личном кабинете uqqi.ru.")
@@ -575,10 +575,18 @@ def _handle_tg_update(up: dict):
 
     # Команды по записям. Работают только у привязанного владельца.
     cmd = text.split()[0].split("@")[0].lower() if text.startswith("/") else ""
-    if cmd in ("/today", "/tomorrow", "/week", "/help", "/bookings"):
+    if cmd in ("/app", "/today", "/tomorrow", "/week", "/help", "/bookings"):
+        if cmd == "/app":
+            from app.telegram_bot import miniapp_keyboard
+            tg_send_message(str(chat_id),
+                "Календарь записей: неделя целиком, можно подтвердить, перенести, "
+                "отменить и добавить запись руками.",
+                reply_markup=miniapp_keyboard())
+            return
         if cmd == "/help":
             tg_send_message(str(chat_id),
                 "Что умеет бот:\n"
+                "/app — календарь записей приложением\n"
                 "/today — записи на сегодня\n"
                 "/tomorrow — записи на завтра\n"
                 "/week — записи на неделю вперёд\n\n"
@@ -661,6 +669,68 @@ async def _loop_telegram():
             await asyncio.sleep(10)
 
 
+async def _loop_booking_reminders():
+    """
+    Напоминание клиенту за час до визита (Pro, онлайн-запись).
+
+    Раз в пять минут берём записи, начинающиеся в ближайшие 55–70 минут, и
+    шлём письмо тем, кто оставил почту. Окно шире часа с запасом: цикл может
+    задержаться, а напомнить лучше на пять минут раньше, чем не напомнить.
+    Отправленное помечаем `reminder_sent`, поэтому повтор цикла не задваивает
+    письма. Отменённые пропускаем.
+
+    Почта — единственный канал до клиента: телефон для писем не годится,
+    SMS-провайдера нет. Кто её не оставил, напоминания не получит.
+    """
+    await asyncio.sleep(60)
+    while True:
+        try:
+            await asyncio.to_thread(_send_booking_reminders)
+        except Exception as e:                                # noqa: BLE001
+            print(f"[BOOKING] напоминания: {e}", flush=True)
+        await asyncio.sleep(300)
+
+
+def _send_booking_reminders() -> None:
+    from datetime import timedelta as _td
+
+    from app.booking import settings_of
+    from app.mailer import booking_reminder_html, send_email
+    from app.models import Booking, Company
+
+    db = SessionLocal()
+    try:
+        now = datetime.utcnow()
+        rows = db.query(Booking).filter(
+            Booking.slot_start > now + _td(minutes=55),
+            Booking.slot_start <= now + _td(minutes=70),
+            Booking.status != "canceled",
+            Booking.reminder_sent.is_(False),
+        ).all()
+        for b in rows:
+            if not b.client_email:
+                b.reminder_sent = True       # напоминать нечем, но и не перебирать её каждый цикл
+                continue
+            c = db.query(Company).filter(Company.id == b.company_id).first()
+            if not c:
+                b.reminder_sent = True
+                continue
+            tz = settings_of(c)["tz"]
+            local = b.slot_start + _td(hours=tz)
+            title = c.title or c.slug
+            try:
+                send_email(b.client_email, f"Напоминание о записи — {title}",
+                           booking_reminder_html(title, f"{local:%d.%m.%Y} в {local:%H:%M}",
+                                                 c.address or "", c.phone or ""))
+            except Exception as e:                            # noqa: BLE001
+                print(f"[BOOKING] напоминание {b.id} не ушло: {e}", flush=True)
+            b.reminder_sent = True
+        if rows:
+            db.commit()
+    finally:
+        db.close()
+
+
 def start_scheduler():
     """Запускает фоновые задачи. Вызывается из main при старте."""
     global _RUNNING
@@ -675,7 +745,8 @@ def start_scheduler():
     loop.create_task(_loop_monitor())
     loop.create_task(_loop_reconcile())
     loop.create_task(_loop_telegram())
+    loop.create_task(_loop_booking_reminders())
     # Диспетчер задач парсинга (Блок 9): спавнит worker.py-процессы на задачи из jobs.
     from app.dispatcher import run_dispatcher
     loop.create_task(run_dispatcher())
-    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг + реконсиляция платежей + telegram-чат + диспетчер сборок)", flush=True)
+    print("[SCHEDULER] Фоновые задачи запущены (биллинг + автообновление + watchdog + очистка логов + мониторинг + реконсиляция платежей + telegram-чат + напоминания о записи + диспетчер сборок)", flush=True)

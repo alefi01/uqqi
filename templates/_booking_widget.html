@@ -87,7 +87,8 @@
   var body = document.getElementById('uqbkBody');
   if(!root || !body) return;
 
-  var state = {days:[], services:[], date:'', slot:'', loaded:false, sending:false};
+  var state = {days:[], services:[], masters:[], slotMasters:[],
+               date:'', slot:'', loaded:false, sending:false};
   var lastFocus = null;
 
   function esc(s){
@@ -141,6 +142,7 @@
         state.loaded = true;
         state.days = (d && d.days) || [];
         state.services = (d && d.services) || [];
+        state.masters  = (d && d.masters)  || [];
         if(!state.days.length){
           body.innerHTML = '<div class="uqbk__empty">Свободного времени сейчас нет. ' +
             'Позвоните нам — подберём удобное.</div>';
@@ -172,19 +174,29 @@
       state.services.forEach(function(s){ h += '<option>' + esc(s) + '</option>'; });
       h += '</select></div>';
     }
+    // Мастеров показываем только в режиме «Мульти». Список наполняется после
+    // выбора времени: в разное время свободны разные мастера.
+    if(state.masters.length){
+      h += '<span class="uqbk__lbl">Мастер</span><div class="uqbk__field">' +
+           '<select id="uqbkMaster"><option value="">Любой свободный</option></select></div>';
+    }
     h += '<span class="uqbk__lbl">Ваши данные</span>' +
          '<div class="uqbk__field"><input id="uqbkName" type="text" placeholder="Как вас зовут" autocomplete="name"></div>' +
          '<div class="uqbk__field"><input id="uqbkPhone" type="tel" placeholder="Телефон" autocomplete="tel"></div>' +
+         '<div class="uqbk__field"><input id="uqbkMail" type="email" placeholder="Почта (необязательно)" autocomplete="email"></div>' +
          '<div class="uqbk__field"><textarea id="uqbkNote" placeholder="Комментарий (необязательно)"></textarea></div>' +
          '<div id="uqbkErr"></div>' +
          '<button type="button" class="uqbk__go" id="uqbkGo">Записаться</button>' +
-         '<p class="uqbk__note">Мы перезвоним, чтобы подтвердить запись.</p>';
+         '<p class="uqbk__note">Мы перезвоним, чтобы подтвердить запись. На почту придёт ' +
+         'напоминание за час и сообщение, если время придётся изменить.</p>';
     body.innerHTML = h;
 
     body.querySelectorAll('.uqbk__day').forEach(function(b){
       b.addEventListener('click', function(){
         state.date = b.getAttribute('data-date');
         state.slot = '';
+        state.slotMasters = [];
+        fillMasters();
         body.querySelectorAll('.uqbk__day').forEach(function(x){
           x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
         });
@@ -208,11 +220,14 @@
         }
         box.innerHTML = slots.map(function(s){
           return '<button type="button" class="uqbk__slot" data-start="' + esc(s.start) + '"' +
+                 ' data-masters="' + esc((s.masters || []).join('|')) + '"' +
                  ' aria-pressed="false">' + esc(s.time) + '</button>';
         }).join('');
         box.querySelectorAll('.uqbk__slot').forEach(function(b){
           b.addEventListener('click', function(){
             state.slot = b.getAttribute('data-start');
+            state.slotMasters = (b.getAttribute('data-masters') || '').split('|').filter(Boolean);
+            fillMasters();
             box.querySelectorAll('.uqbk__slot').forEach(function(x){
               x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
             });
@@ -222,6 +237,20 @@
       .catch(function(){
         box.innerHTML = '<div class="uqbk__empty">Не удалось загрузить время.</div>';
       });
+  }
+
+  function fillMasters(){
+    var sel = document.getElementById('uqbkMaster');
+    if(!sel) return;
+    var was = sel.value;
+    sel.innerHTML = '<option value="">Любой свободный</option>';
+    state.slotMasters.forEach(function(m){
+      var o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      if(m === was) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.disabled = !state.slotMasters.length;
   }
 
   function fail(text){
@@ -235,6 +264,8 @@
     var phone = (document.getElementById('uqbkPhone').value || '').trim();
     var note = (document.getElementById('uqbkNote').value || '').trim();
     var svcEl = document.getElementById('uqbkSvc');
+    var mEl = document.getElementById('uqbkMaster');
+    var mail = (document.getElementById('uqbkMail').value || '').trim();
     if(!state.slot){ fail('Выберите время'); return; }
     if(name.length < 2){ fail('Напишите, как вас зовут'); return; }
     if(phone.replace(/\D/g, '').length < 10){ fail('Введите телефон полностью'); return; }
@@ -249,7 +280,8 @@
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({start: state.slot, name: name, phone: phone,
-                            comment: note, service: svcEl ? svcEl.value : ''})
+                            comment: note, service: svcEl ? svcEl.value : '',
+                            master: mEl ? mEl.value : '', email: mail})
     })
       .then(function(r){ return r.json().then(function(j){ return {ok: r.ok, data: j}; }); })
       .then(function(res){

@@ -327,6 +327,21 @@ def main():
         print("[migrate] + таблица bookings")
         added += 1
 
+    # Колонки под мини-приложение владельца (2026-09): мастер в режиме «Мульти»,
+    # кто создал запись, почта клиента для уведомлений, отметка напоминания.
+    if table_exists(cur, "bookings"):
+        bk_cols = existing_columns(cur, "bookings")
+        for name, ddl in {
+            "master":        "VARCHAR(120) DEFAULT ''",
+            "created_by":    "VARCHAR(16)  DEFAULT 'client'",
+            "client_email":  "VARCHAR(160) DEFAULT ''",
+            "reminder_sent": "BOOLEAN DEFAULT 0",
+        }.items():
+            if name not in bk_cols:
+                cur.execute(f"ALTER TABLE bookings ADD COLUMN {name} {ddl}")
+                print(f"[migrate] + bookings.{name}")
+                added += 1
+
     # WAL: несколько процессов (app + воркеры) пишут в одну SQLite
     try:
         mode = cur.execute("PRAGMA journal_mode=WAL").fetchone()
