@@ -500,6 +500,12 @@ def _can_add_site(user, sites) -> tuple[bool, str]:
         return True, ""
 
     if paid_pro == 0:
+        # Отдельная формулировка для тех, у кого Pro есть, но пробный: иначе
+        # «оформите Pro» читается как «у вас его нет», хотя он виден в карточке.
+        on_trial = any(c.pro_until and c.pro_until > now and not c.paid_once for c in sites)
+        if on_trial:
+            return False, ("Пробный Pro лимит не поднимает. Чтобы добавить второй "
+                           "сайт, оплатите Pro на текущем.")
         return False, ("Бесплатно — один сайт. Чтобы добавить ещё, оформите Pro "
                        "на своём сайте.")
     if paid_pro < 3:

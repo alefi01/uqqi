@@ -13,9 +13,13 @@
 <style>
 :root{
   --paper:#FAF8F4; --paper-2:#F4EDE5; --surface:#FFFFFF;
-  --ink:#1A1714; --ink-2:#3D3733; --muted:#8A7F78; --line:#E8E3DC; --line-2:#EFE7DD;
+  --ink:#1A1714; --ink-2:#3D3733; --muted:#736A63; --line:#E8E3DC; --line-2:#EFE7DD;
   --terracotta:#C8643C; --terracotta-deep:#B0522F; --terracotta-wash:#F6EAE1; --terracotta-soft:#F0D9CB;
   --gold:#C8A96E; --signal:#21A038; --signal-tint:rgba(33,160,56,.12); --star:#FFBB00; --yellow:#FFDB4D;
+  /* «Чернильные» варианты акцентов — для ТЕКСТА на светлом. Сами акценты
+     остаются для заливок и мелочей: терракота #C8643C даёт на бумаге 3.7:1,
+     зелёный #21A038 на белом 3.41:1 — как текст оба не проходят WCAG AA. */
+  --terracotta-ink:#A6431D; --signal-ink:#177A29;
   --espresso:#0E0D0B;
   --display:'Unbounded',system-ui,sans-serif;
   --serif:'Playfair Display',Georgia,serif;
@@ -72,13 +76,22 @@ img,svg{display:block;max-width:100%;}
 
 /* ─── HERO COVER ─── */
 .hero{position:relative;min-height:64vh;display:flex;flex-direction:column;justify-content:center;padding:2rem 0 0;overflow:hidden;}
-.hero__cover{position:absolute;inset:0;z-index:0;}
+/* Тёмная подложка ПОД фотографией: пока она грузится (или если адрес с
+   Яндекса отдал 404), белый заголовок иначе оказывается на светлой бумаге
+   и не читается вовсе. С загруженным фото ничего не меняется. */
+.hero__cover{position:absolute;inset:0;z-index:0;background-color:#241A12;}
 .hero__cover::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,var(--espresso) 4%,rgba(14,13,11,.55) 38%,rgba(14,13,11,.15) 100%);}
-.hero__status{position:absolute;top:1.4rem;right:1.5rem;z-index:3;display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;font-weight:600;color:#7fe0a0;background:rgba(33,160,56,.16);border:1px solid rgba(127,224,160,.4);padding:.4rem .85rem;border-radius:var(--r-pill);backdrop-filter:blur(6px);}
-.hero__status .dot{width:7px;height:7px;border-radius:50%;background:#7fe0a0;box-shadow:0 0 0 3px rgba(127,224,160,.25);}
+/* Плашка висит в САМОМ светлом месте пелены (вверху градиент всего .15),
+   а фотография приходит с Яндекса и может быть какой угодно — светло-зелёное
+   по полупрозрачному зелёному там читалось бы не всегда. Подложка непрозрачная. */
+.hero__status{position:absolute;top:1.4rem;right:1.5rem;z-index:3;display:inline-flex;align-items:center;gap:.45rem;font-size:.78rem;font-weight:600;color:#8FE3AC;background:#12301C;border:1px solid rgba(143,227,172,.45);padding:.4rem .85rem;border-radius:var(--r-pill);}
+.hero__status .dot{width:7px;height:7px;border-radius:50%;background:#8FE3AC;box-shadow:0 0 0 3px rgba(143,227,172,.25);}
 .hero__inner{position:relative;z-index:3;padding-bottom:1.8rem;display:flex;flex-direction:column;align-items:center;text-align:center;}
-.hero__cat{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);padding:.35rem .8rem;border-radius:var(--r-pill);backdrop-filter:blur(4px);margin-bottom:.9rem;}
-.hero__title{font-family:var(--display);font-weight:900;letter-spacing:-.03em;font-size:clamp(2.4rem,7vw,4.2rem);line-height:.98;color:#fff;text-wrap:balance;}
+.hero__cat{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);background:#1F1A15;border:1px solid rgba(255,255,255,.18);padding:.35rem .8rem;border-radius:var(--r-pill);margin-bottom:.9rem;}
+/* Нижняя граница кегля и перенос по буквам: одно длинное слово в названии
+   («Шиномонтаж») иначе задаёт минимальную ширину всей колонки, и на 280px
+   страницу уносит вбок. */
+.hero__title{font-family:var(--display);font-weight:900;letter-spacing:-.03em;font-size:clamp(1.8rem,7vw,4.2rem);line-height:.98;color:#fff;text-wrap:balance;overflow-wrap:anywhere;}
 .hero__title em{font-family:var(--serif);font-style:italic;font-weight:500;color:var(--gold);}
 
 /* meta plaque */
@@ -99,7 +112,7 @@ img,svg{display:block;max-width:100%;}
 .hours-toggle{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;background:none;border:none;font-family:var(--body);font-size:.9rem;font-weight:500;color:var(--ink-2);}
 .hours-toggle .chev{transition:transform .25s var(--ease);width:15px;height:15px;}
 .hours-toggle.open .chev{transform:rotate(180deg);}
-.hours-toggle .open-now{color:var(--signal);font-weight:600;}
+.hours-toggle .open-now{color:var(--signal-ink);font-weight:600;}
 .hours-panel{max-height:0;overflow:hidden;transition:max-height .35s var(--ease);}
 .hours-panel.open{max-height:340px;}
 .hours-inner{padding:.4rem 1.4rem 1.1rem;}
@@ -121,21 +134,30 @@ img,svg{display:block;max-width:100%;}
 .cta--phone:hover{filter:brightness(.96);box-shadow:0 10px 24px rgba(255,219,77,.4);}
 .cta--route{background:var(--espresso);color:#fff;}
 .cta--route:hover{box-shadow:0 10px 24px rgba(14,13,11,.32);}
-.cta--book{background:var(--signal);color:#fff;}
+/* Белый на #21A038 — 3.41:1, для кнопки с надписью мало. Берём тот же
+   зелёный на тон глубже: 5.45:1 и та же роль в палитре. */
+.cta--book{background:var(--signal-ink);color:#fff;}
 .cta--book:hover{box-shadow:0 10px 24px rgba(33,160,56,.32);background:#1c8c30;}
 
 /* ─── SECTION ─── */
 .section{padding:3.2rem 0;scroll-margin-top:72px;}
 .section--alt{background:var(--paper-2);}
-.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.6rem;}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.6rem 1rem;margin-bottom:1.6rem;}
+.sec-head h2{overflow-wrap:anywhere;}
 .sec-head h2{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:clamp(1.4rem,3.2vw,1.9rem);line-height:1.1;}
-.sec-head .eyebrow{display:block;font-size:.7rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta);margin-bottom:.5rem;}
-.sec-link{font-size:.82rem;font-weight:500;color:var(--muted);white-space:nowrap;transition:color .15s;}
+.sec-head .eyebrow{display:block;font-size:.7rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracotta-ink);margin-bottom:.5rem;}
+/* nowrap держал «Смотреть все →» одной строкой, но на узком экране именно
+   он и выталкивал секцию за экран. Пусть переносится. */
+.sec-link{font-size:.82rem;font-weight:500;color:var(--muted);overflow-wrap:anywhere;transition:color .15s;}
 .sec-link:hover{color:var(--terracotta);}
 
 /* features */
 .social-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.7rem;}
-.social-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1rem;border-radius:var(--r-pill);background:var(--sc);color:#fff;text-decoration:none;font-size:.88rem;font-weight:600;transition:transform .15s,box-shadow .15s;}
+/* Белый текст на фирменном цвете мессенджера читался не везде: у Telegram
+   #2AABEE это 2.57:1, у ВКонтакте 4.13:1. Цвет бренда узнаётся по тону,
+   поэтому притемняем его, а не заменяем: доля 58% даёт минимум 4.72:1
+   на всех платформах из _social_icons.html, включая самый светлый WhatsApp. */
+.social-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1rem;border-radius:var(--r-pill);background:color-mix(in srgb,var(--sc) 58%,#1A1714);color:#fff;text-decoration:none;font-size:.88rem;font-weight:600;transition:transform .15s,box-shadow .15s;}
 .social-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px color-mix(in srgb,var(--sc) 40%,transparent);}
 .social-btn__ic{display:inline-flex;width:22px;height:22px;}
 .social-btn__ic svg{width:100%;height:100%;}
@@ -201,7 +223,10 @@ img,svg{display:block;max-width:100%;}
 .review__text{font-size:.92rem;color:var(--ink-2);line-height:1.65;}
 
 /* rating summary */
-.rating-sum{display:flex;align-items:center;gap:2rem;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.5rem 1.8rem;margin-bottom:1.6rem;box-shadow:var(--sh-card);}
+/* Padding 1.8rem с боков плюс блок оценки не оставляли места на 280px:
+   на узком экране поля меньше, а колонки переносятся. */
+.rating-sum{display:flex;align-items:center;gap:1rem 2rem;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:1.5rem clamp(1rem,4vw,1.8rem);margin-bottom:1.6rem;box-shadow:var(--sh-card);}
+.rating-sum > *{min-width:0;}
 .rating-sum__big{text-align:center;}
 .rating-sum__num{font-family:var(--display);font-weight:900;font-size:3rem;line-height:1;letter-spacing:-.03em;}
 .rating-sum__stars{color:var(--star);font-size:1rem;margin-top:.3rem;}
@@ -220,11 +245,15 @@ img,svg{display:block;max-width:100%;}
 
 /* map */
 .map-card{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-card);background:var(--surface);}
-.map-card iframe{width:100%;height:380px;border:0;display:block;}
+/* У iframe своя ширина по умолчанию (300px) — без min-width:0 она держит
+   колонку шире экрана. */
+.map-card iframe{width:100%;max-width:100%;min-width:0;height:380px;border:0;display:block;}
 .map-foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 1.4rem;}
 .map-foot .addr{display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--ink-2);font-weight:500;}
 .map-foot .addr svg{width:17px;height:17px;color:var(--terracotta);}
-.map-foot a{display:inline-flex;align-items:center;gap:.4rem;font-size:.84rem;font-weight:600;color:var(--terracotta);}
+/* Ссылка была терракотовой (3.93:1 на белом) — как текст не проходит.
+   Иконка рядом остаётся акцентной: графике хватает 3:1. */
+.map-foot a{display:inline-flex;align-items:center;gap:.4rem;font-size:.84rem;font-weight:600;color:var(--terracotta-ink);}
 
 /* footer */
 footer{background:var(--espresso);color:rgba(255,255,255,.7);padding:2.6rem 0 2rem;}

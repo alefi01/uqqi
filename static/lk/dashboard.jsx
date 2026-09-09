@@ -78,7 +78,7 @@ function SiteCard({ site, nav, onPay, onMenu, onStats }) {
 }
 
 // ---- экран «Мои сайты» ----
-function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd }) {
+function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd, canAddReason }) {
   if (sites.length === 0) {
     return (
       <div className="empty">
@@ -99,7 +99,12 @@ function ScreenSites({ nav, sites, onPay, onMenu, onStats, canAdd }) {
           ? <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
           : <div className="card" style={{ padding: '1rem 1.1rem', display: 'flex', gap: '.7rem', alignItems: 'center', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb,var(--warning) 30%,var(--line))' }}>
               <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
-              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>Дождитесь завершения сборки текущего сайта — потом можно добавить ещё.</span>
+              {/* Причину присылает бэкенд (_can_add_site): их четыре — идёт сборка,
+                  исчерпан бесплатный лимит, лимит пяти сайтов, лимит десяти.
+                  Раньше здесь стоял захардкоженный текст про сборку, и человек с
+                  давно готовым сайтом читал, что надо «дождаться сборки». */}
+              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>
+                {canAddReason || 'Добавить ещё один сайт сейчас нельзя.'}</span>
             </div>}
       </div>
     </div>

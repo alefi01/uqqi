@@ -296,7 +296,7 @@ function App() {
   const state = headState(screen, sites, tickets);
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onMenu={setMenuSite} onStats={openMetrics} canAdd={canAdd} canAddReason={canAddReason} />;
   else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} />;
   else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
@@ -355,7 +355,7 @@ function App() {
               {screen === 'sites' && (
                 canAdd
                   ? <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
-                  : <span className="tip-wrap" data-tip={canAddReason || 'Сначала оплатите предыдущий'}>
+                  : <span className="tip-wrap" data-tip={canAddReason || 'Добавить ещё один сайт сейчас нельзя'}>
                       <button className="btn btn--primary btn--sm" disabled><i data-lucide="plus"></i> Добавить сайт</button>
                     </span>
               )}

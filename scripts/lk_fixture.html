@@ -68,6 +68,9 @@ const ROUTES = {
 };
 const Q = new URLSearchParams(location.search);
 if (Q.has('empty')) ROUTES['/sites'] = {sites:[], canAdd:true, canAddReason:""};
+// ?limit=1 — сайт давно собран, но добавить ещё нельзя: показываем причину с бэкенда.
+if (Q.has('limit')) ROUTES['/sites'] = {sites:[SITES[0]], canAdd:false,
+  canAddReason:"Бесплатно — один сайт. Чтобы добавить ещё, оформите Pro на своём сайте."};
 // ?trial=1 — у второго сайта закончился Pro-триал: показывается окно «Пробный Pro закончился».
 if (Q.has('trial')) Object.assign(SITES[1], {trialEnded:true, trialEndedAt:"01.09.2026"});
 window.fetch = function(url, opts){
