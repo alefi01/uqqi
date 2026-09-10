@@ -500,7 +500,7 @@ function TrialEndedModal({ site, onPay, onClose }) {
 }
 
 // ---- экран «Мои сайты» ----
-function ScreenSites({ nav, sites, onPay, onDesign, onDelete, onStats, canAdd, canAddReason }) {
+function ScreenSites({ nav, sites, onPay, onDesign, onDelete, onStats, canAdd, onAdd }) {
   if (sites.length === 0) {
     return (
       <div className="empty">
@@ -519,19 +519,14 @@ function ScreenSites({ nav, sites, onPay, onDesign, onDelete, onStats, canAdd, c
   return (
     <div className="sites">
       {sites.map(s => <SiteCard key={s.id} site={s} nav={nav} onPay={onPay} onDesign={onDesign} onDelete={onDelete} onStats={onStats} />)}
-      <div style={{ marginTop: '.3rem' }}>
-        {canAdd
-          ? (sites.length >= 4 && <button className="btn btn--outline" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>)
-          : <div className="card" style={{ padding: '1rem 1.1rem', display: 'flex', gap: '.7rem', alignItems: 'center', background: 'var(--warning-wash)', borderColor: 'color-mix(in srgb,var(--warning) 30%,var(--line))' }}>
-              <i data-lucide="info" style={{ width: 18, height: 18, color: 'var(--warning)', flex: 'none' }}></i>
-              {/* Причину присылает бэкенд (_can_add_site): их четыре — идёт сборка,
-                  исчерпан бесплатный лимит, лимит пяти сайтов, лимит десяти.
-                  Раньше здесь стоял захардкоженный текст про сборку, и человек с
-                  давно готовым сайтом читал, что надо «дождаться сборки». */}
-              <span style={{ fontSize: '.84rem', color: 'var(--ink-2)' }}>
-                {canAddReason || 'Добавить ещё один сайт сейчас нельзя.'}</span>
-            </div>}
-      </div>
+      {/* Кнопка активна всегда. Причину, по которой сайт добавить нельзя,
+          показываем окном поверх (LimitModal) по нажатию — плашка под
+          списком читалась как приговор ещё до того, как человек попробовал. */}
+      {(sites.length >= 4 || !canAdd) && (
+        <div style={{ marginTop: '.3rem' }}>
+          <button className="btn btn--outline" onClick={onAdd}><i data-lucide="plus"></i> Добавить сайт</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1374,6 +1369,13 @@ function App() {
     }
   };
   const ping = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
+  // Кнопка «Добавить сайт» активна всегда: почему нельзя — говорим окном
+  // поверх, а не заранее погашенной кнопкой с подсказкой на ховере
+  // (на телефоне ховера нет, и причина была недоступна вовсе).
+  const tryAddSite = () => {
+    if (canAdd) nav('add-site');
+    else setLimitMsg(canAddReason || 'Добавить ещё один сайт сейчас нельзя.');
+  };
 
   // На старте: маршрут по URL (verify/reset/claim/возврат с оплаты) или проверка сессии
   useEffect(() => {
@@ -1471,6 +1473,8 @@ function App() {
 
   const [canAdd, setCanAdd] = useState(true);
   const [canAddReason, setCanAddReason] = useState('');
+  // Текст ограничения для окна поверх: пусто — окна нет.
+  const [limitMsg, setLimitMsg] = useState('');
   const [buildId, setBuildId] = useState(null);
 
   async function startBuild(url, design) {
@@ -1598,7 +1602,7 @@ function App() {
   const state = headState(screen, sites, tickets);
   const section = SECTION_OF[screen] || 'sites';
   let body = null;
-  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onDesign={openDesign} onDelete={askDeleteSite} onStats={openMetrics} canAdd={canAdd} canAddReason={canAddReason} />;
+  if (screen === 'sites') body = <ScreenSites nav={nav} sites={sites} onPay={openPay} onDesign={openDesign} onDelete={askDeleteSite} onStats={openMetrics} canAdd={canAdd} onAdd={tryAddSite} />;
   else if (screen === 'add-site') body = <ScreenAddSite nav={nav} onStartBuild={startBuild} designs={designs} demoSlugs={demoSlugs} />;
   else if (screen === 'design') body = <ScreenDesign nav={nav} site={designSite} designs={designs} onApply={applyDesign} onPay={openPay} />;
   else if (screen === 'building') body = <ScreenBuilding onDone={finishBuild} buildId={buildId} />;
@@ -1655,11 +1659,7 @@ function App() {
                 {sub && <div className="sub">{sub}</div>}
               </div>
               {screen === 'sites' && (
-                canAdd
-                  ? <button className="btn btn--primary btn--sm" onClick={() => nav('add-site')}><i data-lucide="plus"></i> Добавить сайт</button>
-                  : <span className="tip-wrap" data-tip={canAddReason || 'Добавить ещё один сайт сейчас нельзя'}>
-                      <button className="btn btn--primary btn--sm" disabled><i data-lucide="plus"></i> Добавить сайт</button>
-                    </span>
+                <button className="btn btn--primary btn--sm" onClick={tryAddSite}><i data-lucide="plus"></i> Добавить сайт</button>
               )}
             </div>
 
@@ -1675,6 +1675,20 @@ function App() {
             </nav>
           </section>
         </div>
+
+        {/* Почему сайт добавить нельзя. Причину даёт бэкенд (_can_add_site):
+            идёт сборка, исчерпан бесплатный лимит, лимит пяти, лимит десяти. */}
+        {limitMsg && (
+          <div className="scrim" onClick={() => setLimitMsg('')}>
+            <div className="modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="limitTitle">
+              <h3 id="limitTitle">Пока нельзя добавить сайт</h3>
+              <p>{limitMsg}</p>
+              <div className="modal__actions">
+                <button className="btn btn--primary btn--block" onClick={() => setLimitMsg('')}>Понятно</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* site menu modal */}
         <TrialEndedModal site={trialEnded}

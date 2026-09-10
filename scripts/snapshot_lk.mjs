@@ -35,6 +35,9 @@ const SCREENS = [
                                              .first().click(); }],
   // Окно «Пробный Pro закончился» — показывается раз за сессию по флагу сайта.
   ['trial',    '?trial=1',  async () => {}],
+  // Окно «Пока нельзя добавить сайт»: кнопка активна всегда, причину даёт окно.
+  ['limit',    '?limit=1',  async (p) => { await p.locator('.main__head button', { hasText: 'Добавить сайт' })
+                                             .first().click(); }],
 ];
 
 const VENDOR = '.design-gate/vendor';
