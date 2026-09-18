@@ -164,6 +164,7 @@ p{color:var(--tx-soft)}
   <div class="wrap">
     <p class="kick">Прайс</p>
     <h2>{{ company.catalog_title or 'Услуги и цены' }}</h2>
+    {% include "_catalog_search.html" %}
     <div class="prices rv" data-paginate="8">
       {% for item in company.menu_items %}
       <div class="price">

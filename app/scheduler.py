@@ -430,12 +430,18 @@ def _tg_save_offset(n: int):
 
 
 def _owner_companies(db, chat_id) -> list:
-    """Сайты владельца, привязавшего этот Telegram."""
+    """
+    Сайты владельца, привязавшего этот Telegram.
+
+    По всем аккаунтам с этим chat_id, а не по первому: колонка не уникальна,
+    один человек мог подключить Telegram из двух своих аккаунтов — и дайджест
+    молча показывал сайты только одного из них.
+    """
     from app.models import User, Company
-    u = db.query(User).filter(User.tg_chat_id == str(chat_id)).first()
-    if not u:
+    ids = [u.id for u in db.query(User).filter(User.tg_chat_id == str(chat_id)).all()]
+    if not ids:
         return []
-    return db.query(Company).filter(Company.user_id == u.id).all()
+    return db.query(Company).filter(Company.user_id.in_(ids)).all()
 
 
 def _bookings_digest(chat_id, days: int, title: str) -> str:

@@ -28,16 +28,27 @@ document.querySelectorAll(".hr[data-d]").forEach(function(row){
   if (row.dataset.d !== "" && +row.dataset.d === today) row.classList.add("today");
 });
 
-/* пагинация каталога: все позиции остаются в DOM ради поисковиков,
-   JS показывает по N штук на страницу */
+/* каталог: поиск по позициям + пагинация.
+   Все позиции остаются в DOM ради поисковиков — JS только прячет лишние.
+   Поиск и пагинация считаются вместе: страницы строятся по НАЙДЕННЫМ
+   позициям, иначе после фильтра нумерация показывала пустые страницы. */
 document.querySelectorAll("[data-paginate]").forEach(function(grid){
   var size = parseInt(grid.getAttribute("data-paginate"), 10) || 6;
   var items = Array.prototype.slice.call(grid.children);
-  if (items.length <= size) return;
-  var pages = Math.ceil(items.length / size), cur = 1;
+  var box = (grid.closest("section") || document).querySelector("[data-csearch]");
+  var input = box ? box.querySelector("[data-search]") : null;
+  var note = box ? box.querySelector(".csearch__n") : null;
+
+  // Поле поиска показываем, только когда в прайсе есть что искать:
+  // в списке из пяти позиций оно лишний элемент управления.
+  if (box && items.length >= 8) box.hidden = false;
+
+  var shown = items, pages = 1, cur = 1;
   var nav = document.createElement("div");
   nav.className = "pg-nav";
   grid.parentNode.insertBefore(nav, grid.nextSibling);
+
+  function norm(s){ return s.toLowerCase().replace(/\u0451/g, "\u0435").replace(/\s+/g, " "); }
 
   function mkbtn(label, enabled, active, fn){
     var b = document.createElement("button");
@@ -53,17 +64,37 @@ document.querySelectorAll("[data-paginate]").forEach(function(grid){
     s.scrollIntoView({behavior: rm ? "auto" : "smooth", block: "start"});
   }
   function draw(){
-    items.forEach(function(el, i){
-      el.style.display = (i >= (cur-1)*size && i < cur*size) ? "" : "none";
-    });
+    items.forEach(function(el){ el.style.display = "none"; });
+    shown.slice((cur-1)*size, cur*size).forEach(function(el){ el.style.display = ""; });
     nav.innerHTML = "";
+    nav.hidden = pages <= 1;
+    if (pages <= 1) return;
     nav.appendChild(mkbtn("Назад", cur > 1, false, function(){ to(cur-1); }));
     for (var p = 1; p <= pages; p++){
       (function(p){ nav.appendChild(mkbtn(String(p), true, p === cur, function(){ to(p); })); })(p);
     }
     nav.appendChild(mkbtn("Вперёд", cur < pages, false, function(){ to(cur+1); }));
   }
-  draw();
+  function apply(){
+    var q = input ? norm(input.value.trim()) : "";
+    shown = q ? items.filter(function(el){ return norm(el.textContent).indexOf(q) >= 0; }) : items;
+    pages = Math.max(1, Math.ceil(shown.length / size));
+    cur = 1;
+    draw();
+    if (note){
+      note.hidden = !q;
+      note.textContent = !q ? ""
+        : (shown.length ? "Нашлось: " + shown.length
+                        : "Ничего не нашлось. Попробуйте другое слово или посмотрите весь список.");
+    }
+  }
+  if (input){
+    input.addEventListener("input", apply);
+    input.addEventListener("keydown", function(e){
+      if (e.key === "Escape" && input.value){ input.value = ""; apply(); }
+    });
+  }
+  apply();
 });
 })();
 </script>

@@ -1,0 +1,38 @@
+{# Поиск по каталогу премиум-витрин (подключается прямо перед контейнером
+   [data-paginate]; логика — в _design_js.html).
+
+   Разметка нарочно нейтральна по цвету: у каждого оформления своя палитра
+   внутри файла, поэтому поле берёт цвет текста секции (currentColor) и
+   подмешивает его к фону — так оно одинаково уместно и на тёмном garage,
+   и на светлом market, без десяти копий стилей.
+
+   По умолчанию блок скрыт: без JS поле не работает, а в коротком прайсе оно
+   и не нужно — скрипт показывает его, когда позиций много. #}
+<style>
+.csearch{margin:1.4rem 0 .2rem;max-width:28rem}
+.csearch__box{display:flex;align-items:center;gap:.6rem;min-height:46px;
+  padding:.5rem .95rem;border-radius:999px;
+  border:1px solid color-mix(in srgb,currentColor 28%,transparent);
+  background:color-mix(in srgb,currentColor 6%,transparent)}
+.csearch__box:focus-within{outline:2px solid currentColor;outline-offset:2px}
+.csearch__ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:2;stroke-linecap:round}
+.csearch__in{flex:1 1 auto;min-width:0;border:0;background:none;color:inherit;
+  font:inherit;font-size:1rem;line-height:1.3}
+.csearch__in:focus{outline:none}
+.csearch__in::placeholder{color:currentColor;opacity:.75}
+.csearch__n{margin:.55rem 0 0;font-size:.9rem;opacity:.85}
+.csearch__sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+</style>
+<div class="csearch" data-csearch hidden>
+  <div class="csearch__box">
+    <svg class="csearch__ic" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/>
+    </svg>
+    <label class="csearch__sr" for="catSearch">Поиск по каталогу</label>
+    <input id="catSearch" class="csearch__in" type="search" autocomplete="off"
+           placeholder="Найти по названию" data-search>
+  </div>
+  <p class="csearch__n" role="status" aria-live="polite" hidden></p>
+</div>

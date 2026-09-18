@@ -141,6 +141,7 @@ p{color:var(--ink-2)}
 <section id="services">
   <div class="wrap">
     <div style="text-align:center"><p class="kick">Услуги</p><h2 style="margin-top:.5rem">{{ company.catalog_title or 'Что мы делаем' }}</h2></div>
+    {% include "_catalog_search.html" %}
     <div class="srv rv" data-paginate="6">
       {% for item in company.menu_items %}
       <article class="card">

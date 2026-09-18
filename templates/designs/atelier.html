@@ -147,6 +147,7 @@ p{color:var(--ink-2)}
   <div class="wrap">
     <p class="kick">Что делаем</p>
     <h2 style="margin-top:.5rem">{{ company.catalog_title or 'Услуги и цены' }}</h2>
+    {% include "_catalog_search.html" %}
     <ol class="srv rv" data-paginate="8">
       {% for item in company.menu_items %}
       <li>

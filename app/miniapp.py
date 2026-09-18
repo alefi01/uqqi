@@ -97,32 +97,44 @@ def time_now() -> int:
     return int(_t.time())
 
 
-def _owner(db, init_data: str) -> User:
-    """Владелец по подписанным данным Telegram или 401."""
+def _owners(db, init_data: str) -> list[User]:
+    """
+    Аккаунты, к которым привязан ЭТОТ Telegram, или 401/403.
+
+    Именно список, а не один аккаунт: `users.tg_chat_id` не уникален — один
+    человек мог подключить Telegram из двух своих аккаунтов, и тогда
+    `.first()` отдавал случайный из них. Уведомления о записях при этом
+    приходили (их маршрут — `company.user_id` → его chat_id), а
+    мини-приложение показывало «Нет сайтов на Pro»: сайты лежали у второго
+    аккаунта. Собираем сайты по всем аккаунтам этого чата.
+    """
     tg = _check_init_data(init_data)
     if not tg or not tg.get("id"):
         raise HTTPException(status_code=401, detail="Откройте приложение из чата с ботом")
-    user = db.query(User).filter(User.tg_chat_id == str(tg["id"])).first()
-    if not user:
+    users = db.query(User).filter(User.tg_chat_id == str(tg["id"])).all()
+    if not users:
         raise HTTPException(status_code=403,
                             detail="Telegram не привязан. Кабинет → Настройки → Подключить Telegram")
-    return user
+    return users
 
 
-def _pro_sites(db, user: User) -> list[Company]:
+def _owned(db, users: list[User]):
+    """Запрос по всем сайтам этих аккаунтов."""
+    return db.query(Company).filter(Company.user_id.in_([u.id for u in users]))
+
+
+def _pro_sites(db, users: list[User]) -> list[Company]:
     """Сайты владельца с активным Pro — только они попадают в приложение."""
     now = datetime.utcnow()
-    rows = db.query(Company).filter(
-        Company.user_id == user.id,
+    return _owned(db, users).filter(
         Company.is_active.is_(True),
         Company.pro_until.isnot(None),
         Company.pro_until > now,
     ).order_by(Company.id).all()
-    return rows
 
 
-def _site(db, user: User, site_id: int) -> Company:
-    c = db.query(Company).filter(Company.id == site_id, Company.user_id == user.id).first()
+def _site(db, users: list[User], site_id: int) -> Company:
+    c = _owned(db, users).filter(Company.id == site_id).first()
     if not c:
         raise HTTPException(status_code=404, detail="Сайт не найден")
     if not (c.pro_until and c.pro_until > datetime.utcnow()):
@@ -224,9 +236,9 @@ async def miniapp_page(request: Request):
 async def api_bootstrap(req: Auth):
     db = SessionLocal()
     try:
-        user = _owner(db, req.initData)
+        users = _owners(db, req.initData)
         out = []
-        for c in _pro_sites(db, user):
+        for c in _pro_sites(db, users):
             cfg = settings_of(c)
             out.append({
                 "id": c.id, "title": c.title or c.slug, "slug": c.slug,
@@ -236,7 +248,10 @@ async def api_bootstrap(req: Auth):
                 "services": cfg["services"],
                 "slotsOn": slots_active(c),
             })
-        return {"ok": True, "sites": out}
+        # Сколько сайтов всего: без этого «Нет сайтов на Pro» читается
+        # одинаково и когда сайтов нет вовсе, и когда Pro просто не активен.
+        total = _owned(db, users).filter(Company.is_active.is_(True)).count()
+        return {"ok": True, "sites": out, "sitesTotal": total}
     finally:
         db.close()
 
@@ -246,8 +261,8 @@ async def api_bookings(req: RangeReq):
     """Записи сайта за диапазон дат (даты местные для заведения)."""
     db = SessionLocal()
     try:
-        user = _owner(db, req.initData)
-        c = _site(db, user, req.site_id)
+        users = _owners(db, req.initData)
+        c = _site(db, users, req.site_id)
         cfg = settings_of(c)
         tz = timedelta(hours=cfg["tz"])
 
@@ -282,8 +297,8 @@ async def api_slots(req: SlotsReq):
     """
     db = SessionLocal()
     try:
-        user = _owner(db, req.initData)
-        c = _site(db, user, req.site_id)
+        users = _owners(db, req.initData)
+        c = _site(db, users, req.site_id)
         slots = free_slots(db, c, req.date, owner=True, exclude_id=req.exclude_id or None)
         return {"ok": True, "date": req.date, "slots": slots}
     finally:
@@ -325,8 +340,8 @@ def _apply_slot(db, company, start: str, exclude_id: int | None, master: str) ->
 async def api_create(req: CreateReq):
     db = SessionLocal()
     try:
-        user = _owner(db, req.initData)
-        c = _site(db, user, req.site_id)
+        users = _owners(db, req.initData)
+        c = _site(db, users, req.site_id)
         cfg = settings_of(c)
 
         name = (req.name or "").strip()[:120]
@@ -359,11 +374,11 @@ async def api_update(req: UpdateReq):
     """
     db = SessionLocal()
     try:
-        user = _owner(db, req.initData)
+        users = _owners(db, req.initData)
         b = db.query(Booking).filter(Booking.id == req.id).first()
         if not b:
             raise HTTPException(status_code=404, detail="Запись не найдена")
-        c = _site(db, user, b.company_id)
+        c = _site(db, users, b.company_id)
         cfg = settings_of(c)
 
         was_local = b.slot_start + timedelta(hours=cfg["tz"]) if b.slot_start else None
@@ -405,11 +420,11 @@ async def api_update(req: UpdateReq):
 async def api_delete(req: DeleteReq):
     db = SessionLocal()
     try:
-        user = _owner(db, req.initData)
+        users = _owners(db, req.initData)
         b = db.query(Booking).filter(Booking.id == req.id).first()
         if not b:
             raise HTTPException(status_code=404, detail="Запись не найдена")
-        c = _site(db, user, b.company_id)
+        c = _site(db, users, b.company_id)
         cfg = settings_of(c)
         local = b.slot_start + timedelta(hours=cfg["tz"]) if b.slot_start else None
 

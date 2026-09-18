@@ -117,6 +117,7 @@ p{color:var(--ink-2)}
 <section id="menu">
   <div class="wrap">
     <div style="text-align:center"><p class="kick">Меню</p><h2 style="margin-top:.5rem">{{ company.catalog_title or 'Что налить и к чему' }}</h2></div>
+    {% include "_catalog_search.html" %}
     <div class="menu rv" data-paginate="10">
       {% for item in company.menu_items %}
       <div class="mrow">
